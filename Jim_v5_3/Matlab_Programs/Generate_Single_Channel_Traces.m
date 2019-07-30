@@ -117,7 +117,14 @@ IMG1 = cat(3, originalim,detectedim,backim);
 imshow(IMG1);
 
 %% 7) Calculate Sum of signal and background for each frame
-cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+verboseoutput = false;
+
+verbosestr = '';
+if verboseoutput
+    verbosestr = ' -Verbose';
+end
+
+cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"',verbosestr]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
 %% Continue from here for batch processing
 %
@@ -180,7 +187,7 @@ parfor i=1:filenum(1)
     cmd = [JIM,'Expand_Shapes.exe "',workingdir,'Detected_Filtered_Positions.csv" "',workingdir,'Detected_Positions.csv" "',workingdir,'Expanded" -boundaryDist ', num2str(expandinnerradius),' -backgroundDist ',num2str(backgroundradius),' -backInnerRadius ',num2str(backgroundinnerradius)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
     system(cmd)
     % 3.6) Calculate Sum of signal and background for each frame
-    cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+    cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"',verbosestr]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
     system(cmd)
 
 end

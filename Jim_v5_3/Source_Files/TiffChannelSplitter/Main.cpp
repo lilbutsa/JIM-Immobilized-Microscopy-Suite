@@ -61,10 +61,10 @@ int main(int argc, char *argv[])
 
 	string outputfilename;
 
-	int imageDepth = inputstack.depth;
-	int imageWidth = inputstack.width;
-	int imageHeight = inputstack.height;
-	int totnumofframes = inputstack.numofframes;
+	int imageDepth = inputstack.imageDepth;
+	int imageWidth = inputstack.imageWidth;
+	int imageHeight = inputstack.imageHeight;
+	int totnumofframes = inputstack.numOfFrames;
 
 	vector<float> image;
 	int framesperchannel;
@@ -89,12 +89,13 @@ int main(int argc, char *argv[])
 			BLTiffIO::TiffInput inputstack2(inputfile);
 			outputfilename = outputfile + "_Channel_" + to_string(i + 1) + ".tiff";
 			cout << "Writing out " << outputfilename << endl;
-			BLTiffIO::TiffOutput output(outputfilename, imageDepth, imageWidth, imageHeight);
+			BLTiffIO::TiffOutput output(outputfilename, imageWidth, imageHeight, imageDepth);
 			for (int j = 0; j < totnumofframes; j++) {
-				inputstack2.get1dimage(image);
+				//cout << i << "\n";
+				inputstack2.read1dImage(j,image);
 				if (stackorder[j][1] == i) {
 					//cout << "Adding image " << j << " to channel " << i << "\n";
-					output.Write1DImage(image);
+					output.write1dImage(image);
 				}
 			}
 		}
@@ -111,12 +112,12 @@ int main(int argc, char *argv[])
 			BLTiffIO::TiffInput inputstack2(inputfile);
 			outputfilename = outputfile + "_Channel_" + to_string(i + 1) + ".tiff";
 			cout << "Writing out " << outputfilename << endl;
-			BLTiffIO::TiffOutput output(outputfilename, imageDepth, imageWidth, imageHeight);
+			BLTiffIO::TiffOutput output(outputfilename, imageWidth, imageHeight, imageDepth);
 			for (int j = 0; j < totnumofframes; j++) {
-				inputstack2.get1dimage(image);
+				inputstack2.read1dImage(j,image);
 				if (j % totchannelnum == i) {
 					//cout << "Adding image " << j << " to channel " << i << "\n";
-					output.Write1DImage(image);
+					output.write1dImage(image);
 				}
 			}
 		}

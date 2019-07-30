@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 	std::string output = argv[4];
 
 	bool bdrifts = false;
+	bool veboseoutput = false;
 	string driftfile;
 	vector<vector<double>> tableofdrifts(3000, vector<double>(2, 0.0));
 
@@ -54,17 +55,17 @@ int main(int argc, char *argv[])
 			}
 			else { std::cout << "error inputting drifts" << std::endl; return 1; }
 		}
-
+		if (std::string(argv[i]) == "-Verbose")veboseoutput = true;
 	}
 
 
 	BLTiffIO::TiffInput imclass(inputfile);
 
-	int imageDepth = imclass.depth;
-	int imageWidth = imclass.width;
-	int imageHeight = imclass.height;
+	int imageDepth = imclass.imageDepth;
+	int imageWidth = imclass.imageWidth;
+	int imageHeight = imclass.imageHeight;
 	int imagePoints = imageWidth * imageHeight;
-	int totnumofframes = imclass.numofframes;
+	int totnumofframes = imclass.numOfFrames;
 
 	std::vector<std::vector<int>> labelledpos(3000, vector<int>(1000, 0));
 	BLCSVIO::readVariableWidthCSV(ROIfile, labelledpos);
@@ -76,7 +77,8 @@ int main(int argc, char *argv[])
 
 	int numoffits = labelledpos.size();
 
-	vector<vector<double>> results(totnumofframes*numoffits, vector<double>(20, 0));//region num, frame no, x centre, y centre,  total,  mean, std dev, median,min, max, num of points, background total, back mean, back std dev, back median,back min,back max, back num of points, total- (back mean *num of points),total- (back median *num of points)
+	vector<vector<double>> results;
+	if(veboseoutput)results = vector<vector<double>>(totnumofframes*numoffits, vector<double>(20, 0));//region num, frame no, x centre, y centre,  total,  mean, std dev, median,min, max, num of points, background total, back mean, back std dev, back median,back min,back max, back num of points, total- (back mean *num of points),total- (back median *num of points)
 
 	vector<vector<double>> amplitudevals(numoffits, vector<double>(totnumofframes));
 	vector<vector<double>> backgroundvals(numoffits, vector<double>(totnumofframes));
@@ -91,14 +93,14 @@ int main(int argc, char *argv[])
 
 	int xdrift = 0, ydrift = 0, xin, yin;
 	float mean, stddev, min, max;
-	double median, xmid, ymid;
+	double median, xmid, ymid,totfluor;
 
 	vector<double> gausresult, xyztoadd(3);
 	vector<vector<double>> xyzvecin;
 
 	for (int imagecount = 0; imagecount < totnumofframes; imagecount++) {
 		cout << "Fitting Frame Number " << imagecount << endl;
-		imclass.get2dimage(image);
+		imclass.read2dImage(imagecount,image);
 
 		if (bdrifts) {
 			xdrift = round(tableofdrifts[imagecount][0]);
@@ -120,25 +122,30 @@ int main(int argc, char *argv[])
 			xmid *= 1.0 / labelledpos[fitcount].size();
 			ymid *= 1.0 / labelledpos[fitcount].size();
 
-			results[imagecount + fitcount*totnumofframes][0] = fitcount;
-			results[imagecount + fitcount*totnumofframes][1] = imagecount;
-			results[imagecount + fitcount*totnumofframes][2] = xmid;
-			results[imagecount + fitcount*totnumofframes][3] = ymid;
+			if (veboseoutput) {
+				results[imagecount + fitcount*totnumofframes][0] = fitcount;
+				results[imagecount + fitcount*totnumofframes][1] = imagecount;
+				results[imagecount + fitcount*totnumofframes][2] = xmid;
+				results[imagecount + fitcount*totnumofframes][3] = ymid;
+			}
 
 			ippsMeanStdDev_32f(ROIdata[fitcount].data(), ROIdata[fitcount].size(), &mean, &stddev, ippAlgHintAccurate);
 
-			results[imagecount + fitcount*totnumofframes][4] = mean * labelledpos[fitcount].size();
-			results[imagecount + fitcount*totnumofframes][5] = mean;
-			results[imagecount + fitcount*totnumofframes][6] = stddev;
+			totfluor = mean * labelledpos[fitcount].size();
 
-			results[imagecount + fitcount*totnumofframes][7] = CalcMedian(ROIdata[fitcount]);
+			if (veboseoutput) {
+				results[imagecount + fitcount*totnumofframes][4] = mean * labelledpos[fitcount].size();
+				results[imagecount + fitcount*totnumofframes][5] = mean;
+				results[imagecount + fitcount*totnumofframes][6] = stddev;
 
-			ippsMinMax_32f(ROIdata[fitcount].data(), ROIdata[fitcount].size(), &min, &max);
+				results[imagecount + fitcount*totnumofframes][7] = CalcMedian(ROIdata[fitcount]);
 
-			results[imagecount + fitcount*totnumofframes][8] = min;
-			results[imagecount + fitcount*totnumofframes][9] = max;
+				ippsMinMax_32f(ROIdata[fitcount].data(), ROIdata[fitcount].size(), &min, &max);
 
-			results[imagecount + fitcount*totnumofframes][10] = ROIdata[fitcount].size();
+				results[imagecount + fitcount*totnumofframes][8] = min;
+				results[imagecount + fitcount*totnumofframes][9] = max;
+				results[imagecount + fitcount*totnumofframes][10] = ROIdata[fitcount].size();
+			}
 
 			for (int i = 0; i < backgroundpos[fitcount].size(); i++) {
 				xin = backgroundpos[fitcount][i] % imageWidth - xdrift;
@@ -149,31 +156,33 @@ int main(int argc, char *argv[])
 
 			ippsMeanStdDev_32f(backgroundData[fitcount].data(), backgroundData[fitcount].size(), &mean, &stddev, ippAlgHintAccurate);
 
-			results[imagecount + fitcount*totnumofframes][11] = mean * backgroundData[fitcount].size();
-			results[imagecount + fitcount*totnumofframes][12] = mean;
-			results[imagecount + fitcount*totnumofframes][13] = stddev;
+			if (veboseoutput) {
+				results[imagecount + fitcount*totnumofframes][11] = mean * backgroundData[fitcount].size();
+				results[imagecount + fitcount*totnumofframes][12] = mean;
+				results[imagecount + fitcount*totnumofframes][13] = stddev;
 
-			median = CalcMedian(backgroundData[fitcount]);
-			results[imagecount + fitcount*totnumofframes][14] = median;
+				median = CalcMedian(backgroundData[fitcount]);
+				results[imagecount + fitcount*totnumofframes][14] = median;
 
-			ippsMinMax_32f(backgroundData[fitcount].data(), backgroundData[fitcount].size(), &min, &max);
+				ippsMinMax_32f(backgroundData[fitcount].data(), backgroundData[fitcount].size(), &min, &max);
 
-			results[imagecount + fitcount*totnumofframes][15] = min;
-			results[imagecount + fitcount*totnumofframes][16] = max;
+				results[imagecount + fitcount*totnumofframes][15] = min;
+				results[imagecount + fitcount*totnumofframes][16] = max;
 
-			results[imagecount + fitcount*totnumofframes][17] = backgroundData[fitcount].size();
+				results[imagecount + fitcount*totnumofframes][17] = backgroundData[fitcount].size();
 
-			results[imagecount + fitcount*totnumofframes][18] = results[imagecount + fitcount*totnumofframes][4] - (mean *ROIdata[fitcount].size());
-			results[imagecount + fitcount*totnumofframes][19] = results[imagecount + fitcount*totnumofframes][4] - (median *ROIdata[fitcount].size());
+				results[imagecount + fitcount*totnumofframes][18] = results[imagecount + fitcount*totnumofframes][4] - (mean *ROIdata[fitcount].size());
+				results[imagecount + fitcount*totnumofframes][19] = results[imagecount + fitcount*totnumofframes][4] - (median *ROIdata[fitcount].size());
+			}
 
-			amplitudevals[fitcount][imagecount] = results[imagecount + fitcount*totnumofframes][18];
+			amplitudevals[fitcount][imagecount] = totfluor - (mean *ROIdata[fitcount].size());;
 			backgroundvals[fitcount][imagecount] = mean;
 
 		}
 	}
-	cout << "Writing out traces to :" << output + "_Traces.csv\n";
-	BLCSVIO::writeCSV(output + "_Traces.csv", results, "region num, frame no, x centre, y centre,  total,  mean, std dev, median,min, max, num of points, background total, back mean, back std dev, back median,back min,back max, back num of points, total- (back mean * num of points),total- (back median * num of points)\n");
+	cout << "Writing out traces to :" << output + "\n";
+	if(veboseoutput)BLCSVIO::writeCSV(output + "_Traces.csv", results, "region num, frame no, x centre, y centre,  total,  mean, std dev, median,min, max, num of points, background total, back mean, back std dev, back median,back min,back max, back num of points, total- (back mean * num of points),total- (back median * num of points)\n");
 	BLCSVIO::writeCSV(output + "_Flourescent_Intensities.csv", amplitudevals, "Each row is a particle. Each column is a Frame\n");
 	BLCSVIO::writeCSV(output + "_Flourescent_Backgrounds.csv", backgroundvals, "Each row is the mean background surrounding the particle. Each column is a Frame\n");
-
+	
 }

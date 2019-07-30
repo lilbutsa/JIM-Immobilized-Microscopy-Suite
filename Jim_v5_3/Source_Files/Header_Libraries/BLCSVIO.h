@@ -6,8 +6,7 @@
 #include <sstream>
 #include <algorithm>
 
-#ifndef BLCSVIO_H_
-#define BLCSVIO_H_
+
 
 namespace BLCSVIO {
 	template <typename vectortype>
@@ -95,7 +94,7 @@ namespace BLCSVIO {
 	}
 
 	template <typename vectortype>
-	void writeCSV(std::string filename, std::vector<std::vector<vectortype>> file_out, std::string headerline)
+	inline void writeCSV(std::string filename, std::vector<std::vector<vectortype>> file_out, std::string headerline)
 	{
 		std::ofstream myfile;
 		myfile.open(filename.c_str());
@@ -113,7 +112,7 @@ namespace BLCSVIO {
 	}
 
 	template <typename vectortype>
-	void writeCSV(std::string filename, std::vector<std::vector<vectortype>> file_out, std::vector<std::string> headerline)
+	inline void writeCSV(std::string filename, std::vector<std::vector<vectortype>> file_out, std::vector<std::string> headerline)
 	{
 		std::ofstream myfile;
 		myfile.open(filename.c_str());
@@ -135,4 +134,3 @@ namespace BLCSVIO {
 	}
 
 }
-#endif

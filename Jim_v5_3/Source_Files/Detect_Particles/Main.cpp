@@ -21,6 +21,8 @@ int main(int argc, char *argv[])
 	double minDistFromEdge = -0.1, minEccentricity = -0.1, maxEccentricity = 1.1, minLength = 0, maxLength = 10000000000, minCount = 0, maxCount = 1000000000, maxDistFromLinear = 10000000;
 	bool filtering = false;
 
+	double leftminDistFromEdge = -0.1, rightminDistFromEdge = -0.1, topminDistFromEdge = -0.1, bottomminDistFromEdge = -0.1;
+
 	if (argc < 3) { std::cout << "could not read file name" << endl; return 1; }
 	std::string inputfile = argv[1];
 	std::string output = argv[2];
@@ -36,7 +38,40 @@ int main(int argc, char *argv[])
 		if (std::string(argv[i]) == "-minDistFromEdge") {
 			if (i + 1 < argc) {
 				minDistFromEdge = stod(argv[i + 1]);
+				leftminDistFromEdge = minDistFromEdge, rightminDistFromEdge = minDistFromEdge, topminDistFromEdge = minDistFromEdge, bottomminDistFromEdge = minDistFromEdge;
 				cout << "Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				filtering = true;
+			}
+			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
+		}
+		if (std::string(argv[i]) == "-left") {
+			if (i + 1 < argc) {
+				leftminDistFromEdge = stod(argv[i + 1]);
+				cout << "Left Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				filtering = true;
+			}
+			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
+		}
+		if (std::string(argv[i]) == "-right") {
+			if (i + 1 < argc) {
+				rightminDistFromEdge = stod(argv[i + 1]);
+				cout << "Right Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				filtering = true;
+			}
+			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
+		}
+		if (std::string(argv[i]) == "-top") {
+			if (i + 1 < argc) {
+				topminDistFromEdge = stod(argv[i + 1]);
+				cout << "Top Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				filtering = true;
+			}
+			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
+		}
+		if (std::string(argv[i]) == "-bottom") {
+			if (i + 1 < argc) {
+				bottomminDistFromEdge = stod(argv[i + 1]);
+				cout << "Bottom Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
 				filtering = true;
 			}
 			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
@@ -102,11 +137,11 @@ int main(int argc, char *argv[])
 
 	BLTiffIO::TiffInput inputstack(inputfile);
 
-	int imageDepth = inputstack.depth;
-	int imageWidth = inputstack.width;
-	int imageHeight = inputstack.height;
+	int imageDepth = inputstack.imageDepth;
+	int imageWidth = inputstack.imageWidth;
+	int imageHeight = inputstack.imageHeight;
 	int imagePoints = imageWidth*imageHeight;
-	int totnumofframes = inputstack.numofframes;
+	int totnumofframes = inputstack.numOfFrames;
 
 
 
@@ -150,7 +185,7 @@ int main(int argc, char *argv[])
 	std::vector<std::vector<int>> labelledpos, filteredpos;
 	std::vector<std::vector<float>> centroidresults, filteredcents;
 
-	inputstack.get1dimage(imagef);
+	inputstack.read1dImage(0,imagef);
 
 	ippiFilterGaussianBorder_32f_C1R(&imagef[0], imageWidth * sizeof(Ipp32f), &gaussblurred[0], imageWidth * sizeof(Ipp32f), roiSize, ippBorderRepl, pSpec, pBuffer);
 	ippiFilterLaplaceBorder_32f_C1R(&gaussblurred[0], imageWidth * sizeof(Ipp32f), &imlog[0], imageWidth * sizeof(Ipp32f), roiSize, ippMskSize5x5, ippBorderRepl, 0, pBuffer1);
@@ -168,7 +203,7 @@ int main(int argc, char *argv[])
 	componentMeasurements(labelledpos, imageWidth, centroidresults, imagef);
 
 
-	BLTiffIO::TiffOutput(output + "_Regions.tif", 8, imageWidth, imageHeight).Write1DImage(detected);
+	BLTiffIO::TiffOutput(output + "_Regions.tif", imageWidth, imageHeight,8).write1dImage(detected);
 	BLCSVIO::writeCSV(output + "_Measurements.csv", centroidresults, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, x Min Bounding Box,x Max Bounding Box, y Min Bounding Box,y Max Bounding Box\n");
 	std::vector<std::vector<int>> labelledposout = labelledpos;
 	labelledposout.insert(labelledposout.begin(), { imageWidth,imageHeight,imagePoints });
@@ -178,7 +213,7 @@ int main(int argc, char *argv[])
 	if (filtering == false)return 0;
 
 	for (int i = 0; i < centroidresults.size(); i++) {
-		if (centroidresults[i][10] >= minDistFromEdge && centroidresults[i][11] <= imageWidth - 1 - minDistFromEdge && centroidresults[i][12] >= minDistFromEdge && centroidresults[i][13] <= imageHeight - 1 - minDistFromEdge
+		if (centroidresults[i][10] >= leftminDistFromEdge && centroidresults[i][11] <= imageWidth - 1 - rightminDistFromEdge && centroidresults[i][12] >= topminDistFromEdge && centroidresults[i][13] <= imageHeight - 1 - bottomminDistFromEdge
 			&& centroidresults[i][2] >= minEccentricity && centroidresults[i][2] <= maxEccentricity && centroidresults[i][3] >= minLength && centroidresults[i][3] <= maxLength
 			&& centroidresults[i][6] >= minCount && centroidresults[i][6] <= maxCount && centroidresults[i][9] <= maxDistFromLinear) {
 			filteredpos.push_back(labelledpos[i]);
@@ -188,7 +223,7 @@ int main(int argc, char *argv[])
 	vector<uint8_t> filtereddetected(imagePoints, 0);
 	for (int i = 0; i < filteredpos.size(); i++)for (int j = 0; j<filteredpos[i].size(); j++) filtereddetected[filteredpos[i][j]] = 255;
 
-	BLTiffIO::TiffOutput(output + "_Filtered_Regions.tif", 8, imageWidth, imageHeight).Write1DImage(filtereddetected);
+	BLTiffIO::TiffOutput(output + "_Filtered_Regions.tif", imageWidth, imageHeight,8).write1dImage(filtereddetected);
 	BLCSVIO::writeCSV(output + "_Filtered_Measurements.csv", filteredcents, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, x Min Bounding Box,x Max Bounding Box, y Min Bounding Box,y Max Bounding Box\n");
 	//BLCSVIO::writeCSV(output + "_Filtered_Labelled_Positions.csv", filteredpos, "Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
 	labelledposout = filteredpos;

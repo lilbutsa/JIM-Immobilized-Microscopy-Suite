@@ -117,7 +117,7 @@ IMG1 = cat(3, originalim,detectedim,backim);
 imshow(IMG1);
 
 %% 7) Calculate Sum of signal and background for each frame
-cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv" -NoVerbose']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
 %% 8) Make kymographs
 kymdir = [workingdir,'\Kymographs\'];

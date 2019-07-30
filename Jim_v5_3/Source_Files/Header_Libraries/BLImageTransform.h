@@ -1,4 +1,7 @@
 #pragma once
+#ifndef BLImageTransform_H_
+#define BLImageTransform_H_
+
 #include <iostream>
 #include <vector>
 #include <math.h>
@@ -8,29 +11,6 @@
 #include "ipp.h"
 
 
-
-class imageTransform_32f {
-	int widthin, heightin;
-	IppiSize srcSize;
-	int srcStep;
-	double coeffs[2][3];
-	double angle, xCenter, yCenter;
-	int specSize, initSize, bufSize;
-	IppiPoint dstOffset;
-	Ipp8u* pBufferR;
-	IppiWarpSpec* pSpecR;
-	IppiRect rect;
-
-	std::vector<float> pxMap0, pyMap0, pxMap, pyMap;
-	std::vector<float> pxSMap0, pySMap0, pxSMap, pySMap;
-
-public:
-	imageTransform_32f(int width, int height);
-	~imageTransform_32f();
-	void imageRotate(std::vector<float> &imagein, std::vector<float> &imageout, double angle);
-	void imageTranslate(std::vector<float> &imagein, std::vector<float> &imageout, float deltaX, float deltaY);
-	void imageScale(std::vector<float> &imagein, std::vector<float> &imageout, float scaleFactor);
-};
 
 class alignImages_32f {
 	int upscalefactor, width, height, nop;
@@ -78,13 +58,12 @@ public:
 
 
 
-
-alignImages_32f::~alignImages_32f() {
+inline alignImages_32f::~alignImages_32f() {
 	if (pDFTWorkBuf) ippFree(pDFTWorkBuf);
 	if (pDFTSpec) ippFree(pDFTSpec);
 }
 
-alignImages_32f::alignImages_32f(int upscalefactorin, int widthin, int heightin) {
+inline alignImages_32f::alignImages_32f(int upscalefactorin, int widthin, int heightin) {
 	upscalefactor = upscalefactorin;
 
 	width = widthin;
@@ -262,122 +241,134 @@ inline void alignImages_32f::imageAlign(std::vector<float>& gaus1, std::vector<f
 
 
 
-imageTransform_32f::imageTransform_32f(int width, int height) {
 
-	srcSize = { width,height };
-	srcStep = width * sizeof(float);
-	angle = -10.0;
-	xCenter = width / 2.0;
-	yCenter = height / 2.0;
-
-	int nop = width * height;
+#define PI 3.141592653589793238462643383279
 
 
+class imageTransform_32f {
 
-	pxMap0 = std::vector<float>(nop);
-	pyMap0 = std::vector<float>(nop);
-	pxMap = std::vector<float>(nop);
-	pyMap = std::vector<float>(nop);
+	uint16_t imageWidth, imageHeight;
+	uint32_t imagePoints;
 
-	pxSMap0 = std::vector<float>(nop);
-	pySMap0 = std::vector<float>(nop);
-	pxSMap = std::vector<float>(nop);
-	pySMap = std::vector<float>(nop);
+	//Translation requirements
+	IppiSize srcRoi, wrappedRoi;
+	int topborderHeight, leftborderWidth;
 
-	for (int i = 0; i < width; i++)for (int j = 0; j < height; j++) {
-		pxMap0[i + j*width] = i;
-		pyMap0[i + j*width] = j;
-		pxSMap0[i + j*width] = i - width / 2.0;
-		pySMap0[i + j*width] = j - height / 2.0;
-	}
+	//tranform requirements
+	float cornerangle, cornerdist;
 
-	rect = { 0, 0, width, height };
+	double quad[4][2];
+	double coeffs[2][3];
 
-	widthin = width;
-	heightin = height;
+	IppiRect wrappedRect;
+	IppiWarpSpec* pSpec;
+	IppiPoint dstOffset = { 0, 0 }; /* Offset of the destination image ROI with respect to the destination image origin */
+	int specSize = 0, initSize = 0, bufSize = 0;
+	Ipp8u* pBuffer = NULL;
+	IppiBorderType   borderType = ippBorderConst;
+	IppiWarpDirection direction = ippWarpForward;
+	Ipp64f boarder = 0;
 
+	std::vector<float> wrapped;
+	std::vector<float> transformed;
 
-
-
-}
-
-imageTransform_32f::~imageTransform_32f() {
-
-	ippsFree(pSpecR);
-	ippsFree(pBufferR);
-}
-
-inline void imageTransform_32f::imageRotate(std::vector<float> &imagein, std::vector<float> &imageout, double angle) {
-
-	imageout.resize(imagein.size());
-	float halfwidth = (widthin) / 2.0;
-	float halfheight = (heightin) / 2.0;
-	float cosin = cos(angle);
-	float sinin = sin(angle);
-
-	ippiMulC_32f_C1R(pxSMap0.data(), srcStep, sinin, pxSMap.data(), srcStep, srcSize);
-	ippiMulC_32f_C1R(pxSMap0.data(), srcStep, cosin, pxMap.data(), srcStep, srcSize);
-	ippiMulC_32f_C1R(pySMap0.data(), srcStep, -sinin, pySMap.data(), srcStep, srcSize);
-	ippiMulC_32f_C1R(pySMap0.data(), srcStep, cosin, pyMap.data(), srcStep, srcSize);
-
-	ippiAdd_32f_C1IR(pySMap.data(), srcStep, pxMap.data(), srcStep, srcSize);
-	ippiAdd_32f_C1IR(pxSMap.data(), srcStep, pyMap.data(), srcStep, srcSize);
-
-	ippiAddC_32f_C1IR(halfwidth, pxMap.data(), srcStep, srcSize);
-	ippiAddC_32f_C1IR(halfheight, pyMap.data(), srcStep, srcSize);
+public:
 
 
-	for (int i = 0; i < pxMap.size(); i++) {
-		if (pxMap[i] < 0)pxMap[i] += widthin;
-		if (pxMap[i] >widthin)pxMap[i] += -(widthin);
-		if (pyMap[i] < 0)pyMap[i] += (heightin);
-		if (pyMap[i] >heightin)pyMap[i] += -(heightin);
-	}
+	imageTransform_32f(uint16_t imageWidthin, uint16_t imageHeightin);
+
+	void imageTranslate(std::vector<float>& inputImage, std::vector<float>& outputImage, float deltaX, float deltaY);
+
+	void transform(std::vector<float>& inputImage, std::vector<float>& outputImage, float angle, float scale, float deltaX, float deltaY);
 
 
-	ippiRemap_32f_C1R(imagein.data(), srcSize, srcStep, rect, pxMap.data(), srcStep, pyMap.data(), srcStep, imageout.data(), srcStep, srcSize, IPPI_INTER_LINEAR);
+};
 
+inline imageTransform_32f::imageTransform_32f(uint16_t imageWidthin, uint16_t imageHeightin) {
+	imageWidth = imageWidthin;
+	imageHeight = imageHeightin;
+
+	imagePoints = imageWidth*imageHeight;
+
+
+	wrapped = std::vector<float>(9 * imagePoints, 0);
+	transformed = std::vector<float>(9 * imagePoints, 0);
+
+	srcRoi = { imageWidth, imageHeight };
+	wrappedRoi = { 3 * imageWidth, 3 * imageHeight };
+	topborderHeight = imageHeight;
+	leftborderWidth = imageWidth;
+
+	//for transform
+
+	cornerangle = atan(((double)imageHeight) / ((double)imageWidth));
+	cornerdist = sqrt((double)((3.0*imageHeight -1) / 2.0*(3.0*imageHeight -1) / 2.0 + (3.0*imageWidth -1) / 2.0*(3.0*imageWidth -1) / 2.0));
+
+	wrappedRect = { 0,0,3 * imageWidth, 3 * imageHeight };
 
 }
 
-inline void imageTransform_32f::imageTranslate(std::vector<float> &imagein, std::vector<float> &imageout, float deltaX, float deltaY) {
-	imageout.resize(imagein.size());
+inline void imageTransform_32f::imageTranslate(std::vector<float>& inputImage, std::vector<float>& outputImage, float deltaX, float deltaY) {
+
+	outputImage.resize(imagePoints);
+
+	int xint = floor(deltaX);
+	int yint = floor(deltaY);
+
+	float dx = deltaX - xint;
+	float dy = deltaY - yint;
+
+	while (xint > imageWidth / 2.0)xint = xint - imageWidth;
+	while (xint < -1.0*imageWidth / 2)xint = xint + imageWidth;
+	while (yint > imageHeight / 2.0)yint = yint - imageHeight;
+	while (yint < -1.0*imageHeight / 2)yint = yint + imageHeight;
+
+	ippiCopyWrapBorder_32f_C1R(inputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi, wrapped.data(), 3 * imageWidth * sizeof(Ipp32f), wrappedRoi, topborderHeight, leftborderWidth);
+
+	ippiCopySubpix_32f_C1R(&wrapped[(topborderHeight + yint)*(3 * imageWidth) + (leftborderWidth + xint)], 3 * imageWidth * sizeof(Ipp32f), outputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi, dx, dx);
+
+}
+
+inline void imageTransform_32f::transform(std::vector<float>& inputImage, std::vector<float>& outputImage, float angle, float scale, float deltaX, float deltaY) {
+
+	deltaX = -deltaX;// -0.5;
+	deltaY = -deltaY;// -0.5;
+	angle = angle;
+
+	quad[0][0] = (3.0*imageWidth - 1) / 2.0 + scale*cornerdist*cos(PI - cornerangle + angle) + deltaX;
+	quad[0][1] = (3.0*imageHeight - 1) / 2.0 - scale* cornerdist*sin(PI - cornerangle + angle) + deltaY;
+
+	quad[1][0] = (3.0*imageWidth - 1) / 2.0 + scale*cornerdist*cos(cornerangle + angle) + deltaX;
+	quad[1][1] = (3.0*imageHeight - 1) / 2.0 - scale*cornerdist*sin(cornerangle + angle) + deltaY;
+
+	quad[2][0] = (3.0*imageWidth - 1) / 2.0 + scale*cornerdist*cos(-cornerangle + angle) + deltaX;
+	quad[2][1] = (3.0*imageHeight - 1) / 2.0 - scale*cornerdist*sin(-cornerangle + angle) + deltaY;
+
+	quad[3][0] = (3.0*imageWidth - 1) / 2.0 + scale*cornerdist*cos(-PI + cornerangle + angle) + deltaX;
+	quad[3][1] = (3.0*imageHeight - 1) / 2.0 - scale*cornerdist*sin(-PI + cornerangle + angle) + deltaY;
+
+	ippiGetAffineTransform(wrappedRect, quad, coeffs);
+
+	ippiWarpAffineGetSize(wrappedRoi, wrappedRoi, ipp32f, coeffs, ippLinear, direction, borderType, &specSize, &initSize);
+
+	pSpec = (IppiWarpSpec*)ippsMalloc_8u(specSize);
+
+	ippiWarpAffineLinearInit(wrappedRoi, wrappedRoi, ipp32f, coeffs, direction, 1, borderType, &boarder, 0, pSpec);
+	ippiWarpGetBufferSize(pSpec, wrappedRoi, &bufSize);
+
+	pBuffer = ippsMalloc_8u(bufSize);
 
 
+	ippiCopyWrapBorder_32f_C1R(inputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi, wrapped.data(), 3 * imageWidth * sizeof(Ipp32f), wrappedRoi, topborderHeight, leftborderWidth);
 
-	ippiAddC_32f_C1R(pxMap0.data(), srcStep, deltaX, pxMap.data(), srcStep, srcSize);
-	ippiAddC_32f_C1R(pyMap0.data(), srcStep, deltaY, pyMap.data(), srcStep, srcSize);
+	ippiWarpAffineLinear_32f_C1R(wrapped.data(), 3 * imageWidth * sizeof(Ipp32f), transformed.data(), 3 * imageWidth * sizeof(Ipp32f), dstOffset, wrappedRoi, pSpec, pBuffer);
 
-	for (int i = 0; i < pxMap.size(); i++) {
-		while (pxMap[i] < 0)pxMap[i] += widthin;
-		while (pxMap[i] > widthin)pxMap[i] += -widthin;
-		while (pyMap[i] < 0)pyMap[i] += heightin;
-		while (pyMap[i] > heightin)pyMap[i] += -heightin;
-	}
+	ippiCopy_32f_C1R(&transformed[(topborderHeight)*(3 * imageWidth) + (leftborderWidth)], 3 * imageWidth * sizeof(Ipp32f), outputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi);
 
-	ippiRemap_32f_C1R(imagein.data(), srcSize, srcStep, rect, pxMap.data(), srcStep, pyMap.data(), srcStep, imageout.data(), srcStep, srcSize, IPPI_INTER_LINEAR);
+	ippsFree(pBuffer);
+
+	ippsFree(pSpec);
 
 }
 
-
-inline void imageTransform_32f::imageScale(std::vector<float> &imagein, std::vector<float> &imageout, float scaleFactor) {
-	imageout.resize(imagein.size());
-	float halfwidth = (widthin) / 2.0;
-	float halfheight = (heightin) / 2.0;
-	ippiMulC_32f_C1R(pxSMap0.data(), srcStep, 1 / scaleFactor, pxSMap.data(), srcStep, srcSize);
-	ippiMulC_32f_C1R(pySMap0.data(), srcStep, 1 / scaleFactor, pySMap.data(), srcStep, srcSize);
-
-	ippiAddC_32f_C1IR(halfwidth, pxSMap.data(), srcStep, srcSize);
-	ippiAddC_32f_C1IR(halfheight, pySMap.data(), srcStep, srcSize);
-
-	for (int i = 0; i < pxSMap.size(); i++) {
-		while (pxSMap[i] < 0)pxSMap[i] += widthin;
-		while (pxSMap[i] > widthin)pxSMap[i] += -widthin;
-		while (pySMap[i] < 0)pySMap[i] += heightin;
-		while (pySMap[i] > heightin)pySMap[i] += -heightin;
-	}
-
-
-	ippiRemap_32f_C1R(imagein.data(), srcSize, srcStep, rect, pxSMap.data(), srcStep, pySMap.data(), srcStep, imageout.data(), srcStep, srcSize, IPPI_INTER_LINEAR);
-
-}
+#endif

@@ -14,7 +14,9 @@ int main(int argc, char *argv[])
 {
 	int numInputFiles = 0;
 
-	for (int i = 4; i < argc && std::string(argv[i]) != "-Start"&& std::string(argv[i]) != "-End"; i++) numInputFiles++;
+	bool maxproject = false;
+
+	for (int i = 4; i < argc && std::string(argv[i]) != "-Start"&& std::string(argv[i]) != "-End"&& std::string(argv[i]) != "-MaxProjection"; i++) numInputFiles++;
 
 
 	if (argc < 3) { std::cout << "could not read file name" << endl; return 1; }
@@ -25,17 +27,14 @@ int main(int argc, char *argv[])
 	vector<string> inputfiles(numInputFiles);
 	for (int i = 0; i < numInputFiles; i++)inputfiles[i] = argv[i + 4];
 
-	vector<BLTiffIO::TiffInput> vcinput(numInputFiles);
-	for (int i = 0; i < numInputFiles; i++) {
-		vcinput[i] = BLTiffIO::TiffInput(inputfiles[i]); 
-		cout << inputfiles[i] << "\n";
-	}
+	vector<BLTiffIO::TiffInput*> vcinput(numInputFiles);
+	for (int i = 0; i < numInputFiles; i++)vcinput[i] = new BLTiffIO::TiffInput(inputfiles[i]);
 
-	int imageDepth = vcinput[0].depth;
-	int imageWidth = vcinput[0].width;
-	int imageHeight = vcinput[0].height;
+	int imageDepth = vcinput[0]->imageDepth;
+	int imageWidth = vcinput[0]->imageWidth;
+	int imageHeight = vcinput[0]->imageHeight;
 	int imagePoints = imageWidth * imageHeight;
-	int totnumofframes = vcinput[0].numofframes;
+	int totnumofframes = vcinput[0]->numOfFrames;
 
 
 	vector<float> image1(imagePoints);
@@ -68,6 +67,10 @@ int main(int argc, char *argv[])
 						else { std::cout << "error inputting ends" << std::endl; return 1; }
 					}
 				}
+				if (std::string(argv[i]) == "-MaxProjection") {
+					maxproject = true;
+					cout << "Using Max Projection"<< endl;
+				}
 			}
 
 			vector<vector<double>> drifts(3000, vector<double>(2, 0.0));
@@ -93,33 +96,32 @@ int main(int argc, char *argv[])
 			for (int channelcount = 0; channelcount < numInputFiles; channelcount++) {
 				count = 0;
 				if (channelcount == 0) {
-					for (int i = 0; i < start[channelcount]; i++)vcinput[channelcount].get1dimage(image1);
 					for (int imcount = start[channelcount]; imcount < end[channelcount]; imcount++) {
-						vcinput[channelcount].get1dimage(image1);
+						vcinput[channelcount]->read1dImage(imcount,image1);
 						transformclass.imageTranslate(image1, alignedimage, -drifts[imcount][0], -drifts[imcount][1]);
-						ippiAdd_32f_C1IR(alignedimage.data(), srcStep, meanimage[channelcount].data(), srcStep, roiSize);
+						if (maxproject)ippsMaxEvery_32f_I(alignedimage.data(), meanimage[channelcount].data(), imagePoints);
+						else ippiAdd_32f_C1IR(alignedimage.data(), srcStep, meanimage[channelcount].data(), srcStep, roiSize);
 						count++;
 					}
 
 				}
 				else {
-					for (int i = 0; i < start[channelcount]; i++)vcinput[channelcount].get1dimage(image1);
 					for (int imcount = start[channelcount]; imcount < end[channelcount]; imcount++) {
 						transxoffset = (-drifts[imcount][0])*channelalignment[channelcount - 1][5] + (-drifts[imcount][1])*channelalignment[channelcount - 1][6];
 						transyoffset = (-drifts[imcount][0])*channelalignment[channelcount - 1][7] + (-drifts[imcount][1])*channelalignment[channelcount - 1][8];
-						vcinput[channelcount].get1dimage(image1);
+						vcinput[channelcount]->read1dImage(imcount, image1);
 						transformclass.imageTranslate(image1, alignedimage, transxoffset, transyoffset);
-						ippiAdd_32f_C1IR(alignedimage.data(), srcStep, meanimage[channelcount].data(), srcStep, roiSize);
+
+						if (maxproject)ippsMaxEvery_32f_I(alignedimage.data(), meanimage[channelcount].data(), imagePoints);
+						else ippiAdd_32f_C1IR(alignedimage.data(), srcStep, meanimage[channelcount].data(), srcStep, roiSize);
+						
 						count++;
 					}
 				}
-				if (count>0)ippiMulC_32f_C1IR(1.0 / count, meanimage[channelcount].data(), srcStep, roiSize);
+				if (count>0 && maxproject==false)ippiMulC_32f_C1IR(1.0 / count, meanimage[channelcount].data(), srcStep, roiSize);
 
 				if (channelcount > 0) {
-					transformclass.imageRotate(meanimage[channelcount], rotimage, channelalignment[channelcount - 1][1] * 3.14159 / 180.0);
-					transformclass.imageScale(rotimage, scaleimage, channelalignment[channelcount - 1][2]);
-					transformclass.imageTranslate(scaleimage, translated, -channelalignment[channelcount - 1][3], -channelalignment[channelcount - 1][4]);
-
+					transformclass.transform(meanimage[channelcount], translated, channelalignment[channelcount - 1][1] * 3.14159 / 180.0, channelalignment[channelcount - 1][2], -channelalignment[channelcount - 1][3], -channelalignment[channelcount - 1][4]);
 					ippiAdd_32f_C1IR(translated.data(), srcStep, Combinedmeanimage.data(), srcStep, roiSize);
 				}
 				else ippiAdd_32f_C1IR(meanimage[0].data(), srcStep, Combinedmeanimage.data(), srcStep, roiSize);
@@ -131,7 +133,7 @@ int main(int argc, char *argv[])
 
 			string adjustedOutputFilename = outputfile + "_Partial_Mean.tiff";
 
-			BLTiffIO::TiffOutput(adjustedOutputFilename, imageDepth, imageWidth, imageHeight).Write1DImage(Combinedmeanimage);
+			BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, imageHeight, imageDepth).write1dImage(Combinedmeanimage);
 			
 	//system("PAUSE");
 	return 0;

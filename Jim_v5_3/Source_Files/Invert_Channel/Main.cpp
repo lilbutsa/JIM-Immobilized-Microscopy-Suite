@@ -15,21 +15,21 @@ int main(int argc, char *argv[])
 
 	BLTiffIO::TiffInput imstackin(inputfile);
 
-	int imageDepth = imstackin.depth;
-	int imageWidth = imstackin.width;
-	int imageHeight = imstackin.height;
+	int imageDepth = imstackin.imageDepth;
+	int imageWidth = imstackin.imageWidth;
+	int imageHeight = imstackin.imageHeight;
 	int imagePoints = imageWidth * imageHeight;
-	int totnumofframes = imstackin.numofframes;
+	int totnumofframes = imstackin.numOfFrames;
 
 	vector<vector<float>> image(imageWidth, vector<float>(imageHeight));
 	vector<vector<float>> imageout(imageWidth, vector<float>(imageHeight));
 
-	BLTiffIO::TiffOutput imstackout(output, imageDepth, imageWidth, imageHeight);
+	BLTiffIO::TiffOutput imstackout(output, imageWidth, imageHeight, imageDepth);
 
 	for (int imagecount = 0; imagecount < totnumofframes; imagecount++) {
-		imstackin.get2dimage(image);
+		imstackin.read2dImage(imagecount,image);
 		for (int i = 0; i < imageWidth; i++)for (int j = 0; j < imageHeight; j++)imageout[i][imageHeight - j - 1] = image[i][j];
-		imstackout.Write2DImage(imageout);
+		imstackout.write2dImage(imageout);
 	}
 
 	return 0;

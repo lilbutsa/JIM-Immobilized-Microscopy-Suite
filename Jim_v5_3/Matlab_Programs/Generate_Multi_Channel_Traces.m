@@ -13,7 +13,7 @@ workingdir = [pathname,name,'\'];
 mkdir(workingdir);%make a subfolder with that name
 
 %% 3) Split File into individual channels 
-usemetadatafile = true; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
+usemetadatafile = false; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
 numberofchannels = 2;
 if usemetadatafile
     metafilename = [pathname,name,'_metadata.txt']; % Finds the metadaata file in the same folder as the tiff imagestack with the suffix _metadata.txt
@@ -24,7 +24,7 @@ end
 system(cmd)
 
 %% (Optional invert second channel) In two camera systems the second image is reflected off the dichroic splitter. If this isn't corrected in the microscope software it can be corrected here
-invertchannel2 = true;
+invertchannel2 = false;
 
 if invertchannel2
     cmd = [JIM,'Invert_Channel.exe "',workingdir,'Images_Channel_2.tiff" "',workingdir,'Images_Channel_2_Inverted.tiff"']; %Creates the flipped image as Images_Channel_2_Inverted.tiff
@@ -35,10 +35,10 @@ end
 
 
 %% 4) Align Channels and Calculate Drifts
-iterations = 3;
+iterations = 1;
 
-alignstartframe = 20;
-alignendframe = 25;
+alignstartframe = 23;
+alignendframe = 23;
 
 manualalignment = false; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 rotationangle = -1.19;
@@ -85,8 +85,8 @@ disp('Alignment and drift correction completed');
 %% 5) Make a SubAverage of frames where all particles are present 
 usemaxprojection = false;
 
-partialstart = [1,90];
-partialend = [4,100];
+partialstart = [1,45];
+partialend = [4,50];
 
 maxprojectstr = '';
 if usemaxprojection
@@ -197,10 +197,17 @@ imshow(IMG1);
 disp('Finished Expanding ROIs');
 
 %% 9) Calculate Sum for each frame for each channel
-cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_1.tiff" "',workingdir,'Expanded_Channel_1_ROI_Positions.csv" "',workingdir,'Expanded_Channel_1_Background_Positions.csv" "',workingdir,'Channel_1" -Drift "',workingdir,'Aligned_Drifts.csv"'];
+verboseoutput = false;
+
+verbosestr = '';
+if verboseoutput
+    verbosestr = ' -Verbose';
+end
+
+cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_1.tiff" "',workingdir,'Expanded_Channel_1_ROI_Positions.csv" "',workingdir,'Expanded_Channel_1_Background_Positions.csv" "',workingdir,'Channel_1" -Drift "',workingdir,'Aligned_Drifts.csv"',verbosestr];
 system(cmd)
 for j = 2:numberofchannels
-    cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_',num2str(j),'.tiff" "',workingdir,'Expanded_Channel_',num2str(j),'_ROI_Positions.csv" "',workingdir,'Expanded_Channel_',num2str(j),'_Background_Positions.csv" "',workingdir,'Channel_',num2str(j),'" -Drift "',workingdir,'Detected_Filtered_Drifts_Channel_',num2str(j),'.csv"'];
+    cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_',num2str(j),'.tiff" "',workingdir,'Expanded_Channel_',num2str(j),'_ROI_Positions.csv" "',workingdir,'Expanded_Channel_',num2str(j),'_Background_Positions.csv" "',workingdir,'Channel_',num2str(j),'" -Drift "',workingdir,'Detected_Filtered_Drifts_Channel_',num2str(j),'.csv"',verbosestr];
     system(cmd)
 end
 
@@ -311,10 +318,10 @@ parfor i=1:filenum(1)
     end
 
     % 3.8) Calculate amplitude for each frame for each channel
-    cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_1.tiff" "',workingdir,'Expanded_Channel_1_ROI_Positions.csv" "',workingdir,'Expanded_Channel_1_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"'];
+    cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_1.tiff" "',workingdir,'Expanded_Channel_1_ROI_Positions.csv" "',workingdir,'Expanded_Channel_1_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"',verbosestr];
     system(cmd)
     for j = 2:numberofchannels
-        cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_',num2str(j),'.tiff" "',workingdir,'Expanded_Channel_',num2str(j),'_ROI_Positions.csv" "',workingdir,'Expanded_Channel_',num2str(j),'_Background_Positions.csv" "',workingdir,'Channel_',num2str(j),'" -Drifts "',workingdir,'Detected_Drifts_Channel_',num2str(j),'.csv"'];
+        cmd = [JIM,'Calculate_Traces.exe "',workingdir,'Images_Channel_',num2str(j),'.tiff" "',workingdir,'Expanded_Channel_',num2str(j),'_ROI_Positions.csv" "',workingdir,'Expanded_Channel_',num2str(j),'_Background_Positions.csv" "',workingdir,'Channel_',num2str(j),'" -Drifts "',workingdir,'Detected_Drifts_Channel_',num2str(j),'.csv"',verbosestr];
         system(cmd)
     end
 end
