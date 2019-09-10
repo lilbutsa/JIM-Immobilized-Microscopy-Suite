@@ -23,7 +23,8 @@ else
 end
 system(cmd)
 
-%% (Optional invert second channel) In two camera systems the second image is reflected off the dichroic splitter. If this isn't corrected in the microscope software it can be corrected here
+%% 4) invert second channel 
+% In two camera systems the second image is reflected off the dichroic splitter. If this isn't corrected in the microscope software it can be corrected here
 invertchannel2 = false;
 
 if invertchannel2
@@ -34,14 +35,14 @@ if invertchannel2
 end
 
 
-%% 4) Align Channels and Calculate Drifts
-iterations = 1;
+%% 5) Align Channels and Calculate Drifts
+iterations = 3;
 
-alignstartframe = 23;
-alignendframe = 23;
+alignstartframe = 15;
+alignendframe = 15;
 
-manualalignment = false; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
-rotationangle = -1.19;
+manualalignment = true; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
+rotationangle = -2.86;
 scalingfactor = 1;
 xoffset = -5;
 yoffset = -5;

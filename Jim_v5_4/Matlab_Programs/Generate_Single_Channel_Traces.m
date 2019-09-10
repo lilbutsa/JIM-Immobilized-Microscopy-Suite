@@ -128,6 +128,30 @@ end
 
 cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drift "',workingdir,'Aligned_Drifts.csv"',verbosestr]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
+%% 8) Plot Traces
+    pagenumber = 2;
+
+    traces=csvread([workingdir,'\Channel_1_Flourescent_Intensities.csv'],1);
+    measures = csvread([workingdir,'\Detected_Filtered_Measurements.csv'],1);
+    numberimage = imread([workingdir,'Detected_Filtered_Region_Numbers.tif']);
+    figure('Name','Particle Numbers');
+    imshow(numberimage);
+
+    figure
+    set(gcf, 'Position', [100, 100, 1500, 800])
+
+    for i=1:36
+        if i+36*(pagenumber-1)<size(traces,1)
+        subplot(6,6,i)
+        hold on
+        title(['Particle ' num2str(i+36*(pagenumber-1)) ' x ' num2str(round(measures(i+36*(pagenumber-1),1))) ' y ' num2str(round(measures(i+36*(pagenumber-1),2)))])
+        plot(traces(i+36*(pagenumber-1),:),'-r');
+        plot([0 size(traces(i+36*(pagenumber-1),:),2)],[0 0] ,'-b');
+        xlim([0 size(traces(i+36*(pagenumber-1),:),2)])
+        hold off
+        end
+    end
+
 %% Continue from here for batch processing
 %
 %
