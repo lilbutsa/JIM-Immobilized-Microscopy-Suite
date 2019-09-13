@@ -4,3 +4,6 @@ Typical substrates will take the form of diffraction limited particles like lipo
 
 For binding analysis, the output of JIM is in the form of traces
 
+The online manual, filled with tutorials can be found at :
+https://docs.google.com/document/d/12frP6jp74eiycXxY8knR_qb27ui7Ia-RNMBuAuAHRFs/edit?usp=sharing
+
