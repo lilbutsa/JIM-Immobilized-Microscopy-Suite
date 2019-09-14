@@ -36,10 +36,10 @@ end
 
 
 %% 5) Align Channels and Calculate Drifts
-iterations = 3;
+iterations = 1;
 
-alignstartframe = 15;
-alignendframe = 15;
+alignstartframe = 1;
+alignendframe = 1;
 
 manualalignment = true; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 rotationangle = -2.86;
