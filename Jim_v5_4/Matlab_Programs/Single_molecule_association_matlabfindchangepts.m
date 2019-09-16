@@ -60,7 +60,7 @@ fltotal = 0;
 figure
 set(gcf, 'Position', [100, 100, 1500, 800])
 
-for expcount=2:numofexps
+for expcount=8:10%2:numofexps
    
     traces=csvread(channel1{expcount},1);
     
@@ -239,7 +239,7 @@ plot(sort(posdeltatsteps./framespersecond),size(posdeltatsteps,1):-1:1);
 figure
 histogram(alldeltatsteps./framespersecond)
 %%
-framespersecond = 2;
+framespersecond = 4;
 
 
 tofit = allfirststeps;
@@ -262,10 +262,10 @@ opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
 Bb = fminsearch(OLS, [size(tofit,1)/2 100/max(tofit)  size(tofit,1)/2 1/max(tofit)], opts);
 
 
-% by = @(b,bx)( b(1)*exp(-b(2)*bx)+b(3)*exp(-4*0.057*bx));             % Objective function
-% OLS = @(b) sum((by(b,bx) - byx).^2);          % Ordinary Least Squares cost function
-% opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
-% Bb = fminsearch(OLS, [size(tofit,1)/2 0.8  size(tofit,1)/2], opts);
+by = @(b,bx)( b(1)*exp(-b(2)*bx)+b(3)*exp(-0.39*bx));             % Objective function
+OLS = @(b) sum((by(b,bx) - byx).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+Bb = fminsearch(OLS, [size(tofit,1)/2 0.8  size(tofit,1)/2], opts);
 
 
 bxin = 0:max(tofit);
