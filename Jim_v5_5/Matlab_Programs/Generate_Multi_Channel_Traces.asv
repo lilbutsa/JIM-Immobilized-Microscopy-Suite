@@ -111,21 +111,21 @@ disp('Average projection completed');
 cutoff=0.4; % The curoff for the initial thresholding
 
 %Filtering
-left = 0;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-right = 30;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-top = 20;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-bottom = 12;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+left = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+right = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+top = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+bottom = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
-mincount = 15; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-maxcount= 1000000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+mincount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+maxcount= 30; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 mineccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-maxeccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+maxeccentricity = 0.3;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
 minlength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
 maxlength = 1000000; % Maximum number of pixels for the major axis of the best fit ellipse
 
-maxDistFromLinear = 100000; % Maximum distance that a pixel can diviate from the major axis.
+maxDistFromLinear = 1000000; % Maximum distance that a pixel can diviate from the major axis.
 
 displaymin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 displaymax = 0.5; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -214,34 +214,6 @@ for j = 2:numberofchannels
 end
 
 disp('Finished Generating Traces');
-%% 11) Plot Traces
-    pagenumber = 1;
-
-    traces=csvread([workingdir,'\Channel_1_Flourescent_Intensities.csv'],1);
-    traces2=csvread([workingdir,'\Channel_2_Flourescent_Intensities.csv'],1);
-    measures = csvread([workingdir,'\Detected_Filtered_Measurements.csv'],1);
-    numberimage = imread([workingdir,'Detected_Filtered_Region_Numbers.tif']);
-    figure('Name','Particle Numbers');
-    imshow(numberimage);
-
-    figure
-    set(gcf, 'Position', [100, 100, 1500, 800])
-
-    for i=1:36
-        if i+36*(pagenumber-1)<size(traces,1)
-        subplot(6,6,i)
-        hold on
-        title(['Particle ' num2str(i+36*(pagenumber-1)) ' x ' num2str(round(measures(i+36*(pagenumber-1),1))) ' y ' num2str(round(measures(i+36*(pagenumber-1),2)))])
-        plot(traces(i+36*(pagenumber-1),:),'-r');
-        plot(traces2(i+36*(pagenumber-1),:),'-b');
-        plot([0 size(traces(i+36*(pagenumber-1),:),2)],[0 0] ,'-b');
-        xlim([0 size(traces(i+36*(pagenumber-1),:),2)])
-        hold off
-        end
-    end
-
-
-
 %% Continue from here for batch processing
 %
 %
