@@ -224,6 +224,8 @@ disp('Finished Generating Traces');
     figure('Name','Particle Numbers');
     imshow(numberimage);
 
+    disp(['There are ',num2str(size(traces,1)),' particles']);
+    
     figure
     set(gcf, 'Position', [100, 100, 1500, 800])
 
