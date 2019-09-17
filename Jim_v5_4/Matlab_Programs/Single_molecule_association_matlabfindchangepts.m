@@ -268,7 +268,7 @@ opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
 Bb = fminsearch(OLS, [size(tofit,1)/2 0.8  size(tofit,1)/2], opts);
 
 
-bxin = 0:max(tofit);
+bxin = 0:0.1:max(tofit);
 byxin = by(Bb,bxin);
 
 
@@ -281,7 +281,9 @@ byxin = by(Bb,bxin);
  hold off
  
 disp(['The rate of polymerisation is ' num2str(Bb(2)) ' per second']);
-
+%%
+toexport1 = sort(tofit./framespersecond)';
+toexport2 = size(tofit,1):-1:1
 %%
 possteps = 12600.*firststeps(firststeps>0);
 posstephistcounts3 = histcounts(possteps,0:0.1*12600:4*12600);

@@ -4,7 +4,7 @@ clear
 pathname = uigetdir();
 pathname=[pathname,'\'];
 %% 2) Find all traces
-insubfolders = false;
+insubfolders = true;
 
 channel1 = {};
 
