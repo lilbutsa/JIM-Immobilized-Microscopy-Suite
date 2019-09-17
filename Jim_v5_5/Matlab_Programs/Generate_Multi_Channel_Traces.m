@@ -1,10 +1,9 @@
 clear
-%% 1) Select the input tiff file
+%% 1) Select the input tiff file Create a Folder for results
 [jimpath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 JIM = [fileparts(jimpath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [filename,pathname] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
 
-%% 2) Create folder for results
 completename = [pathname,filename];
 [~,name,~] = fileparts(completename);%get the name of the tiff image excluding the .tiff extension
 workingdir = [pathname,name];
