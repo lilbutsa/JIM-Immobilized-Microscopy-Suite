@@ -1,10 +1,9 @@
 clear
-%% 1) Select the input tiff file
+%% 1) Select the input tiff file and Create a Folder for Results
 [jimpath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 JIM = [fileparts(jimpath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [filename,pathname] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
 
-%% 2) Create folder for results
 completename = [pathname,filename];
 [~,name,~] = fileparts(completename);%get the name of the tiff image excluding the .tiff extension
 workingdir = [pathname,name];
@@ -14,7 +13,7 @@ mkdir(workingdir);%make a subfolder with that name
 
 info = imfinfo(completename); % Place path to file inside single quotes
 num_images = numel(info);
-%% 3) Calculate Drifts
+%% 2) Calculate Drifts
 iterations = 1;
 
 alignstartframe = 150;
@@ -36,7 +35,7 @@ imshow(originalim);
 
 drifts = csvread([workingdir,'Aligned_Drifts.csv'],1);%Read in drifts to see waht the max the image has shifted by
 disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
-%% 4) Make a SubAverage of frames where all particles are present 
+%% 3) Make a SubAverage of frames where all particles are present 
 usemaxprojection = false;
 
 partialstartframe = 200; % OR you can set the actual numbers here 
@@ -56,7 +55,7 @@ originalim = imread([workingdir,'Aligned_Partial_Mean.tiff']);
 originalim = imadjust(originalim);
 imshow(originalim);
 
-%% 5) Detect Particles
+%% 4) Detect Particles
 nmperpixel = 110;%86.6;
 % User Defined Parameters 
 %Thresholding
@@ -103,7 +102,7 @@ allmeasures = csvread(measurefile,1,0);
 
 figure('Name','Filament Length Distribution')
 histogram(allmeasures(:,4).*2.*nmperpixel./1000,round(length(allmeasures(:,4))/10))
-%% Join Fragments
+%% 5) Join Fragments
 %Joining
 maxAngle = 0.3;
 maxJoinDist = 10;

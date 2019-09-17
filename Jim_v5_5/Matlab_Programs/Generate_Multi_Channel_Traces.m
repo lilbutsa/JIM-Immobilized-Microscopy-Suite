@@ -11,7 +11,7 @@ workingdir = [pathname,name];
 workingdir = [pathname,name,'\'];
 mkdir(workingdir);%make a subfolder with that name
 
-%% 3) Split File into individual channels 
+%% 2) Split File into individual channels 
 usemetadatafile = false; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
 numberofchannels = 2;
 if usemetadatafile
@@ -22,7 +22,7 @@ else
 end
 system(cmd)
 
-%% 4) invert second channel 
+%% 3) invert second channel 
 % In two camera systems the second image is reflected off the dichroic splitter. If this isn't corrected in the microscope software it can be corrected here
 invertchannel2 = false;
 
@@ -34,7 +34,7 @@ if invertchannel2
 end
 
 
-%% 5) Align Channels and Calculate Drifts
+%% 4) Align Channels and Calculate Drifts
 iterations = 1;
 
 alignstartframe = 15;
@@ -213,7 +213,7 @@ for j = 2:numberofchannels
 end
 
 disp('Finished Generating Traces');
-%% 11) Plot Traces
+%% 10) Plot Traces
     pagenumber = 1;
 
     traces=csvread([workingdir,'\Channel_1_Flourescent_Intensities.csv'],1);
