@@ -4,6 +4,13 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageMath, ImageTk
 
+sectionNumber = 1
+# Sections
+# 1 - Select input file
+# 2 - Create folder for results
+
+
+
 
 # Adjust these variables for drift correction
 #Alignment

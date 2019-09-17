@@ -1,17 +1,16 @@
 clear
-%% 1) Select the input tiff file
+%% 1) Select the input tiff file and Create folder for results
 [jimpath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 JIM = [fileparts(jimpath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [filename,pathname] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
-
-%% 2) Create folder for results
+ 
 completename = [pathname,filename];
 [~,name,~] = fileparts(completename);%get the name of the tiff image excluding the .tiff extension
 workingdir = [pathname,name];
 [~,name,~] = fileparts(workingdir);%also remove the .ome if it exists or any other full stops
 workingdir = [pathname,name,'\'];
 mkdir(workingdir);%make a subfolder with that name
-%% 3) Calculate Drifts
+%% 2) Calculate Drifts
 iterations = 3;
 
 alignstartframe = 1;
@@ -33,7 +32,7 @@ imshow(originalim);
 
 drifts = csvread([workingdir,'Aligned_Drifts.csv'],1);%Read in drifts to see waht the max the image has shifted by
 disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
-%% 4) Make a SubAverage of the image stack for detection
+%% 3) Make a SubAverage of the image stack for detection
 usemaxprojection = false;
 
 partialstartframe = 1;
@@ -52,7 +51,7 @@ originalim = imread([workingdir,'Aligned_Partial_Mean.tiff']);
 originalim = imadjust(originalim);
 imshow(originalim);
 
-%% 5) Detect Particles
+%% 4) Detect Particles
 % User Defined Parameters 
 %Thresholding
 cutoff=0.85; % The curoff for the initial thresholding
@@ -97,7 +96,7 @@ detectedim = im2uint16(detectedim)/1.5;
 IMG1 = cat(3, originalim,thresim,detectedim);
 imshow(IMG1)
 
-%% 6) Fit areas around each shape
+%% 5) Fit areas around each shape
 expandinnerradius=4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
 backgroundinnerradius = 4.1;
 backgroundradius = 20; % Distance to dilate beyond the ROI to measure the local background
@@ -118,7 +117,7 @@ backim = im2uint16(backim)/1.5;
 IMG1 = cat(3, originalim,detectedim,backim);
 imshow(IMG1);
 
-%% 7) Calculate Sum of signal and background for each frame
+%% 6) Calculate Sum of signal and background for each frame
 verboseoutput = true;
 
 verbosestr = '';
@@ -128,7 +127,7 @@ end
 
 cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drift "',workingdir,'Aligned_Drifts.csv"',verbosestr]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
-%% 8) Plot Traces
+%% 7) Plot Traces
     pagenumber = 2;
 
     traces=csvread([workingdir,'\Channel_1_Flourescent_Intensities.csv'],1);
