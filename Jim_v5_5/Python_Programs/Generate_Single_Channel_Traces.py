@@ -1,212 +1,181 @@
 import sys
 import os
 import tkinter as tk
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import csv
 from tkinter import filedialog
-from PIL import Image, ImageMath, ImageTk
+from PIL import Image, ImageMath
 
-sectionNumber = 1
+
+sectionNumber = 2
 # Sections
-# 1 - Select input file
-# 2 - Create folder for results
+# 1 - Select input file and create a folder for results
+# 2 - Drift Correct
+# 3 - Make a SubAverage of the Image Stack for Detection
+# 4 - Detect Particles
+# 5 - Expand Regions
+# 6 - Calculate Traces
+# 7 - View Traces
+# 8 - Detect files for batch
+# 9 - Batch Analyse
 
-
-
-
-# Adjust these variables for drift correction
-#Alignment
-alignmanstartend = True
+# 2 - Drift Correct Parameters
+iterations = 3
 alignstartframe = 1
-alignendframe = 1
+alignendframe = 5
 
-#Partial Mean
-partialstartframe = 1  # First frame in statck to take average from (First frame is 1)
-partialendframe = 100  # Last frame in stack to take average up to (Make sure this value is not more then the total number of frames)
+# 3 - Make a SubAverage of the Image Stack for Detection Parameters
+usemaxprojection = False
+partialstartframe = 1
+partialendframe = 25
 
-#Particle Detection
-# Thresholding
-cutoff = 1.5 # The cutoff for the initial thresholding
+# 4 - Detect Particles Parameters
+cutoff = 0.85  # The cutoff for the initial thresholding
 
 # Filtering
+left = 10  # Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+right = 10  # Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+top = 10  # Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+bottom = 10  # Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
-mindistfromedge = 25  # Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
 mincount = 10  # Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-maxcount = 1000000  # Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+maxcount=100  # Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 mineccentricity = -0.1  # Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-maxeccentricity = 0.4  # Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects
+maxeccentricity = 1.1  # Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects
 
 minlength = 0  # Minimum number of pixels for the major axis of the best fit ellipse
-maxlength = 1000000  # Maximum number of pixels for the major axis of the best fit ellipse
+maxlength = 100000  # Maximum number of pixels for the major axis of the best fit ellipse
 
-maxDistFromLinear = 100000  # Maximum distance that a pixel can diviate from the major axis.
+maxDistFromLinear = 10000000  # Maximum distance that a pixel can diviate from the major axis.
 
-# expand shapes
+# 5 - Expand Regions Parameters
 
 expandinnerradius = 4.1  # Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+backgroundinnerradius = 4.1
 backgroundradius = 20  # Distance to dilate beyond the ROI to measure the local background
-backgroundinnerradius = 0
+
+# 6 - Calculate Traces Parameter
+verboiseoutput = False
+
+# 7 - View Traces Parameter
+pagenumber = 3
+
+# 8 - Detect files for batch
+batchinsubfolders = True
+
+
+
+
 
 
 
 
 # Don't touch from here
-
-# get jim location an initial file to analyse
-root = tk.Tk()
-root.withdraw()
 pyfile = sys.argv[0]
-JIM = os.path.dirname(os.path.dirname(pyfile))+"\\Jim_Programs\\"
-JIM = "C:\\Users\\James\\Desktop\\Jim_v5\\Jim_Programs\\"
+JIM = os.path.dirname(os.path.dirname(pyfile)) + "\\Jim_Programs\\"  #  Change if not running in original location e.g. JIM = "C:\\Users\\James\\Desktop\\Jim_v5\\Jim_Programs\\"
 
-#
-# # create the working directory
+if sectionNumber != 1 and sectionNumber != 8:
+    channelfile = os.path.dirname(pyfile)+"\\savefilename.csv"
+    filelist = list(csv.reader(open(channelfile)))
+    completename = filelist[0][0];
+    print("Analysing "+completename)
+    workingdir = os.path.dirname(completename) + "\\" + str(os.path.basename(completename).split(".", 1)[0]) + "\\"
 
-completename = filedialog.askopenfilename()
-completename = completename.replace("/", "\\")
-print(completename)
-workingdir = os.path.dirname(completename)+"\\"+str(os.path.basename(completename).split(".", 1)[0])+"\\"
-print(workingdir)
-if not os.path.isdir(workingdir):
-    os.makedirs(workingdir)
 
-# Calculate Drifts
+# 1 - Select input file and create a folder for results
+if sectionNumber == 1:
+    root = tk.Tk()
+    root.withdraw()
 
-alreadyrun = os.path.isfile(workingdir+"Aligned_final_mean_1.tiff")
-if alreadyrun:
-    print("Drift correction has already run")
-    wait = input("Enter r to rerun Drift Correction or any other key to skip")
-    if wait == "r":
-        alreadyrun = False
+    completename = filedialog.askopenfilename()
+    completename = completename.replace("/", "\\")
+    print(completename)
+    workingdir = os.path.dirname(completename)+"\\"+str(os.path.basename(completename).split(".", 1)[0])+"\\"
+    print(workingdir)
+    if not os.path.isdir(workingdir):
+        os.makedirs(workingdir)
+    savedFilenamefile = open(os.path.dirname(pyfile) + "\\savefilename.csv", "w")
+    savedFilenamefile.write(completename)
+    savedFilenamefile.close()
 
-if not alreadyrun:
-    if alignmanstartend:
-        cmd = JIM + "Align_Channels.exe \""+workingdir+"Aligned\" \"" + completename + "\" -Start " + str(alignstartframe) + " -End " + str(alignendframe)
-    else:
-        cmd = JIM + "Align_Channels.exe \"" + workingdir + "Aligned\" \"" + completename + "\""
+# 2 - Drift Correct
+if sectionNumber == 2:
+
+    cmd = JIM + "Align_Channels.exe \""+workingdir+"Aligned\" \"" + completename + "\" -Start " + str(alignstartframe) + " -End " + str(alignendframe)+' -Iterations '+str(iterations)
     os.system(cmd)
 
-    try:
-        root.destroy()
-    except:
-        pass
-    root = filedialog.Tk()
-    imname = workingdir+"Aligned_final_mean_1.tiff"
-    im1 = Image.open(imname)
-    im1 = im1.convert("I")
-    (minin,maxin) = im1.getextrema()
-    im1 = ImageMath.eval("256*(a-c) / (b-c)", a=im1, b=maxin,c=minin)
-    im1 = ImageTk.PhotoImage(im1)
-    filedialog.Label(root, image=im1).grid(row=0, column=0)
-    root.mainloop()
+    imname = workingdir+"Aligned_initial_mean.tiff"
+    img = mpimg.imread(imname)
+    plt.figure('Before Drift Correction')
+    imgplot = plt.imshow(img, cmap="gray")
 
-    # see if the user wants to exit
-    wait = input("Enter q to to quit or any other key to continue")
-    print(wait)
-    if wait == "q":
-        sys.exit("Exited after drift correction")
+    imname = workingdir+"Aligned_final_mean.tiff"
+    img = mpimg.imread(imname)
+    plt.figure('After Drift Correction')
+    imgplot = plt.imshow(img, cmap="gray")
+    plt.show()
 
-# Make a SubAverage of frames where all particles are present
+# 3 - Make a SubAverage of the Image Stack for Detection
+if sectionNumber == 3:
 
-alreadyrun = os.path.isfile(workingdir+"Aligned_Partial_Mean.tiff")
-if alreadyrun:
-    print("Sub average has already been made")
-    wait = input("Enter r to remake sub average or any other key to skip")
-    if wait == "r":
-        alreadyrun = False
+    maxprojectstr = ""
+    if usemaxprojection:
+        maxprojectstr = " -MaxProjection"
 
-if not alreadyrun:
-    cmd = JIM + "MeanofFrames.exe NULL \"" + workingdir + "Aligned_Drifts.csv\" \"" + workingdir + "Aligned\" \""+ completename +"\" -Start " + str(partialstartframe) + " -End " + str(partialendframe)
+    cmd = JIM + "MeanofFrames.exe NULL \"" + workingdir + "Aligned_Drifts.csv\" \"" + workingdir + "Aligned\" \""+ completename +"\" -Start " + str(partialstartframe) + " -End " + str(partialendframe) + maxprojectstr
     os.system(cmd)
 
-    try:
-        root.destroy()
-    except:
-        pass
-    root = filedialog.Tk()
     imname = workingdir+"Aligned_Partial_Mean.tiff"
-    im1 = Image.open(imname)
-    im1 = im1.convert("I")
-    (minin,maxin) = im1.getextrema()
-    im1 = ImageMath.eval("256*(a-c) / (b-c)", a=im1, b=maxin,c=minin)
-    im1 = ImageTk.PhotoImage(im1)
-    filedialog.Label(root, image=im1).grid(row=0, column=0)
-    root.mainloop()
+    img = mpimg.imread(imname)
+    plt.figure('Sub-Average to use for detection')
+    imgplot = plt.imshow(img, cmap="gray")
+    plt.show()
 
-    # see if the user wants to exit
-    wait = input("Enter q to to quit or any other key to continue")
-    print(wait)
-    if wait == "q":
-        sys.exit("Exited after partial mean")
 
-# detect particles
+# 4 - detect particles
+if sectionNumber == 4:
 
-alreadyrun = os.path.isfile(workingdir+"Detected_Regions.tif")
-if alreadyrun:
-    print("Particles have already been detected")
-    wait = input("Enter r to redetect or any other key to skip")
-    if wait == "r":
-        alreadyrun = False
-
-if not alreadyrun:
-    cmd = JIM + 'Detect_Particles.exe \"' + workingdir + 'Aligned_Partial_Mean.tiff\" \"' + workingdir + 'Detected\" -BinarizeCutoff '+ str(cutoff) + ' -minLength ' + str(minlength) + ' -maxLength ' + str(maxlength) + ' -minCount ' + str(mincount) + ' -maxCount ' + str(maxcount) + ' -minEccentricity ' + str(mineccentricity)+ ' -maxEccentricity '+ str(maxeccentricity)+ ' -minDistFromEdge '+ str(mindistfromedge)+ ' -maxDistFromLinear '+ str(maxDistFromLinear)
+    cmd = (JIM + 'Detect_Particles.exe \"' + workingdir + 'Aligned_Partial_Mean.tiff\" \"' + workingdir
+           + 'Detected\" -BinarizeCutoff '+ str(cutoff) + ' -minLength ' + str(minlength) + ' -maxLength '
+           + str(maxlength) + ' -minCount ' + str(mincount) + ' -maxCount ' + str(maxcount) + ' -minEccentricity ' + str(mineccentricity)
+           + ' -maxEccentricity ' + str(maxeccentricity) + ' -maxDistFromLinear ' + str(maxDistFromLinear)
+           + ' -left ' + str(left)+' -right ' + str(right)+' -top ' + str(top)+' -bottom ' + str(bottom))
     os.system(cmd)
 
-    try:
-        root.destroy()
-    except:
-        pass
-    root = filedialog.Tk()
     imname = workingdir+"Detected_Regions.tif"
     im1 = Image.open(imname)
     im1 = im1.convert("I")
-    (minin,maxin) = im1.getextrema()
+    (minin , maxin) = im1.getextrema()
     im2 = ImageMath.eval("128*(a-c) / (b-c)", a=im1, b=maxin,c=minin)
     imname = workingdir+"Detected_Filtered_Regions.tif"
     im1 = Image.open(imname)
     im1 = im1.convert("I")
-    (minin,maxin) = im1.getextrema()
+    (minin , maxin) = im1.getextrema()
     im3 = ImageMath.eval("128*(a-c) / (b-c)", a=im1, b=maxin,c=minin)
     imname = workingdir+"Aligned_Partial_Mean.tiff"
     im1 = Image.open(imname)
     im1 = im1.convert("I")
-    (minin,maxin) = im1.getextrema()
-
+    (minin , maxin) = im1.getextrema()
     im1 = ImageMath.eval("2560*(a-c) / (b-c)-400", a=im1, b=maxin, c=minin)
 
     imout = Image.merge("RGB", (im1.convert("L"), im2.convert("L"), im3.convert("L")))
+    plt.figure('Detected Particles')
+    imgplot = plt.imshow(imout, cmap="gray")
+    plt.show()
 
 
-    im1 = ImageTk.PhotoImage(imout)
 
 
-    filedialog.Label(root, image=im1).grid(row=0, column=0)
-    root.mainloop()
-
-    # see if the user wants to exit
-    wait = input("Enter q to to quit or any other key to continue")
-    print(wait)
-    if wait == "q":
-        sys.exit("Exited after partial mean")
-
-# Expand Areas around each shape
-
-alreadyrun = os.path.isfile(workingdir+"Expanded_ROIs.tif")
-if alreadyrun:
-    print("Areas have already been expanded")
-    wait = input("Enter r to reexpand areas or any other key to skip")
-    if wait == "r":
-        alreadyrun = False
-
-if not alreadyrun:
-    cmd = JIM + 'Expand_Shapes.exe \"'+ workingdir+ 'Detected_Filtered_Positions.csv\" \"'+ workingdir+'Detected_Positions.csv\" \"'+ workingdir+ 'Expanded\" -boundaryDist '+ str(expandinnerradius)+ ' -backgroundDist '+ str(backgroundradius)+ ' -backInnerRadius '+str(backgroundinnerradius)
+# 5 - Expand Regions
+if sectionNumber == 5:
+    cmd = (JIM + 'Expand_Shapes.exe \"'+ workingdir+ 'Detected_Filtered_Positions.csv\" \"'
+           + workingdir+'Detected_Positions.csv\" \"'+ workingdir+ 'Expanded\" -boundaryDist '
+           + str(expandinnerradius)+ ' -backgroundDist ' + str(backgroundradius)+ ' -backInnerRadius '+str(backgroundinnerradius))
     os.system(cmd)
 
-    try:
-        root.destroy()
-    except:
-        pass
-    root = filedialog.Tk()
     imname = workingdir+"Expanded_ROIs.tif"
     im1 = Image.open(imname)
     im1 = im1.convert("I")
@@ -221,60 +190,51 @@ if not alreadyrun:
     im1 = Image.open(imname)
     im1 = im1.convert("I")
     (minin,maxin) = im1.getextrema()
-
     im1 = ImageMath.eval("2560*(a-c) / (b-c)-400", a=im1, b=maxin, c=minin)
-
     imout = Image.merge("RGB", (im1.convert("L"), im2.convert("L"), im3.convert("L")))
+    plt.figure('Detected Particles')
+    imgplot = plt.imshow(imout, cmap="gray")
+    plt.show()
 
-
-    im1 = ImageTk.PhotoImage(imout)
-
-
-    filedialog.Label(root, image=im1).grid(row=0, column=0)
-    root.lift()
-    root.mainloop()
-
-    # see if the user wants to exit
-    wait = input("Enter q to to quit or any other key to continue")
-    print(wait)
-    if wait == "q":
-        sys.exit("Exited after expanding Shapes")
-
-
-alreadyrun = os.path.isfile(workingdir+"Channel_1_Traces.csv")
-if alreadyrun:
-    print("Traces have already been made")
-    wait = input("Enter r to recalculate traces or any other key to skip")
-    if wait == "r":
-        alreadyrun = False
-
-if not alreadyrun:
-    cmd = JIM + 'Calculate_Traces.exe \"'+ completename+ '\" \"' + workingdir+ 'Expanded_ROI_Positions.csv\" \"' + workingdir +'Expanded_Background_Positions.csv\" \"'  + workingdir+ 'Channel_1\" -Drifts \"' + workingdir+'Aligned_Drifts.csv\"'
+# 6 - Calculate Traces
+if sectionNumber == 6:
+    cmd = JIM + 'Calculate_Traces.exe \"'+ completename+ '\" \"' + workingdir+ 'Expanded_ROI_Positions.csv\" \"' + workingdir +'Expanded_Background_Positions.csv\" \"'  + workingdir+ 'Channel_1\" -Drift \"' + workingdir+'Aligned_Drifts.csv\"'
     os.system(cmd)
 
-    # see if the user wants to exit
-    wait = input("Enter q to to quit or any other key to continue")
-    if wait == "q":
-        sys.exit("Exited after making traces")
+# 7 - View Traces
+if sectionNumber == 7:
+    imname = workingdir+"Detected_Filtered_Region_Numbers.tif"
+    img = mpimg.imread(imname)
+    plt.figure('Before Drift Correction')
+    imgplot = plt.imshow(img, cmap="gray")
 
-# Detect files for batch
+    channelfile = workingdir+"Detected_Filtered_Measurements.csv"
+    measurements = list(csv.reader(open(channelfile)))
 
-filedetect = True
-filelist = []
-while filedetect:
-    try:
-        root.destroy()
-    except:
-        pass
+    channelfile = workingdir+"Channel_1_Flourescent_Intensities.csv"
+    data = list(csv.reader(open(channelfile)))
+    plt.figure()
+    for i in range(1, 37):
+        if len(data) > i+(pagenumber-1)*36:
+            plt.subplot(6, 6, i)
+            plt.plot(data[i+(pagenumber-1)*36-1])
+            xpos = round(float(measurements[i+(pagenumber-1)*36][0]))
+            ypos = round(float(measurements[i+(pagenumber-1)*36][1]))
+            plt.title('Particle '+str(i+(pagenumber-1)*36)+' x '+str(xpos)+' y '+str(ypos))
+    mng = plt.get_current_fig_manager()
+    mng.window.showMaximized()
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+# 8 - Detect files for batch
+if sectionNumber == 8:
     root = tk.Tk()
     root.withdraw()
-    root.focus_force()
     topfolder = filedialog.askdirectory(parent=root)
 
-    batchinsubfolders = False
-    wait = input("Enter y if files are subfolders or any other key if directly in file")
-    if wait == "y":
-        batchinsubfolders = True
 
     filelist = []
     if batchinsubfolders:
@@ -291,35 +251,35 @@ while filedetect:
 
     print('There are ' + str(len(filelist))+' files to analyse')
     print(filelist)
-    filedetect = False
-    wait = input("Enter r to redetect files or any other key to continue")
-    if wait == "r":
-        filedetect = True
+    savedFilenamefile = open(os.path.dirname(pyfile) + "\\savefilename.csv", "w")
+    for i in range(len(filelist)):
+        savedFilenamefile.write(filelist[i]+"\n")
+    savedFilenamefile.close()
 
 
-for filein in filelist:
-    completename = filein
-    print('Analysing file '+completename)
-    workingdir = os.path.dirname(completename) + "\\" + str(os.path.basename(completename).split(".", 1)[0]) + "\\"
-    if not os.path.isdir(workingdir):
-        os.makedirs(workingdir)
+if sectionNumber == 9:
 
-    if alignmanstartend:
-        cmd = JIM + "Align_Channels.exe \""+workingdir+"Aligned\" \"" + completename + "\" -Start " + str(alignstartframe) + " -End " + str(alignendframe)
-    else:
-        cmd = JIM + "Align_Channels.exe \"" + workingdir + "Aligned\" \"" + completename + "\""
-    os.system(cmd)
+    for filein in filelist:
+        completename = filein[0]
+        print('Analysing file '+completename)
+        workingdir = os.path.dirname(completename) + "\\" + str(os.path.basename(completename).split(".", 1)[0]) + "\\"
+        if not os.path.isdir(workingdir):
+            os.makedirs(workingdir)
 
-    cmd = JIM + "MeanofFrames.exe NULL \"" + workingdir + "Aligned_Drifts.csv\" \"" + workingdir + "Aligned\" \""+ completename +"\" -Start " + str(partialstartframe) + " -End " + str(partialendframe)
-    os.system(cmd)
+        cmd = (JIM + "Align_Channels.exe \"" + workingdir + "Aligned\" \"" + completename + "\" -Start " + str(
+            alignstartframe) + " -End " + str(alignendframe) + ' -Iterations ' + str(iterations))
+        os.system(cmd)
 
-    cmd = JIM + 'Detect_Particles.exe \"' + workingdir + 'Aligned_Partial_Mean.tiff\" \"' + workingdir + 'Detected\" -BinarizeCutoff '+ str(cutoff) + ' -minLength ' + str(minlength) + ' -maxLength ' + str(maxlength) + ' -minCount ' + str(mincount) + ' -maxCount ' + str(maxcount) + ' -minEccentricity ' + str(mineccentricity)+ ' -maxEccentricity '+ str(maxeccentricity)+ ' -minDistFromEdge '+ str(mindistfromedge)+ ' -maxDistFromLinear '+ str(maxDistFromLinear)
-    os.system(cmd)
+        cmd = JIM + "MeanofFrames.exe NULL \"" + workingdir + "Aligned_Drifts.csv\" \"" + workingdir + "Aligned\" \""+ completename +"\" -Start " + str(partialstartframe) + " -End " + str(partialendframe)
+        os.system(cmd)
 
-    cmd = JIM + 'Expand_Shapes.exe \"'+ workingdir+ 'Detected_Filtered_Positions.csv\" \"'+ workingdir+'Detected_Positions.csv\" \"'+ workingdir+ 'Expanded\" -boundaryDist '+ str(expandinnerradius)+ ' -backgroundDist '+ str(backgroundradius)+ ' -backInnerRadius '+str(backgroundinnerradius)
-    os.system(cmd)
+        cmd = JIM + 'Detect_Particles.exe \"' + workingdir + 'Aligned_Partial_Mean.tiff\" \"' + workingdir + 'Detected\" -BinarizeCutoff '+ str(cutoff) + ' -minLength ' + str(minlength) + ' -maxLength ' + str(maxlength) + ' -minCount ' + str(mincount) + ' -maxCount ' + str(maxcount) + ' -minEccentricity ' + str(mineccentricity)+ ' -maxEccentricity '+ str(maxeccentricity)+ ' -minDistFromEdge '+ str(maxDistFromLinear)+ ' -maxDistFromLinear '+ str(maxDistFromLinear)
+        os.system(cmd)
 
-    cmd = JIM + 'Calculate_Traces.exe \"'+ completename+ '\" \"' + workingdir+ 'Expanded_ROI_Positions.csv\" \"' + workingdir +'Expanded_Background_Positions.csv\" \"'  + workingdir+ 'Channel_1\" -Drifts \"' + workingdir+'Aligned_Drifts.csv\"'
-    os.system(cmd)
+        cmd = JIM + 'Expand_Shapes.exe \"'+ workingdir+ 'Detected_Filtered_Positions.csv\" \"'+ workingdir+'Detected_Positions.csv\" \"'+ workingdir+ 'Expanded\" -boundaryDist '+ str(expandinnerradius)+ ' -backgroundDist '+ str(backgroundradius)+ ' -backInnerRadius '+str(backgroundinnerradius)
+        os.system(cmd)
 
-print('Batch Analysis Completed')
+        cmd = JIM + 'Calculate_Traces.exe \"'+ completename+ '\" \"' + workingdir+ 'Expanded_ROI_Positions.csv\" \"' + workingdir +'Expanded_Background_Positions.csv\" \"'  + workingdir+ 'Channel_1\" -Drift \"' + workingdir+'Aligned_Drifts.csv\"'
+        os.system(cmd)
+
+    print('Batch Analysis Completed')

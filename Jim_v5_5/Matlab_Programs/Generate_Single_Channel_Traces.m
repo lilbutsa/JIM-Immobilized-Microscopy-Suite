@@ -96,7 +96,7 @@ detectedim = im2uint16(detectedim)/1.5;
 IMG1 = cat(3, originalim,thresim,detectedim);
 imshow(IMG1)
 
-%% 5) Fit areas around each shape
+%% 5) Expand Regions
 expandinnerradius=4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
 backgroundinnerradius = 4.1;
 backgroundradius = 20; % Distance to dilate beyond the ROI to measure the local background
@@ -127,7 +127,7 @@ end
 
 cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drift "',workingdir,'Aligned_Drifts.csv"',verbosestr]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
-%% 7) Plot Traces
+%% 7) View Traces
     pagenumber = 2;
 
     traces=csvread([workingdir,'\Channel_1_Flourescent_Intensities.csv'],1);
