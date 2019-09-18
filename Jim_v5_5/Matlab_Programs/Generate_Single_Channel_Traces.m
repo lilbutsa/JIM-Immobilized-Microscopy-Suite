@@ -1,55 +1,55 @@
 clear
 %% 1) Select the input tiff file and Create folder for results
-[jimpath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
-JIM = [fileparts(jimpath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
-[filename,pathname] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
- 
-completename = [pathname,filename];
-[~,name,~] = fileparts(completename);%get the name of the tiff image excluding the .tiff extension
-workingdir = [pathname,name];
-[~,name,~] = fileparts(workingdir);%also remove the .ome if it exists or any other full stops
-workingdir = [pathname,name,'\'];
-mkdir(workingdir);%make a subfolder with that name
+[jimPath,~,~] = fileparts(matlab.desktop.editor.getActivefileName);%Find the location of this script (should be in Jim\Matlab_Programs)
+JIM = [fileparts(jimPath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
+[fileName,pathName] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
+
+completeName = [pathName,fileName];
+[~,name,~] = fileparts(completeName);%get the name of the tiff image excluding the .tiff extension
+workingDir = [pathName,name];
+[~,name,~] = fileparts(workingDir);%also remove the .ome if it exists or any other full stops
+workingDir = [pathName,name,'\'];
+mkdir(workingDir);%make a subfolder with that name
 %% 2) Calculate Drifts
 iterations = 3;
 
-alignstartframe = 1;
-alignendframe = 5;
+alignStartFrame = 1;
+alignEndFrame = 5;
 
-cmd = [JIM,'Align_Channels.exe "',workingdir,'Aligned" "',completename,'" -Start ',num2str(alignstartframe),' -End ',num2str(alignendframe),' -Iterations ',num2str(iterations)];%Run the Align_Channels program with the selected image stack as the input and save the results to the results folder with the Aligned prefix
+cmd = [JIM,'Align_Channels.exe "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations)];%Run the Align_Channels program with the selected image stack as the input and save the results to the results folder with the Aligned prefix
 system(cmd);
 
 figure('Name','Before Drift Correction') %Display the initial mean that has no drift correction. This is equivilent to the z projection if the stack in ImageJ
-originalim = imread([workingdir,'Aligned_initial_mean.tiff']);
-originalim = imadjust(originalim);
-imshow(originalim);
+originalIm = imread([workingDir,'Aligned_initial_mean.tiff']);
+originalIm = imadjust(originalIm);
+imshow(originalIm);
 
 
 figure('Name','After Drift Correction')%Display the final mean drift corrected mean. 
-originalim = imread([workingdir,'Aligned_final_mean.tiff']);
-originalim = imadjust(originalim);
-imshow(originalim);
+originalIm = imread([workingDir,'Aligned_final_mean.tiff']);
+originalIm = imadjust(originalIm);
+imshow(originalIm);
 
-drifts = csvread([workingdir,'Aligned_Drifts.csv'],1);%Read in drifts to see waht the max the image has shifted by
+drifts = csvread([workingDir,'Aligned_Drifts.csv'],1);%Read in drifts to see waht the max the image has shifted by
 disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
-%% 3) Make a SubAverage of the image stack for detection
-usemaxprojection = false;
+%% 3) Make a SubAverage of Frames for Detection 
+useMaxProjection = false;
 
-partialstartframe = 1;
-partialendframe = 25;
+partialStartFrame = 1;
+partialEndFrame = 25;
 
-maxprojectstr = '';
-if usemaxprojection
-    maxprojectstr = ' -MaxProjection';
+maxProjectionString = '';
+if useMaxProjection
+    maxProjectionString = ' -MaxProjection';
 end
 
-cmd = [JIM,'MeanofFrames.exe NULL "',workingdir,'Aligned_Drifts.csv" "',workingdir,'Aligned" "',completename,'" -Start ',num2str(partialstartframe),' -End ',num2str(partialendframe),maxprojectstr];
+cmd = [JIM,'Mean_of_Frames.exe NULL "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(partialStartFrame),' -End ',num2str(partialEndFrame),maxProjectionString];
 system(cmd);
 
 figure('Name','Sub-Average to use for detection')%Display the mean of the substack that will be used for particle detection
-originalim = imread([workingdir,'Aligned_Partial_Mean.tiff']);
-originalim = imadjust(originalim);
-imshow(originalim);
+originalIm = imread([workingDir,'Aligned_Partial_Mean.tiff']);
+originalIm = imadjust(originalIm);
+imshow(originalIm);
 
 %% 4) Detect Particles
 % User Defined Parameters 
@@ -63,93 +63,90 @@ top = 10;% Excluded particles closer to the edge than this. Make sure this value
 bottom = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
 
-mincount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-maxcount=100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+minCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+maxCount=100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-mineccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-maxeccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+minEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
+maxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
-minlength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
-maxlength = 100000; % Maximum number of pixels for the major axis of the best fit ellipse
+minLength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
+maxLength = 100000; % Maximum number of pixels for the major axis of the best fit ellipse
 
 maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from the major axis.
 
 
-displaymin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displaymax = 0.5; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 0.5; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
-refchan = [workingdir,'Aligned_Partial_Mean.tiff']; % Change this to change what file is used for detection(If you don't want to use a partial mean make it Aligned_final_mean_1.tiff).
-cmd = [JIM,'Detect_Particles.exe "',refchan,'" "',workingdir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minlength),' -maxLength ',num2str(maxlength),' -minCount ',num2str(mincount),' -maxCount ',num2str(maxcount),' -minEccentricity ',num2str(mineccentricity),' -maxEccentricity ',num2str(maxeccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
+cmd = [JIM,'Detect_Particles.exe "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
 system(cmd)
 
 %Show detection results - Red Original Image -ROIs->White -
 % Green/Yellow->Excluded by filters
 figure('Name','Detected Particles - Red Original Image - White Selected ROIs - Green to Yellow->Excluded by filters')
-originalim = imread(refchan);
-originalim = imadjust(originalim);
-originalim = imadjust(originalim, [displaymin displaymax]);
-thresim = imread([workingdir,'Detected_Regions.tif']);
-thresim = im2uint16(thresim)/1.5;
-detectedim = imread([workingdir,'Detected_Filtered_Regions.tif']);
-detectedim = im2uint16(detectedim)/1.5;
-IMG1 = cat(3, originalim,thresim,detectedim);
+originalIm = imread(workingDir,'Aligned_Partial_Mean.tiff');
+originalIm = imadjust(originalIm);
+originalIm = imadjust(originalIm, [displayMin displayMax]);
+thresholdedIm = imread([workingDir,'Detected_Regions.tif']);
+thresholdedIm = im2uint16(thresholdedIm)/1.5;
+detectedIm = imread([workingDir,'Detected_Filtered_Regions.tif']);
+detectedIm = im2uint16(detectedIm)/1.5;
+IMG1 = cat(3, originalIm,thresholdedIm,detectedIm);
 imshow(IMG1)
 
 %% 5) Expand Regions
-expandinnerradius=4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-backgroundinnerradius = 4.1;
-backgroundradius = 20; % Distance to dilate beyond the ROI to measure the local background
+foregroundDist = 4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+backInnerDist = 4.1;
+backOuterDist = 20; % Distance to dilate beyond the ROI to measure the local background
 
-
-cmd = [JIM,'Expand_Shapes.exe "',workingdir,'Detected_Filtered_Positions.csv" "',workingdir,'Detected_Positions.csv" "',workingdir,'Expanded" -boundaryDist ', num2str(expandinnerradius),' -backgroundDist ',num2str(backgroundradius),' -backInnerRadius ',num2str(backgroundinnerradius)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
+cmd = [JIM,'Expand_Shapes.exe "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(foregroundDist),' -backgroundDist ',num2str(backOuterDist),' -backInnerRadius ',num2str(backInnerDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
 system(cmd)
 
-
-%view detection overlay RGB
+%show expansion reult
 figure('Name','Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
-detectedim = imread([workingdir,'Expanded_ROIs.tif']);
-detectedim = im2uint16(detectedim)/1.5;
+detectedIm = imread([workingDir,'Expanded_ROIs.tif']);
+detectedIm = im2uint16(detectedIm)/1.5;
 
-backim = imread([workingdir,'Expanded_Background_Regions.tif']);
+backim = imread([workingDir,'Expanded_Background_Regions.tif']);
 backim = im2uint16(backim)/1.5;
 
-IMG1 = cat(3, originalim,detectedim,backim);
+IMG1 = cat(3, originalIm,detectedIm,backim);
 imshow(IMG1);
 
 %% 6) Calculate Traces
-verboseoutput = true;
+verboseOutput = true;
 
-verbosestr = '';
-if verboseoutput
-    verbosestr = ' -Verbose';
+verboseString = '';
+if verboseOutput
+    verboseString = ' -Verbose';
 end
 
-cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drift "',workingdir,'Aligned_Drifts.csv"',verbosestr]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+cmd = [JIM,'Calculate_Traces.exe "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"',verboseString]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
 %% 7) View Traces
-    pagenumber = 2;
+pageNumber = 2;
 
-    traces=csvread([workingdir,'\Channel_1_Flourescent_Intensities.csv'],1);
-    measures = csvread([workingdir,'\Detected_Filtered_Measurements.csv'],1);
-    numberimage = imread([workingdir,'Detected_Filtered_Region_Numbers.tif']);
-    figure('Name','Particle Numbers');
-    imshow(numberimage);
+traces=csvread([workingDir,'\Channel_1_Fluorescent_Intensities.csv'],1);
+measures = csvread([workingDir,'\Detected_Filtered_Measurements.csv'],1);
+numberImage = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
+figure('Name','Particle Numbers');
+imshow(numberImage);
 
-    figure
-    set(gcf, 'Position', [100, 100, 1500, 800])
+figure
+set(gcf, 'Position', [100, 100, 1500, 800])
 
-    for i=1:36
-        if i+36*(pagenumber-1)<size(traces,1)
-        subplot(6,6,i)
-        hold on
-        title(['Particle ' num2str(i+36*(pagenumber-1)) ' x ' num2str(round(measures(i+36*(pagenumber-1),1))) ' y ' num2str(round(measures(i+36*(pagenumber-1),2)))])
-        plot(traces(i+36*(pagenumber-1),:),'-r');
-        plot([0 size(traces(i+36*(pagenumber-1),:),2)],[0 0] ,'-b');
-        xlim([0 size(traces(i+36*(pagenumber-1),:),2)])
-        hold off
-        end
+for i=1:36
+    if i+36*(pageNumber-1)<size(traces,1)
+    subplot(6,6,i)
+    hold on
+    title(['Particle ' num2str(i+36*(pageNumber-1)) ' x ' num2str(round(measures(i+36*(pageNumber-1),1))) ' y ' num2str(round(measures(i+36*(pageNumber-1),2)))])
+    plot(traces(i+36*(pageNumber-1),:),'-r');
+    plot([0 size(traces(i+36*(pageNumber-1),:),2)],[0 0] ,'-b');
+    xlim([0 size(traces(i+36*(pageNumber-1),:),2)])
+    hold off
     end
+end
 
 %% Continue from here for batch processing
 %
@@ -157,62 +154,64 @@ system(cmd)
 %
 %
 %
-[jimpath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename); % Find the location of this script again in case the user is just running batch (should be in Jim\Matlab_Programs)
-JIM = [fileparts(jimpath),'\Jim_Programs\'];
-pathname = uigetdir(); % open the dialog box to select the folder for batch files
-pathname=[pathname,'\'];
+%% 8) Detect files for batch
+filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
-%% 2) detect files to analyze
-insubfolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
-if insubfolders
-    allfiles = dir(pathname); % find everything in the input folder
-    allfiles(~[allfiles.isdir]) = []; % filter for folders
-    allfiles=allfiles(3:end);
-    allfilescells = arrayfun(@(y) arrayfun(@(x) [pathname,y.name,'\',x.name],[dir([pathname,y.name,'\*.tif']); dir([pathname,y.name,'\*.tiff'])]','UniformOutput',false),allfiles','UniformOutput',false); % look in each folder and pull out all files that end in tif or tiff
-    allfilescells = horzcat(allfilescells{:})'; % combine the files from all folders into one list
-    filenum=size(allfilescells,1);
+
+
+[jimPath,~,~] = fileparts(matlab.desktop.editor.getActivefileName); % Find the location of this script again in case the user is just running batch (should be in Jim\Matlab_Programs)
+JIM = [fileparts(jimPath),'\Jim_Programs\'];
+fileName = uigetdir(); % open the dialog box to select the folder for batch files
+fileName=[fileName,'\'];
+
+if filesInSubFolders
+    allFiles = dir(fileName); % find everything in the input folder
+    allFiles(~[allFiles.isdir]) = []; % filter for folders
+    allFiles=allFiles(3:end);
+    allFilescells = arrayfun(@(y) arrayfun(@(x) [fileName,y.name,'\',x.name],[dir([fileName,y.name,'\*.tif']); dir([fileName,y.name,'\*.tiff'])]','UniformOutput',false),allFiles','UniformOutput',false); % look in each folder and pull out all files that end in tif or tiff
+    allFilescells = horzcat(allFilescells{:})'; % combine the files from all folders into one list
+    NumberOfFiles=size(allFilescells,1);
 else
-    allfiles = [dir([pathname,'\*.tif']); dir([pathname,'\*.tiff'])];% find everything in the main folder ending in tiff or tif
-    allfilescells = arrayfun(@(y) [pathname,y.name],allfiles,'UniformOutput',false); % generate a full path name for each file
-    allfilescells = allfilescells(~startsWith(allfilescells,[pathname,'.']));
-    filenum=size(allfilescells,1);
+    allFiles = [dir([fileName,'\*.tif']); dir([fileName,'\*.tiff'])];% find everything in the main folder ending in tiff or tif
+    allFilescells = arrayfun(@(y) [fileName,y.name],allFiles,'UniformOutput',false); % generate a full path name for each file
+    allFilescells = allFilescells(~startsWith(allFilescells,[fileName,'.']));
+    NumberOfFiles=size(allFilescells,1);
 end
-disp(['There are ',num2str(filenum),' files to analyse']);
+disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 
-%% Run sum single iteratively
-overwrite = true;
-parfor i=1:filenum(1)
-    completename = allfilescells{i};
-    disp(['Analysing ',completename]);
+%% 9) Batch Analyse
+overwritePreviouslyAnalysed = true;
+parfor i=1:NumberOfFiles(1)
+    completeName = allFilescells{i};
+    disp(['Analysing ',completeName]);
     % 3.2) Create folder for results
-    [pathnamein,name,~] = fileparts(completename);%get the name of the tiff image
-    workingdir = [pathnamein,'\',name];
-    [pathnamein,name,~] = fileparts(workingdir);
-    workingdir = [pathnamein,'\',name,'\'];
-    mkdir(workingdir);%make a subfolder with that name
+    [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
+    workingDir = [fileNamein,'\',name];
+    [fileNamein,name,~] = fileparts(workingDir);
+    workingDir = [fileNamein,'\',name,'\'];
+    mkdir(workingDir);%make a subfolder with that name
 
-    if (exist([workingdir,'Channel_1_Flourescent_Intensities.csv'],'file')==2 && overwrite==false)
-        disp(['Skipping ',completename,' - Analysis already exists']);
+    if (exist([workingDir,'Channel_1_Fluorescent_Intensities.csv'],'file')==2 && overwritePreviouslyAnalysed==false)
+        disp(['Skipping ',completeName,' - Analysis already exists']);
         continue
     end
     
     % 3.3)  Calculate Drifts
-    cmd = [JIM,'Align_Channels.exe "',workingdir,'Aligned" "',completename,'" -Start ',num2str(alignstartframe),' -End ',num2str(alignendframe),' -Iterations ',num2str(iterations)];%Run the Align_Channels program with the selected image stack as the input and save the results to the results folder with the Aligned prefix
+    cmd = [JIM,'Align_Channels.exe "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations)];%Run the Align_Channels program with the selected image stack as the input and save the results to the results folder with the Aligned prefix
     system(cmd);
 
     
-    cmd = [JIM,'MeanofFrames.exe NULL "',workingdir,'Aligned_Drifts.csv" "',workingdir,'Aligned" "',completename,'" -Start ',num2str(partialstartframe),' -End ',num2str(partialendframe),maxprojectstr];
+    cmd = [JIM,'Mean_of_Frames.exe NULL "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(partialStartFrame),' -End ',num2str(partialEndFrame),maxProjectionString];
     system(cmd);
     % 3.4) Detect Particles
-    refchan = [workingdir,'Aligned_Partial_Mean.tiff'];
-    cmd = [JIM,'Detect_Particles.exe "',refchan,'" "',workingdir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minlength),' -maxLength ',num2str(maxlength),' -minCount ',num2str(mincount),' -maxCount ',num2str(maxcount),' -minEccentricity ',num2str(mineccentricity),' -maxEccentricity ',num2str(maxeccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
+    cmd = [JIM,'Detect_Particles.exe "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
     system(cmd)
     % 3.5) Fit areas around each shape
-    cmd = [JIM,'Expand_Shapes.exe "',workingdir,'Detected_Filtered_Positions.csv" "',workingdir,'Detected_Positions.csv" "',workingdir,'Expanded" -boundaryDist ', num2str(expandinnerradius),' -backgroundDist ',num2str(backgroundradius),' -backInnerRadius ',num2str(backgroundinnerradius)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
+    cmd = [JIM,'Expand_Shapes.exe "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(foregroundDist),' -backgroundDist ',num2str(backOuterDist),' -backInnerRadius ',num2str(backInnerDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
     system(cmd)
     % 3.6) Calculate Sum of signal and background for each frame
-    cmd = [JIM,'Calculate_Traces.exe "',completename,'" "',workingdir,'Expanded_ROI_Positions.csv" "',workingdir,'Expanded_Background_Positions.csv" "',workingdir,'Channel_1" -Drifts "',workingdir,'Aligned_Drifts.csv"',verbosestr]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+    cmd = [JIM,'Calculate_Traces.exe "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drifts "',workingDir,'Aligned_Drifts.csv"',verboseString]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
     system(cmd)
 
 end

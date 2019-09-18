@@ -20,6 +20,8 @@ sectionNumber = 2
 # 8 - Detect files for batch
 # 9 - Batch Analyse
 
+#### PARAMETER INPUTS ####
+
 # 2 - Drift Correct Parameters
 iterations = 3
 alignstartframe = 1
@@ -66,14 +68,15 @@ pagenumber = 3
 # 8 - Detect files for batch
 batchinsubfolders = True
 
+# 9 - Batch Analysis
+overwritePreviouslyAnalysed = True
 
 
 
 
 
 
-
-# Don't touch from here
+#### Don't touch from here ####
 pyfile = sys.argv[0]
 JIM = os.path.dirname(os.path.dirname(pyfile)) + "\\Jim_Programs\\"  #  Change if not running in original location e.g. JIM = "C:\\Users\\James\\Desktop\\Jim_v5\\Jim_Programs\\"
 
