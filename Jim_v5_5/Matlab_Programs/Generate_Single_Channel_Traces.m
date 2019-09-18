@@ -117,7 +117,7 @@ backim = im2uint16(backim)/1.5;
 IMG1 = cat(3, originalim,detectedim,backim);
 imshow(IMG1);
 
-%% 6) Calculate Sum of signal and background for each frame
+%% 6) Calculate Traces
 verboseoutput = true;
 
 verbosestr = '';
