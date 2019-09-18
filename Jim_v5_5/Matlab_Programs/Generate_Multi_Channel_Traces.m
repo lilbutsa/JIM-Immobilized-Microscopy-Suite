@@ -85,15 +85,15 @@ disp('Alignment and drift correction completed');
 %% 5) Make a SubAverage of Frames for each Channel for Detection 
 useMaxProjection = false;
 
-frameRangeStarts = [1,20];
-frameRangeEnds = [10,30];
+detectionStartFrame = '1 20';
+detectionEndFrame = '10 30';
 
 maxProjectionString = '';
 if useMaxProjection
     maxProjectionString = ' -MaxProjection';
 end
 
-cmd = [JIM,'Mean_of_Frames.exe "',workingDir,'Aligned_channel_alignment.csv" "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(frameRangeStarts),' -End ',num2str(frameRangeEnds),maxProjectionString];
+cmd = [JIM,'Mean_of_Frames.exe "',workingDir,'Aligned_channel_alignment.csv" "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(detectionStartFrame),' -End ',num2str(detectionEndFrame),maxProjectionString];
 system(cmd);
 
 figure
@@ -136,7 +136,7 @@ system(cmd)
 %Show detection results - Red Original Image -ROIs->White -
 % Green/Yellow->Excluded by filters
 figure('Name','Detected Particles - Red Original Image - Blue to White Selected ROIs - Green to Yellow->Excluded by filters')
-originalIm = imread(refchan);
+originalIm = imread([workingDir,'Aligned_Partial_Mean.tiff']);
 originalIm = imadjust(originalIm);
 originalIm = imadjust(originalIm, [displayMin displayMax]);
 thresholdedIm = imread([workingDir,'Detected_Regions.tif']);
@@ -209,6 +209,20 @@ for j = 2:numberOfChannels
     cmd = [JIM,'Calculate_Traces.exe "',workingDir,'Images_Channel_',num2str(j),'.tiff" "',workingDir,'Expanded_Channel_',num2str(j),'_ROI_Positions.csv" "',workingDir,'Expanded_Channel_',num2str(j),'_Background_Positions.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Detected_Filtered_Drifts_Channel_',num2str(j),'.csv"',verboseString];
     system(cmd)
 end
+
+variableString = ['Date, ', datestr(datetime('today')),'\n'...
+     ,'useMetadataFile,',num2str(useMetadataFile),'\nnumberOfChannels,', num2str(numberOfChannels),'\n'...
+    ,'iterations,',num2str(iterations),'\nalignStartFrame,', num2str(alignStartFrame),'\nalignEndFrame,', num2str(alignEndFrame),'\n'...
+    ,'rotationAngle,',num2str(rotationAngle),'\nscalingFactor,', num2str(scalingFactor),'\nxoffset,', num2str(xoffset),'\nyoffset,', num2str(yoffset),'\n'...
+    ,'useMaxProjection,',num2str(useMaxProjection),'\ndetectionStartFrame,', num2str(detectionStartFrame),'\ndetectionEndFrame,', num2str(detectionEndFrame),'\n'...
+    ,'cutoff,',num2str(cutoff),'\nleft,', num2str(left),'\nright,', num2str(right),'\ntop,', num2str(top),'\nbottom,', num2str(bottom),'\n'...
+    ,'minCount,',num2str(minCount),'\nmaxCount,', num2str(maxCount),'\nminEccentricity,', num2str(minEccentricity),'\nmaxEccentricity,', num2str(maxEccentricity),'\n'...
+    ,'minLength,',num2str(minLength),'\nmaxLength,', num2str(maxLength),'\nmaxDistFromLinear,', num2str(maxDistFromLinear),'\n'...
+    ,'foregroundDist,',num2str(foregroundDist),'\nbackInnerDist,', num2str(backInnerDist),'\nbackOuterDist,', num2str(backOuterDist),'\nverboseOutput,', num2str(verboseOutput)];
+
+fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
+fprintf(fileID, variableString);
+fclose(fileID);
 
 disp('Finished Generating Traces');
 %% 10) Plot Traces
@@ -322,7 +336,7 @@ parfor i=1:filenum(1)
 
 
     % make submean
-    cmd = [JIM,'Mean_of_Frames.exe "',workingDir,'Aligned_channel_alignment.csv" "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(frameRangeStarts),' -End ',num2str(frameRangeEnds),maxProjectionString];
+    cmd = [JIM,'Mean_of_Frames.exe "',workingDir,'Aligned_channel_alignment.csv" "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(detectionStartFrame),' -End ',num2str(detectionEndFrame),maxProjectionString];
     system(cmd);
     
     % 3.5) Detect Particles

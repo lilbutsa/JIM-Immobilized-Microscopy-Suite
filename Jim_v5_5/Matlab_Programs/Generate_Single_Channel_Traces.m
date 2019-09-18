@@ -1,6 +1,6 @@
 clear
 %% 1) Select the input tiff file and Create folder for results
-[jimPath,~,~] = fileparts(matlab.desktop.editor.getActivefileName);%Find the location of this script (should be in Jim\Matlab_Programs)
+[jimPath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 JIM = [fileparts(jimPath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [fileName,pathName] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
 
@@ -35,15 +35,15 @@ disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
 %% 3) Make a SubAverage of Frames for Detection 
 useMaxProjection = false;
 
-partialStartFrame = 1;
-partialEndFrame = 25;
+detectionStartFrame = 1;
+detectionEndFrame = 25;
 
 maxProjectionString = '';
 if useMaxProjection
     maxProjectionString = ' -MaxProjection';
 end
 
-cmd = [JIM,'Mean_of_Frames.exe NULL "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(partialStartFrame),' -End ',num2str(partialEndFrame),maxProjectionString];
+cmd = [JIM,'Mean_of_Frames.exe NULL "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(detectionStartFrame),' -End ',num2str(detectionEndFrame),maxProjectionString];
 system(cmd);
 
 figure('Name','Sub-Average to use for detection')%Display the mean of the substack that will be used for particle detection
@@ -85,7 +85,7 @@ system(cmd)
 %Show detection results - Red Original Image -ROIs->White -
 % Green/Yellow->Excluded by filters
 figure('Name','Detected Particles - Red Original Image - White Selected ROIs - Green to Yellow->Excluded by filters')
-originalIm = imread(workingDir,'Aligned_Partial_Mean.tiff');
+originalIm = imread([workingDir,'Aligned_Partial_Mean.tiff']);
 originalIm = imadjust(originalIm);
 originalIm = imadjust(originalIm, [displayMin displayMax]);
 thresholdedIm = imread([workingDir,'Detected_Regions.tif']);
@@ -124,8 +124,21 @@ end
 
 cmd = [JIM,'Calculate_Traces.exe "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"',verboseString]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
+
+variableString = ['Date, ', datestr(datetime('today')),'\n'...
+    ,'iterations,',num2str(iterations),'\nalignStartFrame,', num2str(alignStartFrame),'\nalignEndFrame,', num2str(alignEndFrame),'\n'...
+    ,'useMaxProjection,',num2str(useMaxProjection),'\ndetectionStartFrame,', num2str(detectionStartFrame),'\ndetectionEndFrame,', num2str(detectionEndFrame),'\n'...
+    ,'cutoff,',num2str(cutoff),'\nleft,', num2str(left),'\nright,', num2str(right),'\ntop,', num2str(top),'\nbottom,', num2str(bottom),'\n'...
+    ,'minCount,',num2str(minCount),'\nmaxCount,', num2str(maxCount),'\nminEccentricity,', num2str(minEccentricity),'\nmaxEccentricity,', num2str(maxEccentricity),'\n'...
+    ,'minLength,',num2str(minLength),'\nmaxLength,', num2str(maxLength),'\nmaxDistFromLinear,', num2str(maxDistFromLinear),'\n'...
+    ,'foregroundDist,',num2str(foregroundDist),'\nbackInnerDist,', num2str(backInnerDist),'\nbackOuterDist,', num2str(backOuterDist),'\nverboseOutput,', num2str(verboseOutput)];
+
+fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
+fprintf(fileID, variableString);
+fclose(fileID);
+
 %% 7) View Traces
-pageNumber = 2;
+pageNumber = 3;
 
 traces=csvread([workingDir,'\Channel_1_Fluorescent_Intensities.csv'],1);
 measures = csvread([workingDir,'\Detected_Filtered_Measurements.csv'],1);
@@ -202,7 +215,7 @@ parfor i=1:NumberOfFiles(1)
     system(cmd);
 
     
-    cmd = [JIM,'Mean_of_Frames.exe NULL "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(partialStartFrame),' -End ',num2str(partialEndFrame),maxProjectionString];
+    cmd = [JIM,'Mean_of_Frames.exe NULL "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(detectionStartFrame),' -End ',num2str(detectionEndFrame),maxProjectionString];
     system(cmd);
     % 3.4) Detect Particles
     cmd = [JIM,'Detect_Particles.exe "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
@@ -213,6 +226,10 @@ parfor i=1:NumberOfFiles(1)
     % 3.6) Calculate Sum of signal and background for each frame
     cmd = [JIM,'Calculate_Traces.exe "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drifts "',workingDir,'Aligned_Drifts.csv"',verboseString]; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
     system(cmd)
+    
+    fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
+    fprintf(fileID, variableString);
+    fclose(fileID);
 
 end
 
