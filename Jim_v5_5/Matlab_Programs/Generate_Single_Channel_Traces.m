@@ -4,6 +4,10 @@ clear
 JIM = [fileparts(jimPath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [fileName,pathName] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
 
+colour1 = [1 0 0];
+colour2 = [0 1 0];
+colour3 = [0 0 1];
+
 completeName = [pathName,fileName];
 [~,name,~] = fileparts(completeName);%get the name of the tiff image excluding the .tiff extension
 workingDir = [pathName,name];
@@ -20,15 +24,14 @@ cmd = [JIM,'Align_Channels.exe "',workingDir,'Aligned" "',completeName,'" -Start
 system(cmd);
 
 figure('Name','Before Drift Correction') %Display the initial mean that has no drift correction. This is equivilent to the z projection if the stack in ImageJ
-originalIm = imread([workingDir,'Aligned_initial_mean.tiff']);
-originalIm = imadjust(originalIm);
-imshow(originalIm);
-
+channel1Im = rescale(imread([workingDir,'Aligned_initial_mean.tiff']));
+imshow(channel1Im);
+truesize([900 900]);
 
 figure('Name','After Drift Correction')%Display the final mean drift corrected mean. 
-originalIm = imread([workingDir,'Aligned_final_mean.tiff']);
-originalIm = imadjust(originalIm);
-imshow(originalIm);
+channel1Im = rescale(imread([workingDir,'Aligned_final_mean.tiff']));
+imshow(channel1Im);
+truesize([900 900]);
 
 drifts = csvread([workingDir,'Aligned_Drifts.csv'],1);%Read in drifts to see waht the max the image has shifted by
 disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
@@ -47,9 +50,9 @@ cmd = [JIM,'Mean_of_Frames.exe NULL "',workingDir,'Aligned_Drifts.csv" "',workin
 system(cmd);
 
 figure('Name','Sub-Average to use for detection')%Display the mean of the substack that will be used for particle detection
-originalIm = imread([workingDir,'Aligned_Partial_Mean.tiff']);
-originalIm = imadjust(originalIm);
-imshow(originalIm);
+channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']));
+imshow(channel1Im);
+truesize([900 900]);
 
 %% 4) Detect Particles
 % User Defined Parameters 
@@ -76,7 +79,7 @@ maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from t
 
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 0.5; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
 cmd = [JIM,'Detect_Particles.exe "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
@@ -84,35 +87,36 @@ system(cmd)
 
 %Show detection results - Red Original Image -ROIs->White -
 % Green/Yellow->Excluded by filters
-figure('Name','Detected Particles - Red Original Image - White Selected ROIs - Green to Yellow->Excluded by filters')
-originalIm = imread([workingDir,'Aligned_Partial_Mean.tiff']);
-originalIm = imadjust(originalIm);
-originalIm = imadjust(originalIm, [displayMin displayMax]);
-thresholdedIm = imread([workingDir,'Detected_Regions.tif']);
-thresholdedIm = im2uint16(thresholdedIm)/1.5;
-detectedIm = imread([workingDir,'Detected_Filtered_Regions.tif']);
-detectedIm = im2uint16(detectedIm)/1.5;
-IMG1 = cat(3, originalIm,thresholdedIm,detectedIm);
-imshow(IMG1)
+figure('Name','Detected Particles - Red Original Image - Blue to White Selected ROIs - Green to Yellow->Excluded by filters')
+channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin,displayMax);
+channel1Im=min(max(channel1Im,0),1);
+channel2Im = rescale(imread([workingDir,'Detected_Regions.tif']));
+channel3Im = rescale(imread([workingDir,'Detected_Filtered_Regions.tif']));
+combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+imshow(combinedImage)
+truesize([900 900]);
+disp('Finish detecting particles');
 
 %% 5) Expand Regions
 foregroundDist = 4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
 backInnerDist = 4.1;
 backOuterDist = 20; % Distance to dilate beyond the ROI to measure the local background
 
+displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+
 cmd = [JIM,'Expand_Shapes.exe "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(foregroundDist),' -backgroundDist ',num2str(backOuterDist),' -backInnerRadius ',num2str(backInnerDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
 system(cmd)
 
 %show expansion reult
 figure('Name','Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
-detectedIm = imread([workingDir,'Expanded_ROIs.tif']);
-detectedIm = im2uint16(detectedIm)/1.5;
-
-backim = imread([workingDir,'Expanded_Background_Regions.tif']);
-backim = im2uint16(backim)/1.5;
-
-IMG1 = cat(3, originalIm,detectedIm,backim);
-imshow(IMG1);
+channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin,displayMax);
+channel1Im=min(max(channel1Im,0),1);
+channel2Im = rescale(imread([workingDir,'Expanded_Channel_1_ROIs.tif']));
+channel3Im = rescale(imread([workingDir,'Expanded_Channel_1_Background_Regions.tif']));
+combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+imshow(combinedImage);
+truesize([900 900]);
 
 %% 6) Calculate Traces
 verboseOutput = true;
@@ -142,9 +146,10 @@ pageNumber = 3;
 
 traces=csvread([workingDir,'\Channel_1_Fluorescent_Intensities.csv'],1);
 measures = csvread([workingDir,'\Detected_Filtered_Measurements.csv'],1);
-numberImage = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
+channel1Im = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
 figure('Name','Particle Numbers');
-imshow(numberImage);
+imshow(channel1Im);
+truesize([900 900]);
 
 figure
 set(gcf, 'Position', [100, 100, 1500, 800])

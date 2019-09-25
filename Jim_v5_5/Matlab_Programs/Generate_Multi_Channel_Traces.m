@@ -4,6 +4,10 @@ clear
 JIM = [fileparts(jimPath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [fileName,pathName] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
 
+colour1 = [1 0 0];
+colour2 = [0 1 0];
+colour3 = [0 0 1];
+
 completeName = [pathName,fileName];
 [~,name,~] = fileparts(completeName);%get the name of the tiff image excluding the .tiff extension
 workingDir = [pathName,name];
@@ -41,10 +45,10 @@ alignStartFrame = 15;
 alignEndFrame = 15;
 
 manualAlignment = false; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
-rotationAngle = -2.86;
-scalingFactor = 1;
-xoffset = -5;
-yoffset = -5;
+rotationAngle = -0.2;
+scalingFactor = 0.9941;
+xoffset = 7;
+yoffset = -3.5;
 
 allChannelNames = ''; % make a list of all channels that need aligning (everything above channel 1)
 for j = 1:numberOfChannels
@@ -60,33 +64,32 @@ system(cmd)
 
 %view alignment before
 if manualAlignment
-    detectedIm = imread([workingDir,'Aligned_aligned_partial_mean_1.tiff']);
-    originalIm = imread([workingDir,'Aligned_aligned_partial_mean_2.tiff']);
+    channel1Im = rescale(imread([workingDir,'Aligned_aligned_partial_mean_1.tiff']));
+    channel2Im = rescale(imread([workingDir,'Aligned_aligned_partial_mean_2.tiff']));
 else
-    detectedIm = imread([workingDir,'Aligned_initial_partial_mean_1.tiff']);
-    originalIm = imread([workingDir,'Aligned_initial_partial_mean_2.tiff']);
+    channel1Im = rescale(imread([workingDir,'Aligned_initial_partial_mean_1.tiff']));
+    channel2Im = rescale(imread([workingDir,'Aligned_initial_partial_mean_2.tiff']));
 end
-detectedIm = imadjust(detectedIm);
-originalIm = imadjust(originalIm);
-IMG1 = cat(3, originalIm,detectedIm,zeros(size(detectedIm)));
+combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im,colour1(2).*channel1Im+colour2(2).*channel2Im,colour1(3).*channel1Im+colour2(3).*channel2Im);
 figure('Name','Before Drift Correction and Alignment')
-imshow(IMG1);
+imshow(combinedImage);
+truesize([900 900]);
+
 
 %view alignment after
-detectedIm = imread([workingDir,'Aligned_aligned_full_mean_1.tiff']);
-detectedIm = imadjust(detectedIm);
-originalIm = imread([workingDir,'Aligned_aligned_full_mean_2.tiff']);
-originalIm = imadjust(originalIm);
-IMG1 = cat(3, originalIm,detectedIm,zeros(size(detectedIm)));
+channel1Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_1.tiff']));
+channel2Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_2.tiff']));
+combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im,colour1(2).*channel1Im+colour2(2).*channel2Im,colour1(3).*channel1Im+colour2(3).*channel2Im);
 figure('Name','After Drift Correction and Alignment')
-imshow(IMG1);
+imshow(combinedImage);
+truesize([900 900]);
 disp('Alignment and drift correction completed');
 
 %% 5) Make a SubAverage of Frames for each Channel for Detection 
 useMaxProjection = false;
 
 detectionStartFrame = '1 20';
-detectionEndFrame = '10 30';
+detectionEndFrame = '180 200';
 
 maxProjectionString = '';
 if useMaxProjection
@@ -97,23 +100,23 @@ cmd = [JIM,'Mean_of_Frames.exe "',workingDir,'Aligned_channel_alignment.csv" "',
 system(cmd);
 
 figure
-originalIm = imread([workingDir,'Aligned_Partial_Mean.tiff']);
-originalIm = imadjust(originalIm);
-imshow(originalIm);
+channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']));
+imshow(channel1Im);
+truesize([900 900]);
 disp('Average projection completed');
 
 %% 6) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=0.4; % The curoff for the initial thresholding
+cutoff=0.6; % The curoff for the initial thresholding
 
 %Filtering
 left = 0;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-right = 30;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-top = 20;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-bottom = 12;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+right = 0;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+top = 0;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+bottom = 0;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
-minCount = 15; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+minCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 maxCount= 1000000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 minEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
@@ -125,7 +128,7 @@ maxLength = 1000000; % Maximum number of pixels for the major axis of the best f
 maxDistFromLinear = 100000; % Maximum distance that a pixel can diviate from the major axis.
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 0.5; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 
 % Detection Program
 
@@ -136,16 +139,13 @@ system(cmd)
 %Show detection results - Red Original Image -ROIs->White -
 % Green/Yellow->Excluded by filters
 figure('Name','Detected Particles - Red Original Image - Blue to White Selected ROIs - Green to Yellow->Excluded by filters')
-originalIm = imread([workingDir,'Aligned_Partial_Mean.tiff']);
-originalIm = imadjust(originalIm);
-originalIm = imadjust(originalIm, [displayMin displayMax]);
-thresholdedIm = imread([workingDir,'Detected_Regions.tif']);
-thresholdedIm = im2uint16(thresholdedIm)/1.5;
-detectedIm = imread([workingDir,'Detected_Filtered_Regions.tif']);
-detectedIm = im2uint16(detectedIm)/1.5;
-IMG1 = cat(3, originalIm,thresholdedIm,detectedIm);
-imshow(IMG1)
-
+channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin,displayMax);
+channel1Im=min(max(channel1Im,0),1);
+channel2Im = rescale(imread([workingDir,'Detected_Regions.tif']));
+channel3Im = rescale(imread([workingDir,'Detected_Filtered_Regions.tif']));
+combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+imshow(combinedImage)
+truesize([900 900]);
 disp('Finish detecting particles');
 %% 7)Calculate the equivalent positions in the other channels
 cmd = [JIM,'Other_Channel_Positions.exe "',workingDir,'Aligned_channel_alignment.csv" "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Detected_Filtered" -positions "',workingDir,'Detected_Filtered_Positions.csv" -backgroundpositions "',workingDir,'Detected_Positions.csv"'];
@@ -158,6 +158,9 @@ foregroundDist = 4.1; % Distance to dilate the ROIs by to make sure all flouresc
 backInnerDist = 4.1;
 backOuterDist = 20; % Distance to dilate beyond the ROI to measure the local background
 
+displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+
 cmd = [JIM,'Expand_Shapes.exe "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded_Channel_1" -boundaryDist ', num2str(foregroundDist),' -backgroundDist ',num2str(backOuterDist),' -backInnerRadius ',num2str(backInnerDist)];
 system(cmd)
 
@@ -168,30 +171,22 @@ end
 
 %view detection
 figure('Name','Channel 1 Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
-detectedIm = imread([workingDir,'Expanded_Channel_1_ROIs.tif']);
-detectedIm = im2uint16(detectedIm)/1.5;
-
-backgroundIm = imread([workingDir,'Expanded_Channel_1_Background_Regions.tif']);
-backgroundIm = im2uint16(backgroundIm)/1.5;
-
-originalIm = imread([workingDir,'Aligned_aligned_full_mean_1.tiff']);
-originalIm = imadjust(originalIm);
-
-IMG1 = cat(3, originalIm,detectedIm,backgroundIm);
-imshow(IMG1);
+channel1Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_1.tiff']),displayMin,displayMax);
+channel1Im=min(max(channel1Im,0),1);
+channel2Im = rescale(imread([workingDir,'Expanded_Channel_1_ROIs.tif']));
+channel3Im = rescale(imread([workingDir,'Expanded_Channel_1_Background_Regions.tif']));
+combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+imshow(combinedImage);
+truesize([900 900]);
 
 figure('Name','Channel 2 Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
-detectedIm = imread([workingDir,'Expanded_Channel_2_ROIs.tif']);
-detectedIm = im2uint16(detectedIm)/1.5;
-
-backgroundIm = imread([workingDir,'Expanded_Channel_2_Background_Regions.tif']);
-backgroundIm = im2uint16(backgroundIm)/1.5;
-
-originalIm = imread([workingDir,'Aligned_initial_full_mean_2.tiff']);
-originalIm = imadjust(originalIm);
-
-IMG1 = cat(3, originalIm,detectedIm,backgroundIm);
-imshow(IMG1);
+channel1Im = rescale(imread([workingDir,'Aligned_initial_full_mean_2.tiff']),displayMin,displayMax);
+channel1Im=min(max(channel1Im,0),1);
+channel2Im = rescale(imread([workingDir,'Expanded_Channel_2_ROIs.tif']));
+channel3Im = rescale(imread([workingDir,'Expanded_Channel_2_Background_Regions.tif']));
+combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+imshow(combinedImage);
+truesize([900 900]);
 
 disp('Finished Expanding ROIs');
 
@@ -231,10 +226,10 @@ disp('Finished Generating Traces');
     traces=csvread([workingDir,'\Channel_1_Fluorescent_Intensities.csv'],1);
     traces2=csvread([workingDir,'\Channel_2_Fluorescent_Intensities.csv'],1);
     measures = csvread([workingDir,'\Detected_Filtered_Measurements.csv'],1);
-    numberIm = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
+    channel1Im = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
     figure('Name','Particle Numbers');
-    imshow(numberIm);
-
+    imshow(channel1Im);
+    truesize([900 900]);
     figure
     set(gcf, 'Position', [100, 100, 1500, 800])
 
@@ -265,7 +260,7 @@ pathName = uigetdir(); % open the dialog box to select the folder for batch file
 pathName=[pathName,'\'];
 
 %% 2) detect files to analyze
-filesInSubFolders = true; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 if filesInSubFolders
     allfiles = dir(pathName); % find everything in the input folder

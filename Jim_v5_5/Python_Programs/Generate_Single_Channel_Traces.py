@@ -1,3 +1,4 @@
+import datetime
 import sys
 import os
 import tkinter as tk
@@ -8,11 +9,11 @@ from tkinter import filedialog
 from PIL import Image, ImageMath
 
 
-sectionNumber = 2
+sectionNumber = 6
 # Sections
 # 1 - Select input file and create a folder for results
 # 2 - Drift Correct
-# 3 - Make a SubAverage of the Image Stack for Detection
+# 3 - Make a SubAverage of Frames for Detection
 # 4 - Detect Particles
 # 5 - Expand Regions
 # 6 - Calculate Traces
@@ -75,7 +76,7 @@ overwritePreviouslyAnalysed = True
 
 # ~~~~ Don't touch from here ~~~~ #
 pyfile = sys.argv[0]
-JIM = os.path.dirname(os.path.dirname(pyfile)) + "\\Jim_Programs\\"  
+JIM = os.path.dirname(os.path.dirname(pyfile)) + "\\Jim_Programs\\"
 #  Change if not running in original distribution folder e.g. JIM = "C:\\Users\\James\\Desktop\\Jim_v5\\Jim_Programs\\"
 
 if sectionNumber != 1 and sectionNumber != 8:
@@ -105,7 +106,7 @@ if sectionNumber == 1:
 # 2 - Drift Correct
 if sectionNumber == 2:
 
-    cmd = (JIM + "Align_Channels.exe \"" + workingDir + "Aligned\" \"" + completeName + "\" -Start " 
+    cmd = (JIM + "Align_Channels.exe \"" + workingDir + "Aligned\" \"" + completeName + "\" -Start "
            + str(alignStartFrame) + " -End " + str(alignEndFrame) + ' -Iterations '+str(iterations))
     os.system(cmd)
 
@@ -128,7 +129,7 @@ if sectionNumber == 3:
         maxProjectionString = " -MaxProjection"
 
     cmd = (JIM + "Mean_of_Frames.exe NULL \"" + workingDir + "Aligned_Drifts.csv\" \"" + workingDir + "Aligned\" \""
-           + completeName + "\" -Start " + str(detectionStartFrame) 
+           + completeName + "\" -Start " + str(detectionStartFrame)
            + " -End " + str(detectionEndFrame) + maxProjectionString)
     os.system(cmd)
 
@@ -144,7 +145,7 @@ if sectionNumber == 4:
 
     cmd = (JIM + 'Detect_Particles.exe \"' + workingDir + 'Aligned_Partial_Mean.tiff\" \"' + workingDir
            + 'Detected\" -BinarizeCutoff ' + str(cutoff) + ' -minLength ' + str(minLength) + ' -maxLength '
-           + str(maxLength) + ' -minCount ' + str(minCount) + ' -maxCount ' + str(maxCount) 
+           + str(maxLength) + ' -minCount ' + str(minCount) + ' -maxCount ' + str(maxCount)
            + ' -minEccentricity ' + str(minEccentricity)
            + ' -maxEccentricity ' + str(maxEccentricity) + ' -maxDistFromLinear ' + str(maxDistFromLinear)
            + ' -left ' + str(left) + ' -right ' + str(right) + ' -top ' + str(top) + ' -bottom ' + str(bottom))
@@ -201,10 +202,30 @@ if sectionNumber == 5:
 
 # 6 - Calculate Traces
 if sectionNumber == 6:
-    cmd = (JIM + 'Calculate_Traces.exe \"' + completeName + '\" \"' + workingDir + 'Expanded_ROI_Positions.csv\" \"' 
-           + workingDir + 'Expanded_Background_Positions.csv\" \"' + workingDir + 'Channel_1\" -Drift \"' 
+    cmd = (JIM + 'Calculate_Traces.exe \"' + completeName + '\" \"' + workingDir + 'Expanded_ROI_Positions.csv\" \"'
+           + workingDir + 'Expanded_Background_Positions.csv\" \"' + workingDir + 'Channel_1\" -Drift \"'
            + workingDir + 'Aligned_Drifts.csv\"')
     os.system(cmd)
+
+    variableString = ('Date, ' + str(datetime.date.today()) + '\n' +
+         'iterations,' + str(iterations) + '\nalignStartFrame,' + str(alignStartFrame) + '\nalignEndFrame,' +
+                      str(alignEndFrame) + '\n' +
+         'useMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + str(detectionStartFrame) +
+                      '\ndetectionEndFrame,' + str(detectionEndFrame) + '\n' +
+         'cutoff,' + str(cutoff) + '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(top) +
+                      '\nbottom,' + str(bottom) + '\n' +
+        'minCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) + '\nminEccentricity,' +
+                      str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) + '\n' +
+        'minLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) + '\nmaxDistFromLinear,' +
+                      str(maxDistFromLinear) + '\n' +
+        'foregroundDist,' + str(foregroundDist) + '\nbackInnerDist,' + str(backInnerDist) + '\nbackOuterDist,' +
+                      str(backOuterDist) + '\nverboseOutput,' + str(int(verboseOutput)))
+
+    saveVariablesFile = open(workingDir + "\\Trace_Generation_Variables.csv", "w")
+    saveVariablesFile.write(variableString)
+    saveVariablesFile.close()
+
+
 
 # 7 - View Traces
 if sectionNumber == 7:
@@ -298,5 +319,27 @@ if sectionNumber == 9:
                + workingDir + 'Expanded_Background_Positions.csv\" \"' + workingDir + 'Channel_1\" -Drift \"'
                + workingDir + 'Aligned_Drifts.csv\"')
         os.system(cmd)
+
+        variableString = ('Date, ' + str(datetime.date.today()) + '\n' +
+                          'iterations,' + str(iterations) + '\nalignStartFrame,' + str(
+                    alignStartFrame) + '\nalignEndFrame,' +
+                          str(alignEndFrame) + '\n' +
+                          'useMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + str(
+                    detectionStartFrame) +
+                          '\ndetectionEndFrame,' + str(detectionEndFrame) + '\n' +
+                          'cutoff,' + str(cutoff) + '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(
+                    top) +
+                          '\nbottom,' + str(bottom) + '\n' +
+                          'minCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) + '\nminEccentricity,' +
+                          str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) + '\n' +
+                          'minLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) + '\nmaxDistFromLinear,' +
+                          str(maxDistFromLinear) + '\n' +
+                          'foregroundDist,' + str(foregroundDist) + '\nbackInnerDist,' + str(
+                    backInnerDist) + '\nbackOuterDist,' +
+                          str(backOuterDist) + '\nverboseOutput,' + str(int(verboseOutput)))
+
+        saveVariablesFile = open(workingDir + "\\Trace_Generation_Variables.csv", "w")
+        saveVariablesFile.write(variableString)
+        saveVariablesFile.close()
 
     print('Batch Analysis Completed')
