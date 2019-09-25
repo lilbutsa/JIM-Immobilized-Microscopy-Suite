@@ -177,7 +177,7 @@ system(cmd)
 %% 8) Make kymographs
 kymdir = [workingdir,'\Kymographs\'];
 mkdir(kymdir);
-cmd = [JIM,'Make_Kymographs.exe "',workingdir,'Channel_1_Flourescent_Intensities.csv" "',workingdir,'Channel_1_Flourescent_Backgrounds.csv" "',workingdir,'Expanded_ROI_Positions.csv" "',kymdir,'Kymograph"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+cmd = [JIM,'Make_Kymographs.exe "',workingdir,'Channel_1_Fluorescent_Intensities.csv" "',workingdir,'Channel_1_Fluorescent_Backgrounds.csv" "',workingdir,'Expanded_ROI_Positions.csv" "',kymdir,'Kymograph"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
 %% Continue from here for batch processing
 %
@@ -255,7 +255,7 @@ parfor i=1:filenum(1)
     system(cmd)
     kymdir = [workingdir,'\Kymographs\'];
     mkdir(kymdir);
-    cmd = [JIM,'Make_Kymographs.exe "',workingdir,'Channel_1_Flourescent_Intensities.csv" "',workingdir,'Channel_1_Flourescent_Backgrounds.csv" "',workingdir,'Expanded_ROI_Positions.csv" "',kymdir,'Kymograph"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+    cmd = [JIM,'Make_Kymographs.exe "',workingdir,'Channel_1_Fluorescent_Intensities.csv" "',workingdir,'Channel_1_Fluorescent_Backgrounds.csv" "',workingdir,'Expanded_ROI_Positions.csv" "',kymdir,'Kymograph"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
     system(cmd)
 end
 

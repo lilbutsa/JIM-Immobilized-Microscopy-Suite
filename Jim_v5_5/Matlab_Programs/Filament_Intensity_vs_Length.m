@@ -19,16 +19,16 @@ if insubfolders
         innerfolder(~[innerfolder.isdir]) = [];
         innerfolder=innerfolder(3:end);
         for j=1:size(innerfolder,1)
-            if size(dir([pathname,allfiles(i).name,'\',innerfolder(j).name,'\Channel_1_Flourescent_Intensities.csv']),1)==1
-                channel1 = [channel1 [pathname,allfiles(i).name,'\',innerfolder(j).name,'\Channel_1_Flourescent_Intensities.csv']];
+            if size(dir([pathname,allfiles(i).name,'\',innerfolder(j).name,'\Channel_1_Fluorescent_Intensities.csv']),1)==1
+                channel1 = [channel1 [pathname,allfiles(i).name,'\',innerfolder(j).name,'\Channel_1_Fluorescent_Intensities.csv']];
                 measurements = [measurements [pathname,allfiles(i).name,'\',innerfolder(j).name,'\Detected_Filtered_Measurements.csv']];
             end
         end
     end
 else
     for i=1:size(allfiles,1)
-        if size(dir([pathname,allfiles(i).name,'\Channel_1_Flourescent_Intensities.csv']),1)==1
-            channel1 = [channel1 [pathname,allfiles(i).name,'\Channel_1_Flourescent_Intensities.csv']];
+        if size(dir([pathname,allfiles(i).name,'\Channel_1_Fluorescent_Intensities.csv']),1)==1
+            channel1 = [channel1 [pathname,allfiles(i).name,'\Channel_1_Fluorescent_Intensities.csv']];
             measurements = [measurements [pathname,allfiles(i).name,'\Detected_Filtered_Measurements.csv']];
         end 
     end
@@ -48,7 +48,7 @@ for i=1:numofexps
     meantrace = [meantrace;mean(traces,2)./SingleMolPhotoBleaching];
     
     d1 = csvread(measurements{i},1);
-    lengths = [lengths;2.*d1(:,4).*umperpixel];
+    lengths = [lengths;d1(:,4).*umperpixel];
 end
 
 %%

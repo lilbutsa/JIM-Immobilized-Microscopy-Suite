@@ -9,7 +9,7 @@ workingdir = [pathname,name];
 [~,name,~] = fileparts(workingdir);%also remove the .ome if it exists or any other full stops
 workingdir = [pathname,name,'\'];
 
-tracefile = [workingdir ,'\Channel_1_Flourescent_Intensities.csv'];
+tracefile = [workingdir ,'\Channel_1_Fluorescent_Intensities.csv'];
 
 %% 3) Extract Traces
 
