@@ -4,9 +4,9 @@ clear
 JIM = [fileparts(jimPath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [fileName,pathName] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
 
-colour1 = [1 0 0];
-colour2 = [0 1 0];
-colour3 = [0 0 1];
+overlayColour1 = [1, 0, 0];
+overlayColour2 = [0, 1, 0];
+overlayColour3 = [0, 0, 1];
 
 completeName = [pathName,fileName];
 [~,name,~] = fileparts(completeName);%get the name of the tiff image excluding the .tiff extension
@@ -92,7 +92,7 @@ channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin
 channel1Im=min(max(channel1Im,0),1);
 channel2Im = rescale(imread([workingDir,'Detected_Regions.tif']));
 channel3Im = rescale(imread([workingDir,'Detected_Filtered_Regions.tif']));
-combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 imshow(combinedImage)
 truesize([900 900]);
 disp('Finish detecting particles');
@@ -114,7 +114,7 @@ channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin
 channel1Im=min(max(channel1Im,0),1);
 channel2Im = rescale(imread([workingDir,'Expanded_Channel_1_ROIs.tif']));
 channel3Im = rescale(imread([workingDir,'Expanded_Channel_1_Background_Regions.tif']));
-combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 imshow(combinedImage);
 truesize([900 900]);
 

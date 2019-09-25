@@ -5,11 +5,12 @@ import tkinter as tk
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import csv
+import numpy as np
 from tkinter import filedialog
-from PIL import Image, ImageMath
+from PIL import Image
 
 
-sectionNumber = 6
+sectionNumber = 9
 # Sections
 # 1 - Select input file and create a folder for results
 # 2 - Drift Correct
@@ -22,6 +23,14 @@ sectionNumber = 6
 # 9 - Batch Analyse
 
 # ~~~~PARAMETER INPUTS~~~~ #
+# 1 - General Parameters
+overlayColours1 = [1, 0, 0]
+overlayColours2 = [0, 1, 0]
+overlayColours3 = [0, 0, 1]
+
+displayMin = 0
+displayMax = 2
+
 
 # 2 - Drift Correct Parameters
 iterations = 3
@@ -65,10 +74,10 @@ backOuterDist = 20  # Distance to dilate beyond the ROI to measure the local bac
 verboseOutput = False
 
 # 7 - View Traces Parameter
-pageNumber = 3
+pageNumber = 1
 
 # 8 - Detect files for batch
-filesInSubFolders = True
+filesInSubFolders = False
 
 # 9 - Batch Analysis
 overwritePreviouslyAnalysed = True
@@ -146,30 +155,19 @@ if sectionNumber == 4:
     cmd = (JIM + 'Detect_Particles.exe \"' + workingDir + 'Aligned_Partial_Mean.tiff\" \"' + workingDir
            + 'Detected\" -BinarizeCutoff ' + str(cutoff) + ' -minLength ' + str(minLength) + ' -maxLength '
            + str(maxLength) + ' -minCount ' + str(minCount) + ' -maxCount ' + str(maxCount)
-           + ' -minEccentricity ' + str(minEccentricity)
-           + ' -maxEccentricity ' + str(maxEccentricity) + ' -maxDistFromLinear ' + str(maxDistFromLinear)
+           + ' -minEccentricity ' + str(minEccentricity)+ ' -maxEccentricity ' + str(maxEccentricity)
+           + ' -maxDistFromLinear ' + str(maxDistFromLinear)
            + ' -left ' + str(left) + ' -right ' + str(right) + ' -top ' + str(top) + ' -bottom ' + str(bottom))
     os.system(cmd)
 
-    imName = workingDir+"Detected_Regions.tif"
-    im1 = Image.open(imName)
-    im1 = im1.convert("I")
-    (minIm, maxIm) = im1.getextrema()
-    im2 = ImageMath.eval("128*(a-c) / (b-c)", a=im1, b=maxIm, c=minIm)
-    imName = workingDir+"Detected_Filtered_Regions.tif"
-    im1 = Image.open(imName)
-    im1 = im1.convert("I")
-    (minIm, maxIm) = im1.getextrema()
-    im3 = ImageMath.eval("128*(a-c) / (b-c)", a=im1, b=maxIm, c=minIm)
-    imName = workingDir+"Aligned_Partial_Mean.tiff"
-    im1 = Image.open(imName)
-    im1 = im1.convert("I")
-    (minIm, maxIm) = im1.getextrema()
-    im1 = ImageMath.eval("2560*(a-c) / (b-c)-400", a=im1, b=maxIm, c=minIm)
-
-    imOut = Image.merge("RGB", (im1.convert("L"), im2.convert("L"), im3.convert("L")))
-    plt.figure('Detected Particles')
-    imPlot = plt.imshow(imOut, cmap="gray")
+    channel1Im = np.array(Image.open(workingDir+"Aligned_Partial_Mean.tiff")).astype(float)
+    channel1Im = np.clip(255*(displayMax-displayMin)*(channel1Im - np.min(channel1Im)) / np.ptp(channel1Im)-displayMin, 0, 255)
+    channel2Im = np.array(Image.open(workingDir + "Detected_Regions.tif"))
+    channel3Im = np.array(Image.open(workingDir + "Detected_Filtered_Regions.tif"))
+    combinedImage = (np.dstack((overlayColours1[0]*channel1Im + overlayColours2[0]*channel2Im + overlayColours3[0]*channel3Im,
+                                overlayColours1[1]*channel1Im + overlayColours2[1]*channel2Im + overlayColours3[1]*channel3Im,
+                                overlayColours1[2]*channel1Im + overlayColours2[2]*channel2Im + overlayColours3[2]*channel3Im))).astype(np.uint8)
+    imPlot = plt.imshow(combinedImage)
     plt.show()
 
 
@@ -180,46 +178,38 @@ if sectionNumber == 5:
            + str(foregroundDist) + ' -backgroundDist ' + str(backOuterDist) + ' -backInnerRadius '+str(backInnerDist))
     os.system(cmd)
 
-    imName = workingDir+"Expanded_ROIs.tif"
-    im1 = Image.open(imName)
-    im1 = im1.convert("I")
-    (minIm, maxIm) = im1.getextrema()
-    im2 = ImageMath.eval("128*(a-c) / (b-c)", a=im1, b=maxIm, c=minIm)
-    imName = workingDir+"Expanded_Background_Regions.tif"
-    im1 = Image.open(imName)
-    im1 = im1.convert("I")
-    (minIm, maxIm) = im1.getextrema()
-    im3 = ImageMath.eval("128*(a-c) / (b-c)", a=im1, b=maxIm, c=minIm)
-    imName = workingDir+"Aligned_Partial_Mean.tiff"
-    im1 = Image.open(imName)
-    im1 = im1.convert("I")
-    (minIm, maxIm) = im1.getextrema()
-    im1 = ImageMath.eval("2560*(a-c) / (b-c)-400", a=im1, b=maxIm, c=minIm)
-    imOut = Image.merge("RGB", (im1.convert("L"), im2.convert("L"), im3.convert("L")))
-    plt.figure('Detected Particles')
-    imPlot = plt.imshow(imOut, cmap="gray")
+    channel1Im = np.array(Image.open(workingDir+"Aligned_Partial_Mean.tiff")).astype(float)
+    channel1Im = np.clip(255*(displayMax-displayMin)*(channel1Im - np.min(channel1Im)) / np.ptp(channel1Im)-displayMin, 0, 255)
+    channel2Im = np.array(Image.open(workingDir + "Expanded_ROIs.tif"))
+    channel3Im = np.array(Image.open(workingDir + "Expanded_Background_Regions.tif"))
+    combinedImage = (np.dstack((overlayColours1[0]*channel1Im + overlayColours2[0]*channel2Im + overlayColours3[0]*channel3Im,
+                                overlayColours1[1]*channel1Im + overlayColours2[1]*channel2Im + overlayColours3[1]*channel3Im,
+                                overlayColours1[2]*channel1Im + overlayColours2[2]*channel2Im + overlayColours3[2]*channel3Im))).astype(np.uint8)
+    imPlot = plt.imshow(combinedImage)
     plt.show()
 
 # 6 - Calculate Traces
 if sectionNumber == 6:
+    verboseString = ''
+    if verboseOutput:
+        verboseString = ' -Verbose'
+
     cmd = (JIM + 'Calculate_Traces.exe \"' + completeName + '\" \"' + workingDir + 'Expanded_ROI_Positions.csv\" \"'
            + workingDir + 'Expanded_Background_Positions.csv\" \"' + workingDir + 'Channel_1\" -Drift \"'
-           + workingDir + 'Aligned_Drifts.csv\"')
+           + workingDir + 'Aligned_Drifts.csv\"'+verboseString)
     os.system(cmd)
 
-    variableString = ('Date, ' + str(datetime.date.today()) + '\n' +
-         'iterations,' + str(iterations) + '\nalignStartFrame,' + str(alignStartFrame) + '\nalignEndFrame,' +
-                      str(alignEndFrame) + '\n' +
-         'useMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + str(detectionStartFrame) +
-                      '\ndetectionEndFrame,' + str(detectionEndFrame) + '\n' +
-         'cutoff,' + str(cutoff) + '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(top) +
-                      '\nbottom,' + str(bottom) + '\n' +
-        'minCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) + '\nminEccentricity,' +
-                      str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) + '\n' +
-        'minLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) + '\nmaxDistFromLinear,' +
-                      str(maxDistFromLinear) + '\n' +
-        'foregroundDist,' + str(foregroundDist) + '\nbackInnerDist,' + str(backInnerDist) + '\nbackOuterDist,' +
-                      str(backOuterDist) + '\nverboseOutput,' + str(int(verboseOutput)))
+    variableString = ('Date, ' + str(datetime.date.today()) + '\niterations,' + str(iterations) +
+                      '\nalignStartFrame,' + str(alignStartFrame) + '\nalignEndFrame,' + str(alignEndFrame) +
+                      '\nuseMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + str(detectionStartFrame) +
+                      '\ndetectionEndFrame,' + str(detectionEndFrame) + '\ncutoff,' + str(cutoff) +
+                      '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(top) + '\nbottom,' + str(bottom) +
+                      '\nminCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) +
+                      '\nminEccentricity,' +str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) +
+                      '\nminLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) +
+                      '\nmaxDistFromLinear,' + str(maxDistFromLinear) + '\nforegroundDist,' + str(foregroundDist) +
+                      '\nbackInnerDist,' + str(backInnerDist) + '\nbackOuterDist,' + str(backOuterDist) +
+                      '\nverboseOutput,' + str(int(verboseOutput)))
 
     saveVariablesFile = open(workingDir + "\\Trace_Generation_Variables.csv", "w")
     saveVariablesFile.write(variableString)
@@ -243,7 +233,8 @@ if sectionNumber == 7:
     for i in range(1, 37):
         if len(data) > i+(pageNumber-1)*36:
             plt.subplot(6, 6, i)
-            plt.plot(data[i+(pageNumber-1)*36-1])
+            plt.plot(data[i+(pageNumber-1)*36])
+            plt.plot(plt.xlim(), [0, 0], color='black')
             xpos = round(float(measurements[i+(pageNumber-1)*36][0]))
             ypos = round(float(measurements[i+(pageNumber-1)*36][1]))
             plt.title('Particle '+str(i+(pageNumber-1)*36)+' x '+str(xpos)+' y '+str(ypos))
@@ -289,6 +280,11 @@ if sectionNumber == 9:
         completeName = filein[0]
         print('Analysing file '+completeName)
         workingDir = os.path.dirname(completeName) + "\\" + str(os.path.basename(completeName).split(".", 1)[0]) + "\\"
+
+        if os.path.isfile(workingDir + "Channel_1_Fluorescent_Intensities.csv"):
+            print('Skipping '+ completeName + ' - Analysis already exists')
+            continue
+
         if not os.path.isdir(workingDir):
             os.makedirs(workingDir)
 
@@ -304,8 +300,8 @@ if sectionNumber == 9:
         cmd = (JIM + 'Detect_Particles.exe \"' + workingDir + 'Aligned_Partial_Mean.tiff\" \"' + workingDir
                + 'Detected\" -BinarizeCutoff ' + str(cutoff) + ' -minLength ' + str(minLength) + ' -maxLength '
                + str(maxLength) + ' -minCount ' + str(minCount) + ' -maxCount ' + str(maxCount)
-               + ' -minEccentricity ' + str(minEccentricity)
-               + ' -maxEccentricity ' + str(maxEccentricity) + ' -maxDistFromLinear ' + str(maxDistFromLinear)
+               + ' -minEccentricity ' + str(minEccentricity) + ' -maxEccentricity ' + str(maxEccentricity)
+               + ' -maxDistFromLinear ' + str(maxDistFromLinear)
                + ' -left ' + str(left) + ' -right ' + str(right) + ' -top ' + str(top) + ' -bottom ' + str(bottom))
         os.system(cmd)
 
@@ -320,23 +316,17 @@ if sectionNumber == 9:
                + workingDir + 'Aligned_Drifts.csv\"')
         os.system(cmd)
 
-        variableString = ('Date, ' + str(datetime.date.today()) + '\n' +
-                          'iterations,' + str(iterations) + '\nalignStartFrame,' + str(
-                    alignStartFrame) + '\nalignEndFrame,' +
-                          str(alignEndFrame) + '\n' +
-                          'useMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + str(
-                    detectionStartFrame) +
-                          '\ndetectionEndFrame,' + str(detectionEndFrame) + '\n' +
-                          'cutoff,' + str(cutoff) + '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(
-                    top) +
-                          '\nbottom,' + str(bottom) + '\n' +
-                          'minCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) + '\nminEccentricity,' +
-                          str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) + '\n' +
-                          'minLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) + '\nmaxDistFromLinear,' +
-                          str(maxDistFromLinear) + '\n' +
-                          'foregroundDist,' + str(foregroundDist) + '\nbackInnerDist,' + str(
-                    backInnerDist) + '\nbackOuterDist,' +
-                          str(backOuterDist) + '\nverboseOutput,' + str(int(verboseOutput)))
+        variableString = ('Date, ' + str(datetime.date.today()) + '\niterations,' + str(iterations) +
+                          '\nalignStartFrame,' + str(alignStartFrame) + '\nalignEndFrame,' + str(alignEndFrame) +
+                          '\nuseMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + str(detectionStartFrame) +
+                          '\ndetectionEndFrame,' + str(detectionEndFrame) + '\ncutoff,' + str(cutoff) +
+                          '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(top) + '\nbottom,' + str(bottom) +
+                          '\nminCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) +
+                          '\nminEccentricity,' + str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) +
+                          '\nminLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) +
+                          '\nmaxDistFromLinear,' + str(maxDistFromLinear) + '\nforegroundDist,' + str(foregroundDist) +
+                          '\nbackInnerDist,' + str(backInnerDist) + '\nbackOuterDist,' + str(backOuterDist) +
+                          '\nverboseOutput,' + str(int(verboseOutput)))
 
         saveVariablesFile = open(workingDir + "\\Trace_Generation_Variables.csv", "w")
         saveVariablesFile.write(variableString)

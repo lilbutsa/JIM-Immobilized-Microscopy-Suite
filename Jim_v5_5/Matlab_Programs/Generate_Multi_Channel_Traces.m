@@ -4,9 +4,9 @@ clear
 JIM = [fileparts(jimPath),'\Jim_Programs\'];%Convert to the file path for the C++ Jim Programs
 [fileName,pathName] = uigetfile('*','Select the Image file');%Open the Dialog box to select the initial file to analyze
 
-colour1 = [1 0 0];
-colour2 = [0 1 0];
-colour3 = [0 0 1];
+overlayColour1 = [1, 0, 0];
+overlayColour2 = [0, 1, 0];
+overlayColour3 = [0, 0, 1];
 
 completeName = [pathName,fileName];
 [~,name,~] = fileparts(completeName);%get the name of the tiff image excluding the .tiff extension
@@ -70,7 +70,7 @@ else
     channel1Im = rescale(imread([workingDir,'Aligned_initial_partial_mean_1.tiff']));
     channel2Im = rescale(imread([workingDir,'Aligned_initial_partial_mean_2.tiff']));
 end
-combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im,colour1(2).*channel1Im+colour2(2).*channel2Im,colour1(3).*channel1Im+colour2(3).*channel2Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im);
 figure('Name','Before Drift Correction and Alignment')
 imshow(combinedImage);
 truesize([900 900]);
@@ -79,7 +79,7 @@ truesize([900 900]);
 %view alignment after
 channel1Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_1.tiff']));
 channel2Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_2.tiff']));
-combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im,colour1(2).*channel1Im+colour2(2).*channel2Im,colour1(3).*channel1Im+colour2(3).*channel2Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im);
 figure('Name','After Drift Correction and Alignment')
 imshow(combinedImage);
 truesize([900 900]);
@@ -143,7 +143,7 @@ channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin
 channel1Im=min(max(channel1Im,0),1);
 channel2Im = rescale(imread([workingDir,'Detected_Regions.tif']));
 channel3Im = rescale(imread([workingDir,'Detected_Filtered_Regions.tif']));
-combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 imshow(combinedImage)
 truesize([900 900]);
 disp('Finish detecting particles');
@@ -175,7 +175,7 @@ channel1Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_1.tiff']),dis
 channel1Im=min(max(channel1Im,0),1);
 channel2Im = rescale(imread([workingDir,'Expanded_Channel_1_ROIs.tif']));
 channel3Im = rescale(imread([workingDir,'Expanded_Channel_1_Background_Regions.tif']));
-combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 imshow(combinedImage);
 truesize([900 900]);
 
@@ -184,7 +184,7 @@ channel1Im = rescale(imread([workingDir,'Aligned_initial_full_mean_2.tiff']),dis
 channel1Im=min(max(channel1Im,0),1);
 channel2Im = rescale(imread([workingDir,'Expanded_Channel_2_ROIs.tif']));
 channel3Im = rescale(imread([workingDir,'Expanded_Channel_2_Background_Regions.tif']));
-combinedImage = cat(3, colour1(1).*channel1Im+colour2(1).*channel2Im+colour3(1).*channel3Im,colour1(2).*channel1Im+colour2(2).*channel2Im+colour3(2).*channel3Im,colour1(3).*channel1Im+colour2(3).*channel2Im+colour3(3).*channel3Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 imshow(combinedImage);
 truesize([900 900]);
 
@@ -205,15 +205,15 @@ for j = 2:numberOfChannels
     system(cmd)
 end
 
-variableString = ['Date, ', datestr(datetime('today')),'\n'...
-     ,'useMetadataFile,',num2str(useMetadataFile),'\nnumberOfChannels,', num2str(numberOfChannels),'\n'...
-    ,'iterations,',num2str(iterations),'\nalignStartFrame,', num2str(alignStartFrame),'\nalignEndFrame,', num2str(alignEndFrame),'\n'...
-    ,'rotationAngle,',num2str(rotationAngle),'\nscalingFactor,', num2str(scalingFactor),'\nxoffset,', num2str(xoffset),'\nyoffset,', num2str(yoffset),'\n'...
-    ,'useMaxProjection,',num2str(useMaxProjection),'\ndetectionStartFrame,', num2str(detectionStartFrame),'\ndetectionEndFrame,', num2str(detectionEndFrame),'\n'...
-    ,'cutoff,',num2str(cutoff),'\nleft,', num2str(left),'\nright,', num2str(right),'\ntop,', num2str(top),'\nbottom,', num2str(bottom),'\n'...
-    ,'minCount,',num2str(minCount),'\nmaxCount,', num2str(maxCount),'\nminEccentricity,', num2str(minEccentricity),'\nmaxEccentricity,', num2str(maxEccentricity),'\n'...
-    ,'minLength,',num2str(minLength),'\nmaxLength,', num2str(maxLength),'\nmaxDistFromLinear,', num2str(maxDistFromLinear),'\n'...
-    ,'foregroundDist,',num2str(foregroundDist),'\nbackInnerDist,', num2str(backInnerDist),'\nbackOuterDist,', num2str(backOuterDist),'\nverboseOutput,', num2str(verboseOutput)];
+variableString = ['Date, ', datestr(datetime('today'))...
+    ,'\nuseMetadataFile,',num2str(useMetadataFile),'\nnumberOfChannels,', num2str(numberOfChannels)...
+    ,'\niterations,',num2str(iterations),'\nalignStartFrame,', num2str(alignStartFrame),'\nalignEndFrame,', num2str(alignEndFrame)...
+    ,'\nmanualAlignment,',num2str(manualAlignment),'\nrotationAngle,',num2str(rotationAngle),'\nscalingFactor,', num2str(scalingFactor),'\nxoffset,', num2str(xoffset),'\nyoffset,', num2str(yoffset)...
+    ,'\nuseMaxProjection,',num2str(useMaxProjection),'\ndetectionStartFrame,', num2str(detectionStartFrame),'\ndetectionEndFrame,', num2str(detectionEndFrame)...
+    ,'\ncutoff,',num2str(cutoff),'\nleft,', num2str(left),'\nright,', num2str(right),'\ntop,', num2str(top),'\nbottom,', num2str(bottom)...
+    ,'\nminCount,',num2str(minCount),'\nmaxCount,', num2str(maxCount),'\nminEccentricity,', num2str(minEccentricity),'\nmaxEccentricity,', num2str(maxEccentricity)...
+    ,'\nminLength,',num2str(minLength),'\nmaxLength,', num2str(maxLength),'\nmaxDistFromLinear,', num2str(maxDistFromLinear)...
+    ,'\nforegroundDist,',num2str(foregroundDist),'\nbackInnerDist,', num2str(backInnerDist),'\nbackOuterDist,', num2str(backOuterDist),'\nverboseOutput,', num2str(verboseOutput)];
 
 fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
 fprintf(fileID, variableString);
@@ -240,7 +240,7 @@ disp('Finished Generating Traces');
         title(['Particle ' num2str(i+36*(pageNumber-1)) ' x ' num2str(round(measures(i+36*(pageNumber-1),1))) ' y ' num2str(round(measures(i+36*(pageNumber-1),2)))])
         plot(traces(i+36*(pageNumber-1),:),'-r');
         plot(traces2(i+36*(pageNumber-1),:),'-b');
-        plot([0 size(traces(i+36*(pageNumber-1),:),2)],[0 0] ,'-b');
+        plot([0 size(traces(i+36*(pageNumber-1),:),2)],[0 0] ,'-black');
         xlim([0 size(traces(i+36*(pageNumber-1),:),2)])
         hold off
         end
