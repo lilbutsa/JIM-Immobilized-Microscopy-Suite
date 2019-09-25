@@ -13,8 +13,10 @@ completeName = [pathName,fileName];
 workingDir = [pathName,name];
 [~,name,~] = fileparts(workingDir);%also remove the .ome if it exists or any other full stops
 workingDir = [pathName,name,'\'];
-mkdir(workingDir);%make a subfolder with that name
 
+if ~exist(workingdir, 'dir')
+   mkdir(workingdir)%make a subfolder with that name
+end
 %% 2) Split File into individual channels 
 useMetadataFile = false; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
 numberOfChannels = 2;
@@ -254,13 +256,14 @@ disp('Finished Generating Traces');
 %
 %
 %
+%% 11) Detect files for batch
+filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+
+
 [jimPath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename); % Find the location of this script again in case the user is just running batch (should be in Jim\Matlab_Programs)
 JIM = [fileparts(jimPath),'\Jim_Programs\'];
 pathName = uigetdir(); % open the dialog box to select the folder for batch files
 pathName=[pathName,'\'];
-
-%% 2) detect files to analyze
-filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 if filesInSubFolders
     allfiles = dir(pathName); % find everything in the input folder
@@ -278,7 +281,7 @@ else
 end
 disp(['There are ',num2str(filenum),' files to analyse']);
 
-%% Batch Sum Multi
+%% 12) Batch Analyse
 overwritePreviouslyAnalysed = true;
 
 parfor i=1:filenum(1)
@@ -289,7 +292,10 @@ parfor i=1:filenum(1)
     workingDir = [pathNamein,'\',name];
     [pathNamein,name,~] = fileparts(workingDir);
     workingDir = [pathNamein,'\',name,'\'];
-    mkdir(workingDir);%make a subfolder with that name
+    
+    if ~exist(workingdir, 'dir')
+        mkdir(workingdir)%make a subfolder with that name
+    end
     
     if (exist([workingDir,'Channel_1_Fluorescent_Intensities.csv'],'file')==2 && exist([workingDir,'Channel_2_Fluorescent_Intensities.csv'],'file')==2 && overwritePreviouslyAnalysed==false)
         disp(['Skipping ',completeName,' - Analysis already exists']);

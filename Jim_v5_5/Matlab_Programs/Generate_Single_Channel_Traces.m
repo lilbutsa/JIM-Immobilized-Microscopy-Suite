@@ -13,7 +13,10 @@ completeName = [pathName,fileName];
 workingDir = [pathName,name];
 [~,name,~] = fileparts(workingDir);%also remove the .ome if it exists or any other full stops
 workingDir = [pathName,name,'\'];
-mkdir(workingDir);%make a subfolder with that name
+
+if ~exist(workingdir, 'dir')
+   mkdir(workingdir)%make a subfolder with that name
+end
 %% 2) Calculate Drifts
 iterations = 3;
 
@@ -208,7 +211,9 @@ parfor i=1:NumberOfFiles(1)
     workingDir = [fileNamein,'\',name];
     [fileNamein,name,~] = fileparts(workingDir);
     workingDir = [fileNamein,'\',name,'\'];
-    mkdir(workingDir);%make a subfolder with that name
+    if ~exist(workingdir, 'dir')
+        mkdir(workingdir)%make a subfolder with that name
+    end
 
     if (exist([workingDir,'Channel_1_Fluorescent_Intensities.csv'],'file')==2 && overwritePreviouslyAnalysed==false)
         disp(['Skipping ',completeName,' - Analysis already exists']);
