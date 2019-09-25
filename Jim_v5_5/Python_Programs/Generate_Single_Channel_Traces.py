@@ -10,7 +10,7 @@ from tkinter import filedialog
 from PIL import Image
 
 
-sectionNumber = 9
+sectionNumber = 1
 # Sections
 # 1 - Select input file and create a folder for results
 # 2 - Drift Correct
