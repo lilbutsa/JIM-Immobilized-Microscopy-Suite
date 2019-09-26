@@ -1,0 +1,23 @@
+Date, 2019-09-26
+iterations,1.00
+alignStartFrame,5.00
+alignEndFrame,5.00
+useMaxProjection,0.00
+detectionStartFrame,1.00
+detectionEndFrame,25.00
+cutoff,0.50
+left,25.00
+right,25.00
+top,25.00
+bottom,25.00
+minCount,0.00
+maxCount,10000.00
+minEccentricity,-0.10
+maxEccentricity,1.10
+minLength,0.00
+maxLength,10000.00
+maxDistFromLinear,10000.00
+foregroundDist,4.10
+backInnerDist,4.10
+backOuterDist,20.00
+verboseOutput,0.00

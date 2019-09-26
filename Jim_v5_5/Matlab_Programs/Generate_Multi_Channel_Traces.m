@@ -365,6 +365,10 @@ parfor i=1:filenum(1)
         cmd = [JIM,'Calculate_Traces.exe "',workingDir,'Images_Channel_',num2str(j),'.tiff" "',workingDir,'Expanded_Channel_',num2str(j),'_ROI_Positions.csv" "',workingDir,'Expanded_Channel_',num2str(j),'_Background_Positions.csv" "',workingDir,'Channel_',num2str(j),'" -Drifts "',workingDir,'Detected_Drifts_Channel_',num2str(j),'.csv"',verboseString];
         system(cmd)
     end
+    
+    fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
+    fprintf(fileID, variableString);
+    fclose(fileID);
 end
 
 disp('Batch Process Completed');

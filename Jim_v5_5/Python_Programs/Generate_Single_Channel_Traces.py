@@ -211,7 +211,7 @@ if sectionNumber == 6:
                       '\nbackInnerDist,' + str(backInnerDist) + '\nbackOuterDist,' + str(backOuterDist) +
                       '\nverboseOutput,' + str(int(verboseOutput)))
 
-    saveVariablesFile = open(workingDir + "\\Trace_Generation_Variables.csv", "w")
+    saveVariablesFile = open(workingDir + "Trace_Generation_Variables.csv", "w")
     saveVariablesFile.write(variableString)
     saveVariablesFile.close()
 
