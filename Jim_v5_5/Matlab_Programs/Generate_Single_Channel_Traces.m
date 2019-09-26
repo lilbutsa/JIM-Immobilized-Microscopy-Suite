@@ -14,8 +14,8 @@ workingDir = [pathName,name];
 [~,name,~] = fileparts(workingDir);%also remove the .ome if it exists or any other full stops
 workingDir = [pathName,name,'\'];
 
-if ~exist(workingdir, 'dir')
-   mkdir(workingdir)%make a subfolder with that name
+if ~exist(workingDir, 'dir')
+   mkdir(workingDir)%make a subfolder with that name
 end
 %% 2) Calculate Drifts
 iterations = 3;
@@ -115,8 +115,8 @@ system(cmd)
 figure('Name','Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
 channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin,displayMax);
 channel1Im=min(max(channel1Im,0),1);
-channel2Im = rescale(imread([workingDir,'Expanded_Channel_1_ROIs.tif']));
-channel3Im = rescale(imread([workingDir,'Expanded_Channel_1_Background_Regions.tif']));
+channel2Im = rescale(imread([workingDir,'Expanded_Channel_ROIs.tif']));
+channel3Im = rescale(imread([workingDir,'Expanded_Channel_Background_Regions.tif']));
 combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 imshow(combinedImage);
 truesize([900 900]);

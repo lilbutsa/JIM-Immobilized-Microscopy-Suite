@@ -14,8 +14,8 @@ workingDir = [pathName,name];
 [~,name,~] = fileparts(workingDir);%also remove the .ome if it exists or any other full stops
 workingDir = [pathName,name,'\'];
 
-if ~exist(workingdir, 'dir')
-   mkdir(workingdir)%make a subfolder with that name
+if ~exist(workingDir, 'dir')
+   mkdir(workingDir)%make a subfolder with that name
 end
 %% 2) Split File into individual channels 
 useMetadataFile = false; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
