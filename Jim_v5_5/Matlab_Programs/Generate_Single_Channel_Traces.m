@@ -115,8 +115,8 @@ system(cmd)
 figure('Name','Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
 channel1Im = rescale(imread([workingDir,'Aligned_Partial_Mean.tiff']),displayMin,displayMax);
 channel1Im=min(max(channel1Im,0),1);
-channel2Im = rescale(imread([workingDir,'Expanded_Channel_ROIs.tif']));
-channel3Im = rescale(imread([workingDir,'Expanded_Channel_Background_Regions.tif']));
+channel2Im = rescale(imread([workingDir,'Expanded_ROIs.tif']));
+channel3Im = rescale(imread([workingDir,'Expanded_Background_Regions.tif']));
 combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 imshow(combinedImage);
 truesize([900 900]);
