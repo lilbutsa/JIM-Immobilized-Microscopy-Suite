@@ -147,8 +147,8 @@ fclose(fileID);
 %% 7) View Traces
 pageNumber = 3;
 
-traces=csvread([workingDir,'\Channel_1_Fluorescent_Intensities.csv'],1);
-measures = csvread([workingDir,'\Detected_Filtered_Measurements.csv'],1);
+traces=csvread([workingDir,'Channel_1_Fluorescent_Intensities.csv'],1);
+measures = csvread([workingDir,'Detected_Filtered_Measurements.csv'],1);
 channel1Im = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
 figure('Name','Particle Numbers');
 imshow(channel1Im);
