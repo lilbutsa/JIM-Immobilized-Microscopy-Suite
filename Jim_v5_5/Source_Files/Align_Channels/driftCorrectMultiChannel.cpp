@@ -46,6 +46,20 @@ void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& en
 	ippsDivC_32f_I((Ipp32f)numInputFiles, imagetoalign.data(), vis[0]->imagePoints);
 
 
+	vector<float> gaussblurred(vis[0]->imagePoints, 0);
+	IppiSize roiSize = { vis[0]->imageWidth, vis[0]->imageHeight };
+	Ipp32u kernelSize = 5;
+	int iTmpBufSize = 0, iSpecSize = 0;
+	ippiFilterGaussianGetBufferSize(roiSize, kernelSize, ipp32f, 1, &iSpecSize, &iTmpBufSize);
+	IppFilterGaussianSpec* pSpec = (IppFilterGaussianSpec *)ippsMalloc_8u(iSpecSize);
+	Ipp8u* pBuffer = ippsMalloc_8u(iTmpBufSize);
+	ippiFilterGaussianInit(roiSize, kernelSize, 2.5, ippBorderRepl, ipp32f, 1, pSpec, pBuffer);
+
+	ippiFilterGaussianBorder_32f_C1R(imagetoalign.data(), vis[0]->imageWidth * sizeof(Ipp32f), gaussblurred.data(), vis[0]->imageWidth * sizeof(Ipp32f), roiSize, ippBorderRepl, pSpec, pBuffer);
+	imagetoalign = gaussblurred;
+
+
+
 	//END CREATING INITIAL MEAN
 
 	//START SECONDARY MEAN
@@ -79,6 +93,11 @@ void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& en
 
 
 		imagetoalign = alignedimage;
+
+		ippiFilterGaussianBorder_32f_C1R(imagetoalign.data(), vis[0]->imageWidth * sizeof(Ipp32f), gaussblurred.data(), vis[0]->imageWidth * sizeof(Ipp32f), roiSize, ippBorderRepl, pSpec, pBuffer);
+		imagetoalign = gaussblurred;
+
+
 
 	}
 

@@ -8,6 +8,7 @@
 
 void convertlabelledtopositions(std::vector<int>& labelled, int& numfound, std::vector<std::vector<int>>& labelledpos);
 void componentMeasurements(std::vector<std::vector<int>>& pos2 /*positions vector*/, int imagewidth, std::vector<std::vector<float>> & measurementresults, std::vector<float> & imagef);
+void numberimage(std::vector<std::vector<float>>& filteredcents, std::vector<uint8_t>& fn, int iw, int ih);
 
 #define SQUARE(x) ((x)*(x))
 
@@ -199,11 +200,14 @@ int main(int argc, char *argv[])
 
 	convertlabelledtopositions(labelled, numfound, labelledpos);
 
-
 	componentMeasurements(labelledpos, imageWidth, centroidresults, imagef);
 
 
-	BLTiffIO::TiffOutput(output + "_Regions.tif", imageWidth, imageHeight,8).write1dImage(detected);
+	vector<uint8_t> detectedimage(imagePoints, 0);
+	for (int i = 0; i < labelledpos.size(); i++)for (int j = 0; j<labelledpos[i].size(); j++) detectedimage[labelledpos[i][j]] = 255;
+
+
+	BLTiffIO::TiffOutput(output + "_Regions.tif", imageWidth, imageHeight,8).write1dImage(detectedimage);
 	BLCSVIO::writeCSV(output + "_Measurements.csv", centroidresults, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, x Min Bounding Box,x Max Bounding Box, y Min Bounding Box,y Max Bounding Box\n");
 	std::vector<std::vector<int>> labelledposout = labelledpos;
 	labelledposout.insert(labelledposout.begin(), { imageWidth,imageHeight,imagePoints });
@@ -222,6 +226,10 @@ int main(int argc, char *argv[])
 	}
 	vector<uint8_t> filtereddetected(imagePoints, 0);
 	for (int i = 0; i < filteredpos.size(); i++)for (int j = 0; j<filteredpos[i].size(); j++) filtereddetected[filteredpos[i][j]] = 255;
+
+	vector<uint8_t> numberedimage(imagePoints, 0);
+	numberimage(filteredcents, numberedimage, imageWidth,imageHeight);
+	BLTiffIO::TiffOutput(output + "_Filtered_Region_Numbers.tif", imageWidth, imageHeight, 8).write1dImage(numberedimage);
 
 	BLTiffIO::TiffOutput(output + "_Filtered_Regions.tif", imageWidth, imageHeight,8).write1dImage(filtereddetected);
 	BLCSVIO::writeCSV(output + "_Filtered_Measurements.csv", filteredcents, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, x Min Bounding Box,x Max Bounding Box, y Min Bounding Box,y Max Bounding Box\n");

@@ -17,7 +17,7 @@ void convertlabelledtopositions(std::vector<int>& labelled, int& numfound, std::
 
 	for (int i = 0; i < imagesize; i++)if (labelled[i]>0.5)
 		pos[labelled[i] - 1].push_back(i);
-	for (int i = 0; i < pos.size(); i++)if (pos[i].size()>5)
+	for (int i = 0; i < pos.size(); i++)if (pos[i].size()>3)
 		labelledpos.push_back(pos[i]);
 
 	int imin, imax;
@@ -77,6 +77,7 @@ float FindMaxDistFromLinear(float& xcent, float& ycent, float& xvec, float& yvec
 void componentMeasurements(std::vector<std::vector<int>>& pos2 /*positions vector*/, int imagewidth, std::vector<std::vector<float>> & measurementresults, std::vector<float> & imagef) {
 	measurementresults.clear();
 	std::vector<float> xpos, ypos, newvec(14);//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x min, x max, y min, y max
+	std::vector<float> vx2, vy2;
 	IppiSize roiSize2;
 	double x2, y2, xy;
 	float max, max2;
@@ -103,13 +104,21 @@ void componentMeasurements(std::vector<std::vector<int>>& pos2 /*positions vecto
 		newvec[3] = (x2 + y2) / 2 - sqrt(4 * xy*xy + (x2 - y2)*(x2 - y2)) / 2;
 
 		if (xy != 0) { newvec[4] = newvec[2] - y2; newvec[5] = xy; }
-		else { if (y2 == 0) { newvec[4] = 1; newvec[5] = 0; } else { newvec[4] = 0; newvec[5] = 1; } }
+		else { if (y2 == 0) { newvec[4] = 0; newvec[5] = 1; } else { newvec[4] = 1; newvec[5] = 0; } }
 
 		newvec[2] = 1 - sqrt(newvec[3]) / sqrt(newvec[2]);
 
-		ippsMaxAbs_32f(&xpos[0], xpos.size(), &max);
+		vx2.resize(pos2[i].size());
+		vy2.resize(pos2[i].size());
+		ippsMul_32f(xpos.data(), xpos.data(), vx2.data(), vx2.size());
+		ippsMul_32f(ypos.data(), ypos.data(), vy2.data(), vy2.size());
+		ippsAdd_32f_I(vy2.data(), vx2.data(), vx2.size());
+		ippsMax_32f(vx2.data(), xpos.size(), &max);
+		newvec[3] = 2*sqrt(max);
+
+		/*ippsMaxAbs_32f(&xpos[0], xpos.size(), &max);
 		ippsMaxAbs_32f(&ypos[0], ypos.size(), &max2);
-		newvec[3] = sqrt(max*max + max2*max2);
+		newvec[3] = sqrt(max*max + max2*max2);*/
 
 		float norm = sqrt(newvec[4] * newvec[4] + newvec[5] * newvec[5]);
 		newvec[4] = newvec[4] / norm;
