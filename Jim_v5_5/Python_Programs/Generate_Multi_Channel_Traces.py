@@ -9,11 +9,11 @@ import numpy as np
 from tkinter import filedialog
 from PIL import Image
 
-sectionNumber = 12
+sectionNumber = 10
 # Sections
 # 1 - Select input file and create a folder for results
 # 2 - Split File into Individual Channels
-# 3 - Invert Second Channel
+# 3 - Invert Channel
 # 4 - Align Channels and Calculate Drifts
 # 5 - Make a SubAverage of Frames for Detection
 # 6 - Detect Particles
@@ -39,8 +39,9 @@ displayMax = 3
 useMetadataFile = False
 numberOfChannels = 2
 
-# 3 - Invert Second Channel Parameters
-invertChannel2 = False
+# 3 - Invert Channel Parameters
+invertChannel = False
+channelToInvert = 2
 
 # 4 - Align Channels and Calculate Drifts Parameters
 iterations = 1
@@ -140,12 +141,12 @@ if sectionNumber == 2:
     os.system(cmd)
 
 # 3 - Invert Second Channel
-if sectionNumber == 3 and invertChannel2:
-    cmd = (JIM + 'Invert_Channel.exe "' + workingDir + 'Images_Channel_2.tiff" "' + workingDir +
-           'Images_Channel_2_Inverted.tiff"')
+if sectionNumber == 3 and invertChannel:
+    cmd = (JIM + 'Invert_Channel.exe "' + workingDir + 'Images_Channel_' + channelToInvert + '.tiff" "' + workingDir +
+           'Images_Channel_' + channelToInvert + '_Inverted.tiff"')
     system(cmd)
-    os.remove(workingDir + 'Images_Channel_2.tiff')
-    os.rename(workingDir + 'Images_Channel_2_Inverted.tiff', workingDir + 'Images_Channel_2.tiff')
+    os.remove(workingDir + 'Images_Channel_' + channelToInvert + '.tiff')
+    os.rename(workingDir + 'Images_Channel_' + channelToInvert + '_Inverted.tiff', workingDir + 'Images_Channel_' + channelToInvert + '.tiff')
 
 # 4 - Align Channels and Calculate Drifts
 if sectionNumber == 4:
@@ -346,8 +347,11 @@ if sectionNumber == 10:
     for i in range(1, 37):
         if len(data) > i + (pageNumber - 1) * 36:
             plt.subplot(6, 6, i)
-            plt.plot(data[i + (pageNumber - 1) * 36], color='red')
-            plt.plot(data2[i + (pageNumber - 1) * 36], color='blue')
+            myMax = max(map(float, data[i + (pageNumber - 1) * 36]))
+            list2 = map(float, data[i + (pageNumber - 1) * 36])
+            plt.plot([x / myMax for x in map(float, data[i + (pageNumber - 1) * 36])], color='red')
+            myMax = max(map(float, data2[i + (pageNumber - 1) * 36]))
+            plt.plot([x / myMax for x in map(float, data2[i + (pageNumber - 1) * 36])], color='blue')
             plt.plot(plt.xlim(), [0, 0], color='black')
             xpos = round(float(measurements[i + (pageNumber - 1) * 36][0]))
             ypos = round(float(measurements[i + (pageNumber - 1) * 36][1]))
@@ -421,7 +425,7 @@ if sectionNumber == 12:
         os.system(cmd)
 
         # 3 - Invert Second Channel
-        if invertChannel2:
+        if invertChannel:
             cmd = (JIM + 'Invert_Channel.exe "' + workingDir + 'Images_Channel_2.tiff" "' + workingDir +
                    'Images_Channel_2_Inverted.tiff"')
             system(cmd)

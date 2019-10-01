@@ -28,15 +28,16 @@ else
 end
 system(cmd)
 
-%% 3) invert second channel 
+%% 3) Invert Channel
 % In two camera systems the second image is reflected off the dichroic splitter. If this isn't corrected in the microscope software it can be corrected here
-invertChannel2 = false;
+invertChannel = false;
+channelToInvert = 2;
 
-if invertChannel2
-    cmd = [JIM,'Invert_Channel.exe "',workingDir,'Images_Channel_2.tiff" "',workingDir,'Images_Channel_2_Inverted.tiff"']; %Creates the flipped image as Images_Channel_2_Inverted.tiff
+if invertChannel
+    cmd = [JIM,'Invert_Channel.exe "',workingDir,'Images_Channel_',num2str(channelToInvert),'.tiff" "',workingDir,'Images_Channel_',num2str(channelToInvert),'_Inverted.tiff"']; %Creates the flipped image as Images_Channel_2_Inverted.tiff
     system(cmd)
-    delete([workingDir,'Images_Channel_2.tiff']); % deletes the original image
-    movefile([workingDir,'Images_Channel_2_Inverted.tiff'],[workingDir,'Images_Channel_2.tiff']);% put the flipped image in its place
+    delete([workingDir,'Images_Channel_',num2str(channelToInvert),'.tiff']); % deletes the original image
+    movefile([workingDir,'Images_Channel_',num2str(channelToInvert),'_Inverted.tiff'],[workingDir,'Images_Channel_',num2str(channelToInvert),'.tiff']);% put the flipped image in its place
 end
 
 
@@ -68,11 +69,22 @@ system(cmd)
 if manualAlignment
     channel1Im = rescale(imread([workingDir,'Aligned_aligned_partial_mean_1.tiff']));
     channel2Im = rescale(imread([workingDir,'Aligned_aligned_partial_mean_2.tiff']));
+    if numberOfChannels > 2
+        channel3Im = rescale(imread([workingDir,'Aligned_aligned_partial_mean_3.tiff']));
+    else
+        channel3Im = channel2Im;
+        
+    end
 else
     channel1Im = rescale(imread([workingDir,'Aligned_initial_partial_mean_1.tiff']));
     channel2Im = rescale(imread([workingDir,'Aligned_initial_partial_mean_2.tiff']));
+    if numberOfChannels > 2
+        channel3Im = rescale(imread([workingDir,'Aligned_initial_partial_mean_3.tiff']));
+    else
+        channel3Im = 0.*channel2Im;
+    end    
 end
-combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im);
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 figure('Name','Before Drift Correction and Alignment')
 imshow(combinedImage);
 truesize([900 900]);
@@ -81,7 +93,13 @@ truesize([900 900]);
 %view alignment after
 channel1Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_1.tiff']));
 channel2Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_2.tiff']));
-combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im);
+if numberOfChannels > 2
+    channel3Im = rescale(imread([workingDir,'Aligned_aligned_full_mean_2.tiff']));
+else
+    channel3Im = 0.*channel2Im;
+end
+
+combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 figure('Name','After Drift Correction and Alignment')
 imshow(combinedImage);
 truesize([900 900]);
@@ -91,7 +109,7 @@ disp('Alignment and drift correction completed');
 useMaxProjection = false;
 
 detectionStartFrame = '1 20';
-detectionEndFrame = '180 200';
+detectionEndFrame = '10 30';
 
 maxProjectionString = '';
 if useMaxProjection
@@ -209,6 +227,7 @@ end
 
 variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nuseMetadataFile,',num2str(useMetadataFile),'\nnumberOfChannels,', num2str(numberOfChannels)...
+    ,'\ninvertChannel,',num2str(invertChannel),'\nchannelToInvert,', num2str(channelToInvert)...
     ,'\niterations,',num2str(iterations),'\nalignStartFrame,', num2str(alignStartFrame),'\nalignEndFrame,', num2str(alignEndFrame)...
     ,'\nmanualAlignment,',num2str(manualAlignment),'\nrotationAngle,',num2str(rotationAngle),'\nscalingFactor,', num2str(scalingFactor),'\nxoffset,', num2str(xoffset),'\nyoffset,', num2str(yoffset)...
     ,'\nuseMaxProjection,',num2str(useMaxProjection),'\ndetectionStartFrame,', num2str(detectionStartFrame),'\ndetectionEndFrame,', num2str(detectionEndFrame)...
@@ -240,8 +259,8 @@ disp('Finished Generating Traces');
         subplot(6,6,i)
         hold on
         title(['Particle ' num2str(i+36*(pageNumber-1)) ' x ' num2str(round(measures(i+36*(pageNumber-1),1))) ' y ' num2str(round(measures(i+36*(pageNumber-1),2)))])
-        plot(traces(i+36*(pageNumber-1),:),'-r');
-        plot(traces2(i+36*(pageNumber-1),:),'-b');
+        plot(traces(i+36*(pageNumber-1),:)./max(traces(i+36*(pageNumber-1),:)),'-r');
+        plot(traces2(i+36*(pageNumber-1),:)./max(traces2(i+36*(pageNumber-1),:)),'-b');
         plot([0 size(traces(i+36*(pageNumber-1),:),2)],[0 0] ,'-black');
         xlim([0 size(traces(i+36*(pageNumber-1),:),2)])
         hold off
@@ -314,7 +333,7 @@ parfor i=1:filenum(1)
     system(cmd)
 
     %invert if needed
-    if invertChannel2
+    if invertChannel
         cmd = [JIM,'Invert_Channel.exe "',workingDir,'Images_Channel_2.tiff" "',workingDir,'Images_Channel_2_Inverted.tiff"'];
         system(cmd)
         delete([workingDir,'Images_Channel_2.tiff']);
