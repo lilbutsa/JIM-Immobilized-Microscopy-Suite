@@ -101,9 +101,9 @@ truesize([900 900]);
 disp('Finish detecting particles');
 
 %% 5) Expand Regions
-foregroundDist = 4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+foregroundDist = 4.1; 
 backInnerDist = 4.1;
-backOuterDist = 20; % Distance to dilate beyond the ROI to measure the local background
+backOuterDist = 20; 
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection

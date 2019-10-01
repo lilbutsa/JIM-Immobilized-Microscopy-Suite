@@ -35,7 +35,7 @@ channelToInvert = 2;
 
 if invertChannel
     cmd = [JIM,'Invert_Channel.exe "',workingDir,'Images_Channel_',num2str(channelToInvert),'.tiff" "',workingDir,'Images_Channel_',num2str(channelToInvert),'_Inverted.tiff"']; %Creates the flipped image as Images_Channel_2_Inverted.tiff
-    system(cmd)
+    system(cmd);
     delete([workingDir,'Images_Channel_',num2str(channelToInvert),'.tiff']); % deletes the original image
     movefile([workingDir,'Images_Channel_',num2str(channelToInvert),'_Inverted.tiff'],[workingDir,'Images_Channel_',num2str(channelToInvert),'.tiff']);% put the flipped image in its place
 end
@@ -72,7 +72,7 @@ if manualAlignment
     if numberOfChannels > 2
         channel3Im = rescale(imread([workingDir,'Aligned_aligned_partial_mean_3.tiff']));
     else
-        channel3Im = channel2Im;
+        channel3Im = 0.*channel2Im;
         
     end
 else
