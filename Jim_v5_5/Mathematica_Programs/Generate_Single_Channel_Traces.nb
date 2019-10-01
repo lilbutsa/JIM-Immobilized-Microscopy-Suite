@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[    106687,       2469]
-NotebookOptionsPosition[    104518,       2427]
-NotebookOutlinePosition[    104866,       2442]
-CellTagsIndexPosition[    104823,       2439]
+NotebookDataLength[    107193,       2481]
+NotebookOptionsPosition[    105021,       2439]
+NotebookOutlinePosition[    105372,       2454]
+CellTagsIndexPosition[    105329,       2451]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -2085,66 +2085,76 @@ Cell[BoxData[
       RowBox[{
        RowBox[{"Partition", "[", 
         RowBox[{
-         RowBox[{"Table", "[", "\[IndentingNewLine]", 
+         RowBox[{"Table", "[", 
           RowBox[{
-           RowBox[{"Labeled", "[", 
+           RowBox[{"If", "[", 
             RowBox[{
-             RowBox[{"ListLinePlot", "[", 
+             RowBox[{
+              RowBox[{"i", "+", 
+               RowBox[{
+                RowBox[{"(", 
+                 RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+              "\[LessEqual]", 
+              RowBox[{"Length", "[", "traces", "]"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"Labeled", "[", 
               RowBox[{
-               RowBox[{"traces", "[", 
-                RowBox[{"[", 
-                 RowBox[{"i", "+", 
-                  RowBox[{
-                   RowBox[{"(", 
-                    RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
-                 "]"}], "]"}], ",", 
-               RowBox[{"PlotStyle", "\[Rule]", 
-                RowBox[{"{", 
-                 RowBox[{"{", 
-                  RowBox[{"Red", ",", 
-                   RowBox[{"Thickness", "[", "0.01", "]"}]}], "}"}], "}"}]}], 
-               ",", 
-               RowBox[{"AxesStyle", "\[Rule]", 
-                RowBox[{"{", 
-                 RowBox[{
-                  RowBox[{"{", 
-                   RowBox[{"Black", ",", "Thick", ",", 
-                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}], 
-                    ",", "12"}], "}"}], ",", 
-                  RowBox[{"{", 
-                   RowBox[{"Black", ",", "Thick", ",", 
-                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}], 
-                    ",", "12"}], "}"}]}], "}"}]}], ",", 
-               RowBox[{"TicksStyle", "\[Rule]", "Black"}], ",", 
-               RowBox[{"ImageSize", "\[Rule]", "170"}]}], "]"}], ",", 
-             RowBox[{"{", 
-              RowBox[{
-               RowBox[{"Rotate", "[", 
+               RowBox[{"ListLinePlot", "[", 
                 RowBox[{
-                 RowBox[{"Style", "[", 
-                  RowBox[{"\"\<Intensity\>\"", ",", 
-                   RowBox[{"{", 
-                    RowBox[{"Black", ",", "12", ",", "Bold", ",", 
-                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
-                    "}"}]}], "]"}], ",", 
-                 RowBox[{"\[Pi]", "/", "2"}]}], "]"}], ",", 
-               RowBox[{"Style", "[", 
-                RowBox[{"\"\<Frame\>\"", ",", 
-                 RowBox[{"{", 
-                  RowBox[{"Black", ",", "12", ",", "Bold", ",", 
-                   RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
-                  "}"}]}], "]"}], ",", 
-               RowBox[{"Style", "[", 
-                RowBox[{
-                 RowBox[{"\"\<Particle \>\"", "~~", 
-                  RowBox[{"ToString", "[", 
+                 RowBox[{"traces", "[", 
+                  RowBox[{"[", 
                    RowBox[{"i", "+", 
                     RowBox[{
                     RowBox[{"(", 
                     RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
-                   "]"}], "~~", "\"\< x \>\"", "~~", 
-                  RowBox[{"ToString", "[", 
-                   RowBox[{"Round", "[", 
+                   "]"}], "]"}], ",", 
+                 RowBox[{"PlotStyle", "\[Rule]", 
+                  RowBox[{"{", 
+                   RowBox[{"{", 
+                    RowBox[{"Red", ",", 
+                    RowBox[{"Thickness", "[", "0.01", "]"}]}], "}"}], "}"}]}],
+                  ",", 
+                 RowBox[{"AxesStyle", "\[Rule]", 
+                  RowBox[{"{", 
+                   RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"Black", ",", "Thick", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}], 
+                    ",", "12"}], "}"}], ",", 
+                    RowBox[{"{", 
+                    RowBox[{"Black", ",", "Thick", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}], 
+                    ",", "12"}], "}"}]}], "}"}]}], ",", 
+                 RowBox[{"TicksStyle", "\[Rule]", "Black"}], ",", 
+                 RowBox[{"ImageSize", "\[Rule]", "170"}]}], "]"}], ",", 
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{"Rotate", "[", 
+                  RowBox[{
+                   RowBox[{"Style", "[", 
+                    RowBox[{"\"\<Intensity\>\"", ",", 
+                    RowBox[{"{", 
+                    RowBox[{"Black", ",", "12", ",", "Bold", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
+                    "}"}]}], "]"}], ",", 
+                   RowBox[{"\[Pi]", "/", "2"}]}], "]"}], ",", 
+                 RowBox[{"Style", "[", 
+                  RowBox[{"\"\<Frame\>\"", ",", 
+                   RowBox[{"{", 
+                    RowBox[{"Black", ",", "12", ",", "Bold", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
+                    "}"}]}], "]"}], ",", 
+                 RowBox[{"Style", "[", 
+                  RowBox[{
+                   RowBox[{"\"\<Particle \>\"", "~~", 
+                    RowBox[{"ToString", "[", 
+                    RowBox[{"i", "+", 
+                    RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+                    "]"}], "~~", "\"\< x \>\"", "~~", 
+                    RowBox[{"ToString", "[", 
+                    RowBox[{"Round", "[", 
                     RowBox[{"measures", "[", 
                     RowBox[{"[", 
                     RowBox[{
@@ -2153,9 +2163,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
                     ",", "1"}], "]"}], "]"}], "]"}], "]"}], "~~", 
-                  "\"\< y \>\"", "~~", 
-                  RowBox[{"ToString", "[", 
-                   RowBox[{"Round", "[", 
+                    "\"\< y \>\"", "~~", 
+                    RowBox[{"ToString", "[", 
+                    RowBox[{"Round", "[", 
                     RowBox[{"measures", "[", 
                     RowBox[{"[", 
                     RowBox[{
@@ -2164,13 +2174,13 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
                     ",", "2"}], "]"}], "]"}], "]"}], "]"}]}], ",", 
-                 RowBox[{"{", 
-                  RowBox[{"Black", ",", "12", ",", "Bold", ",", 
-                   RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
-                  "}"}]}], "]"}]}], "}"}], ",", 
-             RowBox[{"{", 
-              RowBox[{"Left", ",", "Bottom", ",", "Top"}], "}"}]}], "]"}], 
-           ",", 
+                   RowBox[{"{", 
+                    RowBox[{"Black", ",", "12", ",", "Bold", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
+                    "}"}]}], "]"}]}], "}"}], ",", 
+               RowBox[{"{", 
+                RowBox[{"Left", ",", "Bottom", ",", "Top"}], "}"}]}], "]"}]}],
+             "]"}], ",", 
            RowBox[{"{", 
             RowBox[{"i", ",", "1", ",", "36"}], "}"}]}], "]"}], ",", "6"}], 
         "]"}], ",", 
@@ -2186,8 +2196,10 @@ Cell[BoxData[
       RowBox[{"WindowTitle", "\[Rule]", "\"\<Traces\>\""}]}], "]"}], 
     ";"}]}]}]], "Input",
  CellChangeTimes->{{3.778894584724*^9, 3.778894734984*^9}, {3.778895485648*^9,
-   3.778895489712*^9}, {3.778895768*^9, 
-  3.778895779889*^9}},ExpressionUUID->"d6b18a50-5c98-489b-97a6-1f71054cd53d"],
+   3.778895489712*^9}, {3.778895768*^9, 3.778895779889*^9}, {
+  3.778904264172*^9, 
+  3.7789042683789997`*^9}},ExpressionUUID->"d6b18a50-5c98-489b-97a6-\
+1f71054cd53d"],
 
 Cell[CellGroupData[{
 
@@ -2425,8 +2437,8 @@ Cell[BoxData["3"], "Print",
 }, Open  ]]
 }, Open  ]]
 },
-WindowSize->{1920, 998},
-WindowMargins->{{-8, Automatic}, {Automatic, -8}},
+WindowSize->{1920, 1038},
+WindowMargins->{{1912, Automatic}, {Automatic, -8}},
 FrontEndVersion->"11.2 for Microsoft Windows (64-bit) (September 10, 2017)",
 StyleDefinitions->"Default.nb"
 ]
@@ -2454,21 +2466,21 @@ Cell[62356, 1464, 3588, 81, 276, "Input",ExpressionUUID->"2fd01788-a401-4f2a-949
 Cell[65947, 1547, 11531, 253, 770, "Input",ExpressionUUID->"a7c4d327-3595-49e1-9de8-64a3f6845f9a"],
 Cell[77481, 1802, 5235, 122, 390, "Input",ExpressionUUID->"b4b1a004-6953-411f-a5ad-38ffcaa1612a"],
 Cell[82719, 1926, 5307, 113, 333, "Input",ExpressionUUID->"a764580b-1821-4243-b1c4-de09656c17ae"],
-Cell[88029, 2041, 6052, 148, 257, "Input",ExpressionUUID->"d6b18a50-5c98-489b-97a6-1f71054cd53d"],
+Cell[88029, 2041, 6555, 160, 257, "Input",ExpressionUUID->"d6b18a50-5c98-489b-97a6-1f71054cd53d"],
 Cell[CellGroupData[{
-Cell[94106, 2193, 689, 16, 86, "Input",ExpressionUUID->"9e4bd6c2-400b-4fc9-8ce5-c88dab829b42"],
-Cell[94798, 2211, 231, 4, 44, "Output",ExpressionUUID->"20de72f6-229d-4039-bc02-f0c770ef82b4"]
+Cell[94609, 2205, 689, 16, 86, "Input",ExpressionUUID->"9e4bd6c2-400b-4fc9-8ce5-c88dab829b42"],
+Cell[95301, 2223, 231, 4, 44, "Output",ExpressionUUID->"20de72f6-229d-4039-bc02-f0c770ef82b4"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[95066, 2220, 1748, 43, 143, "Input",ExpressionUUID->"eecdec5b-29d1-4538-8279-2b60e7b8ba15"],
-Cell[96817, 2265, 178, 2, 22, "Print",ExpressionUUID->"ae7fb18d-3004-430e-a937-f11ef6c87657"]
+Cell[95569, 2232, 1748, 43, 143, "Input",ExpressionUUID->"eecdec5b-29d1-4538-8279-2b60e7b8ba15"],
+Cell[97320, 2277, 178, 2, 22, "Print",ExpressionUUID->"ae7fb18d-3004-430e-a937-f11ef6c87657"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[97032, 2272, 6990, 134, 504, "Input",ExpressionUUID->"f314ce68-445a-4233-9926-3b10fe5aca20"],
+Cell[97535, 2284, 6990, 134, 504, "Input",ExpressionUUID->"f314ce68-445a-4233-9926-3b10fe5aca20"],
 Cell[CellGroupData[{
-Cell[104047, 2410, 145, 3, 22, "Print",ExpressionUUID->"15a766ef-c63b-4165-bf67-48606f229d5f"],
-Cell[104195, 2415, 146, 3, 22, "Print",ExpressionUUID->"63164a36-f898-4479-8508-70aeb8ae32e4"],
-Cell[104344, 2420, 146, 3, 22, "Print",ExpressionUUID->"40f3de0e-a82a-4a4a-a18f-94e9bb25ff31"]
+Cell[104550, 2422, 145, 3, 22, "Print",ExpressionUUID->"15a766ef-c63b-4165-bf67-48606f229d5f"],
+Cell[104698, 2427, 146, 3, 22, "Print",ExpressionUUID->"63164a36-f898-4479-8508-70aeb8ae32e4"],
+Cell[104847, 2432, 146, 3, 22, "Print",ExpressionUUID->"40f3de0e-a82a-4a4a-a18f-94e9bb25ff31"]
 }, Open  ]]
 }, Open  ]]
 }
