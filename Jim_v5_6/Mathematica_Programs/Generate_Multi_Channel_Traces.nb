@@ -1,0 +1,2006 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.2' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     87466,       1998]
+NotebookOptionsPosition[     85068,       1955]
+NotebookOutlinePosition[     85416,       1970]
+CellTagsIndexPosition[     85373,       1967]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "1", ")"}], " ", "Select", " ", "the", " ", "input", " ", 
+    "tiff", " ", "file"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"FileNameSetter", "[", 
+   RowBox[{"Dynamic", "[", "completeName", "]"}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.7554674920178003`*^9, 3.7554675075538*^9}, 
+   3.7554676179798*^9, {3.7731027477324004`*^9, 3.7731027520684004`*^9}, {
+   3.7731027888604*^9, 3.7731028049414005`*^9}, 
+   3.7788991019709997`*^9},ExpressionUUID->"dd123db6-7f48-414d-b83c-\
+372adafcd133"],
+
+Cell[BoxData[
+ TemplateBox[{Dynamic[$CellContext`completeName],"Open",All},
+  "FileNameSetterBoxes"]], "Output",
+ CellChangeTimes->{
+  3.7554674798498*^9, {3.778900633918*^9, 
+   3.778900648019*^9}},ExpressionUUID->"57f20bd3-583d-4c86-8a6c-4ebeabee2b04"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", 
+     RowBox[{"1", "b"}], ")"}], " ", "Create", " ", "folder", " ", "for", " ",
+     "results"}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"overlayColour1", "=", 
+     RowBox[{"{", 
+      RowBox[{"1", ",", "0", ",", "0"}], "}"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"overlayColour2", "=", 
+     RowBox[{"{", 
+      RowBox[{"0", ",", "1", ",", "0"}], "}"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"overlayColour3", "=", 
+     RowBox[{"{", 
+      RowBox[{"0", ",", "0", ",", "1"}], "}"}]}], ";"}], 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"jimPath", " ", "=", " ", 
+     RowBox[{
+      RowBox[{"FileNameJoin", "[", 
+       RowBox[{"Drop", "[", 
+        RowBox[{
+         RowBox[{"FileNameSplit", "[", 
+          RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ",", 
+         RowBox[{"-", "1"}]}], "]"}], "]"}], "~~", 
+      "\"\<\\\\Jim_Programs\\\\\>\""}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"workingDir", " ", "=", " ", 
+     RowBox[{
+      RowBox[{"FileNameJoin", "[", 
+       RowBox[{"Append", "[", 
+        RowBox[{
+         RowBox[{"Drop", "[", 
+          RowBox[{
+           RowBox[{"FileNameSplit", "[", "completeName", "]"}], ",", 
+           RowBox[{"-", "1"}]}], "]"}], ",", 
+         RowBox[{"FileBaseName", "[", "completeName", "]"}]}], "]"}], "]"}], 
+      "~~", "\"\<\\\\\>\""}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"DirectoryQ", "[", "workingDir", "]"}], "\[Equal]", "False"}], 
+      ",", 
+      RowBox[{"CreateDirectory", "[", "workingDir", "]"}]}], "]"}], 
+    ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.7554673693468*^9, 3.7554674467698*^9}, {
+   3.7554675983778*^9, 3.7554676336177998`*^9}, {3.7554678765938*^9, 
+   3.7554678853938*^9}, {3.7554680156577997`*^9, 3.7554680319378*^9}, {
+   3.755895149373*^9, 3.755895149749*^9}, {3.755915091117*^9, 
+   3.755915095469*^9}, {3.7731027555174007`*^9, 3.7731028037414007`*^9}, {
+   3.778897129549*^9, 3.778897146047*^9}, 
+   3.778899036903*^9},ExpressionUUID->"a12e2f3d-5274-45d5-8f85-424c08f4e89e"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "2", ")"}], " ", "Split", " ", "File", " ", "into", " ", 
+    "individual", " ", "channels"}], "*)"}], "\[IndentingNewLine]", "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"useMetadataFile", "=", "False"}], ";", 
+    RowBox[{"(*", " ", 
+     RowBox[{
+     "Set", " ", "to", " ", "true", " ", "to", " ", "read", " ", "in", " ", 
+      "a", " ", "micromanager", " ", "metadata", " ", "file", " ", "to", " ", 
+      "ensure", " ", "the", " ", "tiff", " ", "is", " ", "split", " ", 
+      RowBox[{"correctly", ".", "If"}], " ", "this", " ", "is", " ", "not", 
+      " ", "used", " ", "the", " ", "program", " ", "assumes", " ", "the", 
+      " ", "tiff", " ", "stack", " ", "is", " ", "saved", " ", "in", " ", 
+      "order"}], " ", "*)"}], "\n", 
+    RowBox[{"numberOfChannels", "=", "2"}], ";"}], "\n", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{"useMetadataFile", ",", 
+      RowBox[{
+       RowBox[{"metaFileName", "=", 
+        RowBox[{
+         RowBox[{"FileNameJoin", "[", 
+          RowBox[{"Append", "[", 
+           RowBox[{
+            RowBox[{"Drop", "[", 
+             RowBox[{
+              RowBox[{"FileNameSplit", "[", "completeName", "]"}], ",", 
+              RowBox[{"-", "1"}]}], "]"}], ",", 
+            RowBox[{"FileBaseName", "[", "completeName", "]"}]}], "]"}], 
+          "]"}], "~~", "\"\<_metadata.txt\>\""}]}], ";", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<TIFF_Channel_Splitter.exe \\\"\>\"", "~~", 
+         "completeName", "~~", "\"\<\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+         "\"\<Images\\\" -MetadataFile \\\"\>\"", "~~", "metaFileName", "~~", 
+         "\"\<\\\"\>\""}]}], ";"}], "\[IndentingNewLine]", ",", 
+      "\[IndentingNewLine]", "\t", 
+      RowBox[{
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<TIFF_Channel_Splitter.exe \\\"\>\"", "~~", 
+         "completeName", "~~", "\"\<\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+         "\"\<Images\\\" -numberOfChannels \>\"", "~~", 
+         RowBox[{"ToString", "[", "numberOfChannels", "]"}]}]}], ";"}]}], 
+     "\[IndentingNewLine]", "]"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Run", "[", "cmd", " ", "]"}], ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.7731092943054004`*^9, 3.7731093223254004`*^9}, {
+   3.7731093547814007`*^9, 3.7731093649094005`*^9}, {3.7731094186454*^9, 
+   3.7731094622384005`*^9}, {3.7731095086534004`*^9, 
+   3.7731095106534004`*^9}, {3.7731096042944*^9, 3.7731097826854005`*^9}, {
+   3.778897129554*^9, 3.7788971295550003`*^9}, 3.7788984886549997`*^9, {
+   3.778899053005*^9, 3.778899065301*^9}, {3.778899101972*^9, 
+   3.778899101977*^9}, {3.7788999326949997`*^9, 3.7788999346870003`*^9}, {
+   3.778899996377*^9, 3.778899999385*^9}, {3.778900114865*^9, 
+   3.778900116449*^9}, 3.7789006679820004`*^9, 
+   3.778904352226*^9},ExpressionUUID->"cf914e1f-cf9f-41ef-81c5-08259bf06d36"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "3", ")"}], " ", "Invert", " ", "Channel"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"invertChannel", "=", "False"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"channelToInvert", "=", "2"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{"invertChannel", ",", "\[IndentingNewLine]", "\t", 
+      RowBox[{
+       RowBox[{"cmd", "=", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Invert_Channel.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+         "\"\<.tiff\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+         "\"\<Images_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+         "\"\<_Inverted.tiff\\\"\>\""}]}], ";", "\n", "\t\t", 
+       RowBox[{"Run", "[", "cmd", " ", "]"}], ";", "\n", "\t\t", 
+       RowBox[{"DeleteFile", "[", 
+        RowBox[{"workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+         "\"\<.tiff\>\""}], "]"}], ";", "\[IndentingNewLine]", "\t\t", 
+       RowBox[{"RenameFile", "[", 
+        RowBox[{
+         RowBox[{"workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+          RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+          "\"\<_Inverted.tiff\>\""}], ",", 
+         RowBox[{"workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+          RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+          "\"\<.tiff\>\""}]}], "]"}], ";"}]}], "\[IndentingNewLine]", "]"}], 
+    ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.7788984919440002`*^9, 3.7788985150950003`*^9}, {
+   3.7788995983599997`*^9, 3.778899918519*^9}, {3.7789000178389997`*^9, 
+   3.7789000184230003`*^9}, 3.778900094816*^9, {3.778900568421*^9, 
+   3.778900569133*^9}, 
+   3.778904385138*^9},ExpressionUUID->"a6177961-5992-4581-82d2-c710a9cb77fb"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "4", ")"}], " ", "Align", " ", "Channels", " ", "and", " ", 
+    "Calculate", " ", "Drifts"}], " ", "*)"}], "\[IndentingNewLine]", 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"iterations", "=", "1"}], ";"}], "\n", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"alignstartframe", "=", "15"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"alignendframe", "=", "15"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"manualAlignment", "=", "False"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"rotationAngle", "=", 
+     RowBox[{"-", "0.2"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"scalingFactor", "=", "0.9941"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"xoffset", "=", "7"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"yoffset", "=", 
+     RowBox[{"-", "3.5"}]}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"displayMax", " ", "=", "2"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"displayMin", " ", "=", "0"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"allChannelNames", "=", 
+     RowBox[{"StringJoin", "[", 
+      RowBox[{"Table", "[", 
+       RowBox[{
+        RowBox[{
+        "\"\< \\\"\>\"", "~~", "workingDir", "~~", "\"\<Images_Channel_\>\"", 
+         "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.tiff\\\"\>\""}], 
+        ",", 
+        RowBox[{"{", 
+         RowBox[{"j", ",", "1", ",", "numberOfChannels"}], "}"}]}], "]"}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{"manualAlignment", ",", "\[IndentingNewLine]", "\t", 
+      RowBox[{
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Align_Channels.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Aligned\\\"\>\"", "~~", "allChannelNames", 
+         "~~", "\"\< -Start \>\"", "~~", 
+         RowBox[{"ToString", "[", "alignstartframe", "]"}], "~~", 
+         "\"\< -End \>\"", "~~", 
+         RowBox[{"ToString", "[", "alignendframe", "]"}], "~~", 
+         "\"\< -Iterations \>\"", "~~", 
+         RowBox[{"ToString", "[", "iterations", "]"}], "~~", 
+         "\[IndentingNewLine]", "\t", "\"\<-Alignment \>\"", "~~", 
+         RowBox[{"ToString", "[", "xoffset", "]"}], "~~", "\"\< \>\"", "~~", 
+         RowBox[{"ToString", "[", "yoffset", "]"}], "~~", "\"\< \>\"", "~~", 
+         RowBox[{"ToString", "[", "rotationAngle", "]"}], "~~", "\"\< \>\"", "~~", 
+         RowBox[{"ToString", "[", "scalingFactor", "]"}]}]}], ";"}], 
+      "\[IndentingNewLine]", ",", "\[IndentingNewLine]", "\t", 
+      RowBox[{
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Align_Channels.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Aligned\\\"\>\"", "~~", "allChannelNames", 
+         "~~", "\"\< -Start \>\"", "~~", 
+         RowBox[{"ToString", "[", "alignstartframe", "]"}], "~~", 
+         "\"\< -End \>\"", "~~", 
+         RowBox[{"ToString", "[", "alignendframe", "]"}], "~~", 
+         "\"\< -Iterations \>\"", "~~", 
+         RowBox[{"ToString", "[", "iterations", "]"}]}]}], ";"}]}], 
+     "\[IndentingNewLine]", "\[IndentingNewLine]", "]"}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Run", "[", "cmd", " ", "]"}], ";"}], "\n", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{"manualAlignment", ",", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"channel1Im", " ", "=", " ", 
+        RowBox[{"Import", "[", 
+         RowBox[{
+         "workingDir", "~~", "\"\<Aligned_aligned_partial_mean_1.tiff\>\""}], 
+         "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"channel1Im", "=", 
+        RowBox[{"Image", "[", 
+         RowBox[{"Clip", "[", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"displayMax", " ", 
+             RowBox[{"Rescale", "[", 
+              RowBox[{"ImageData", "[", "channel1Im", "]"}], "]"}]}], "+", 
+            "displayMin"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"channel2Im", " ", "=", " ", 
+        RowBox[{"Import", "[", 
+         RowBox[{
+         "workingDir", "~~", "\"\<Aligned_aligned_partial_mean_2.tiff\>\""}], 
+         "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"channel2Im", "=", 
+        RowBox[{"Image", "[", 
+         RowBox[{"Clip", "[", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"displayMax", " ", 
+             RowBox[{"Rescale", "[", 
+              RowBox[{"ImageData", "[", "channel2Im", "]"}], "]"}]}], "+", 
+            "displayMin"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"numberOfChannels", ">", "2"}], ",", "\[IndentingNewLine]", 
+         "\t", 
+         RowBox[{
+          RowBox[{"channel3Im", " ", "=", " ", 
+           RowBox[{"Import", "[", 
+            RowBox[{
+            "workingDir", "~~", 
+             "\"\<Aligned_aligned_partial_mean_3.tiff\>\""}], "]"}]}], ";", 
+          "\[IndentingNewLine]", "\t", 
+          RowBox[{"channel3Im", "=", 
+           RowBox[{"Image", "[", 
+            RowBox[{"Clip", "[", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"displayMax", " ", 
+                RowBox[{"Rescale", "[", 
+                 RowBox[{"ImageData", "[", "channel3Im", "]"}], "]"}]}], "+", 
+               "displayMin"}], ",", 
+              RowBox[{"{", 
+               RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+         "\[IndentingNewLine]", ",", "\[IndentingNewLine]", "\t", 
+         RowBox[{
+          RowBox[{"channel3Im", " ", "=", " ", 
+           RowBox[{"0", "*", "channel2Im"}]}], ";"}]}], "\[IndentingNewLine]",
+         "]"}], ";"}], "\[IndentingNewLine]", ",", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"channel1Im", " ", "=", " ", 
+        RowBox[{"Import", "[", 
+         RowBox[{
+         "workingDir", "~~", "\"\<Aligned_initial_partial_mean_1.tiff\>\""}], 
+         "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"channel1Im", "=", 
+        RowBox[{"Image", "[", 
+         RowBox[{"Clip", "[", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"displayMax", " ", 
+             RowBox[{"Rescale", "[", 
+              RowBox[{"ImageData", "[", "channel1Im", "]"}], "]"}]}], "+", 
+            "displayMin"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"channel2Im", " ", "=", " ", 
+        RowBox[{"Import", "[", 
+         RowBox[{
+         "workingDir", "~~", "\"\<Aligned_initial_partial_mean_2.tiff\>\""}], 
+         "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"channel2Im", "=", 
+        RowBox[{"Image", "[", 
+         RowBox[{"Clip", "[", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"displayMax", " ", 
+             RowBox[{"Rescale", "[", 
+              RowBox[{"ImageData", "[", "channel2Im", "]"}], "]"}]}], "+", 
+            "displayMin"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"numberOfChannels", ">", "2"}], ",", "\[IndentingNewLine]", 
+         "\t", 
+         RowBox[{
+          RowBox[{"channel3Im", " ", "=", " ", 
+           RowBox[{"Import", "[", 
+            RowBox[{
+            "workingDir", "~~", 
+             "\"\<Aligned_initial_partial_mean_3.tiff\>\""}], "]"}]}], ";", 
+          "\[IndentingNewLine]", "\t", 
+          RowBox[{"channel3Im", "=", 
+           RowBox[{"Image", "[", 
+            RowBox[{"Clip", "[", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"displayMax", " ", 
+                RowBox[{"Rescale", "[", 
+                 RowBox[{"ImageData", "[", "channel3Im", "]"}], "]"}]}], "+", 
+               "displayMin"}], ",", 
+              RowBox[{"{", 
+               RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+         "\[IndentingNewLine]", ",", "\[IndentingNewLine]", "\t", 
+         RowBox[{
+          RowBox[{"channel3Im", " ", "=", " ", 
+           RowBox[{"0", "*", "channel2Im"}]}], ";"}]}], "\[IndentingNewLine]",
+         "]"}], ";"}]}], "\[IndentingNewLine]", "]"}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{
+         RowBox[{"ColorCombine", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel3Im"}]}]}], 
+            "}"}], ",", "\"\<RGB\>\""}], "]"}], ",", 
+         RowBox[{"ImageSize", "\[Rule]", "800"}]}], "]"}], "}"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+      "WindowTitle", "\[Rule]", 
+       "\"\<Before Drift Correction and Alignment\>\""}]}], "]"}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{
+      "workingDir", "~~", "\"\<Aligned_aligned_full_mean_1.tiff\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", "=", 
+     RowBox[{"Image", "[", 
+      RowBox[{"Clip", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"displayMax", " ", 
+          RowBox[{"Rescale", "[", 
+           RowBox[{"ImageData", "[", "channel1Im", "]"}], "]"}]}], "+", 
+         "displayMin"}], ",", 
+        RowBox[{"{", 
+         RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel2Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{
+      "workingDir", "~~", "\"\<Aligned_aligned_full_mean_2.tiff\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel2Im", "=", 
+     RowBox[{"Image", "[", 
+      RowBox[{"Clip", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"displayMax", " ", 
+          RowBox[{"Rescale", "[", 
+           RowBox[{"ImageData", "[", "channel2Im", "]"}], "]"}]}], "+", 
+         "displayMin"}], ",", 
+        RowBox[{"{", 
+         RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{
+      RowBox[{"numberOfChannels", ">", "2"}], ",", "\[IndentingNewLine]", 
+      "\t", 
+      RowBox[{
+       RowBox[{"channel3Im", " ", "=", " ", 
+        RowBox[{"Import", "[", 
+         RowBox[{
+         "workingDir", "~~", "\"\<Aligned_aligned_full_mean_3.tiff\>\""}], 
+         "]"}]}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"channel3Im", "=", 
+        RowBox[{"Image", "[", 
+         RowBox[{"Clip", "[", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"displayMax", " ", 
+             RowBox[{"Rescale", "[", 
+              RowBox[{"ImageData", "[", "channel3Im", "]"}], "]"}]}], "+", 
+            "displayMin"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+      "\[IndentingNewLine]", ",", "\[IndentingNewLine]", "\t", 
+      RowBox[{
+       RowBox[{"channel3Im", " ", "=", " ", 
+        RowBox[{"0", "*", "channel2Im"}]}], ";"}]}], "\[IndentingNewLine]", 
+     "]"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{
+         RowBox[{"ColorCombine", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel3Im"}]}]}], 
+            "}"}], ",", "\"\<RGB\>\""}], "]"}], ",", 
+         RowBox[{"ImageSize", "\[Rule]", "800"}]}], "]"}], "}"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+      "WindowTitle", "\[Rule]", 
+       "\"\<Alignment and drift correction completed\>\""}]}], "]"}], ";"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.755895103366*^9, 3.755895104092*^9}, {
+   3.7558951582209997`*^9, 3.755895162981*^9}, {3.755895370237*^9, 
+   3.755895410245*^9}, {3.755896009005*^9, 3.7558960505959997`*^9}, {
+   3.7558960836689997`*^9, 3.755896113564*^9}, {3.755896421837*^9, 
+   3.7558964545480003`*^9}, 3.755901745545*^9, {3.755903571685*^9, 
+   3.755903576341*^9}, {3.755903758149*^9, 3.755903763109*^9}, {
+   3.755903869101*^9, 3.755903869477*^9}, {3.7731027971254005`*^9, 
+   3.7731028083414*^9}, 3.7731033839414005`*^9, {3.7731034149834003`*^9, 
+   3.7731035846054*^9}, 3.7731040728534*^9, 3.7731041503904004`*^9, 
+   3.7731041865834007`*^9, {3.7731045784394007`*^9, 3.7731045906784005`*^9}, {
+   3.7731097939494004`*^9, 3.7731098039894004`*^9}, 3.7731127433504004`*^9, {
+   3.7788971295559998`*^9, 3.778897129559*^9}, 3.778899101979*^9, {
+   3.778900591909*^9, 3.778900594821*^9}, {3.778900811373*^9, 
+   3.778901011741*^9}, {3.778901061501*^9, 3.778901242085*^9}, {
+   3.778901290311*^9, 3.778901630208*^9}, {3.77890168604*^9, 
+   3.778901703895*^9}, {3.778901869031*^9, 3.778901903046*^9}, {
+   3.77890442642*^9, 
+   3.778904439818*^9}},ExpressionUUID->"5b49cb46-4b7e-45d5-a22b-ee7e6943f9fd"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "5", ")"}], " ", "Make", " ", "a", " ", "SubAverage", " ", 
+    "of", " ", "Frames", " ", "for", " ", "each", " ", "Channel", " ", "for", 
+    " ", "Detection"}], "*)"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"useMaxProjection", "=", "False"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"detectionStartFrame", "=", "\"\<1 20\>\""}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"detectionEndFrame", "=", "\"\<10 30\>\""}], ";"}], 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"maxProjectionString", " ", "=", " ", 
+     RowBox[{"If", "[", 
+      RowBox[{
+      "useMaxProjection", ",", "\"\< -MaxProjection\>\"", ",", "\"\<\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"allChannelNames", "=", 
+     RowBox[{"StringJoin", "[", 
+      RowBox[{"Table", "[", 
+       RowBox[{
+        RowBox[{
+        "\"\< \\\"\>\"", "~~", "workingDir", "~~", "\"\<Images_Channel_\>\"", 
+         "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.tiff\\\"\>\""}], 
+        ",", 
+        RowBox[{"{", 
+         RowBox[{"j", ",", "1", ",", "numberOfChannels"}], "}"}]}], "]"}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", "\n", 
+   RowBox[{
+    RowBox[{"cmd", " ", "=", " ", 
+     RowBox[{
+     "jimPath", "~~", "\"\<Mean_Of_Frames.exe \\\"\>\"", "~~", "workingDir", 
+      "~~", "\"\<Aligned_channel_alignment.csv\\\" \\\"\>\"", "~~", 
+      "workingDir", "~~", "\"\<Aligned_Drifts.csv\\\" \\\"\>\"", "~~", 
+      "workingDir", "~~", "\"\<Aligned\\\"\>\"", "~~", "allChannelNames", 
+      "~~", "\"\< -Start \>\"", "~~", "detectionStartFrame", "~~", 
+      "\"\< -End \>\"", "~~", "detectionEndFrame", "~~", 
+      "maxProjectionString"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{"workingDir", "~~", "\"\<Aligned_Partial_Mean.tiff\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", "=", 
+     RowBox[{"ImageAdjust", "[", 
+      RowBox[{"channel1Im", ",", 
+       RowBox[{"{", 
+        RowBox[{"0", ",", "0", ",", "1"}], "}"}], ",", 
+       RowBox[{"{", 
+        RowBox[{
+         RowBox[{"RankedMin", "[", 
+          RowBox[{
+           RowBox[{"Flatten", "[", 
+            RowBox[{"ImageData", "[", "channel1Im", "]"}], "]"}], ",", " ", 
+           RowBox[{"8", 
+            RowBox[{
+             RowBox[{"ImageDimensions", "[", "channel1Im", "]"}], "[", 
+             RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], ",", "Automatic"}], 
+        "}"}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{"channel1Im", ",", 
+         RowBox[{"ImageSize", "\[Rule]", "800"}]}], "]"}], "}"}], ",", 
+      RowBox[{
+      "WindowTitle", "\[Rule]", 
+       "\"\<Sub-Average to use for detection\>\""}]}], "]"}], ";"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.755902034086*^9, 3.755902214276*^9}, {
+   3.7559022462530003`*^9, 3.75590235871*^9}, {3.755902393229*^9, 
+   3.755902400085*^9}, {3.755903561533*^9, 3.755903567101*^9}, {
+   3.755903965949*^9, 3.755903973941*^9}, 3.755904504297*^9, {
+   3.7731030139414005`*^9, 3.7731030148934*^9}, {3.7731038934154005`*^9, 
+   3.7731040335254*^9}, 3.7731040700374002`*^9, {3.7731043164294004`*^9, 
+   3.7731043605414004`*^9}, {3.7731045522374*^9, 3.7731045522854004`*^9}, {
+   3.7731046801024003`*^9, 3.7731046812474003`*^9}, {3.7731047388104005`*^9, 
+   3.7731048209894004`*^9}, {3.7731048549734*^9, 3.7731048563494005`*^9}, {
+   3.7731049497984004`*^9, 3.7731049507814007`*^9}, 3.7731052595254*^9, {
+   3.778897129565*^9, 3.778897129567*^9}, 3.778899101981*^9, {
+   3.778901907965*^9, 3.778901917791*^9}, {3.778902037277*^9, 
+   3.778902048429*^9}, {3.7789020877980003`*^9, 3.7789021062130003`*^9}, {
+   3.778902201869*^9, 3.778902288717*^9}, {3.778902329566*^9, 
+   3.778902334165*^9}, 
+   3.778902403197*^9},ExpressionUUID->"215994fb-72fd-4a2c-9bac-34f931f332b1"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "6", ")"}], " ", "Detect", " ", "Particles"}], "*)"}], 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  RowBox[{"(*", "Thresholding", "*)"}], "\n", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"cutoff", "=", "0.4"}], ";"}], 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "The", " ", "curoff", " ", "for", " ", "the", " ", "initial", " ", 
+     "thresholding"}], "*)"}], "\[IndentingNewLine]", "\n", 
+   RowBox[{"(*", "Filtering", "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"left", "=", "0"}], ";"}], 
+   RowBox[{"(*", 
+    RowBox[{
+    "Excluded", " ", "particles", " ", "closer", " ", "to", " ", "the", " ", 
+     "edge", " ", "than", " ", 
+     RowBox[{"this", ".", "Make"}], " ", "sure", " ", "this", " ", "value", 
+     " ", "is", " ", "larger", " ", "than", " ", "the", " ", "maximum", " ", 
+     RowBox[{"drift", ".", "25"}], " ", "works", " ", "well", " ", "in", " ", 
+     "most", " ", "cases"}], "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"right", "=", "30"}], ";"}], 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Excluded", " ", "particles", " ", "closer", " ", "to", " ", "the", " ", 
+     "edge", " ", "than", " ", 
+     RowBox[{"this", ".", "Make"}], " ", "sure", " ", "this", " ", "value", 
+     " ", "is", " ", "larger", " ", "than", " ", "the", " ", "maximum", " ", 
+     RowBox[{"drift", ".", "25"}], " ", "works", " ", "well", " ", "in", " ", 
+     "most", " ", "cases"}], "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"top", "=", "20"}], ";"}], 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Excluded", " ", "particles", " ", "closer", " ", "to", " ", "the", " ", 
+     "edge", " ", "than", " ", 
+     RowBox[{"this", ".", "Make"}], " ", "sure", " ", "this", " ", "value", 
+     " ", "is", " ", "larger", " ", "than", " ", "the", " ", "maximum", " ", 
+     RowBox[{"drift", ".", "25"}], " ", "works", " ", "well", " ", "in", " ", 
+     "most", " ", "cases"}], "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"bottom", "=", "12"}], ";"}], 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Excluded", " ", "particles", " ", "closer", " ", "to", " ", "the", " ", 
+     "edge", " ", "than", " ", 
+     RowBox[{"this", ".", "Make"}], " ", "sure", " ", "this", " ", "value", 
+     " ", "is", " ", "larger", " ", "than", " ", "the", " ", "maximum", " ", 
+     RowBox[{"drift", ".", "25"}], " ", "works", " ", "well", " ", "in", " ", 
+     "most", " ", "cases"}], "*)"}], "\n", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"minCount", "=", "15"}], ";", 
+    RowBox[{"(*", " ", 
+     RowBox[{
+     "Minimum", " ", "number", " ", "of", " ", "pixels", " ", "in", " ", "a", 
+      " ", "ROI", " ", "to", " ", "be", " ", "counted", " ", "as", " ", "a", 
+      " ", 
+      RowBox[{"particle", ".", "Use"}], " ", "this", " ", "to", " ", 
+      "exclude", " ", "speckles", " ", "of", " ", "background"}], "*)"}], 
+    "\n", 
+    RowBox[{"maxCount", "=", "10000"}], ";", 
+    RowBox[{"(*", " ", 
+     RowBox[{
+     "Maximum", " ", "number", " ", "of", " ", "pixels", " ", "in", " ", "a", 
+      " ", "ROI", " ", "to", " ", "be", " ", "counted", " ", "as", " ", "a", 
+      " ", 
+      RowBox[{"particle", ".", "Use"}], " ", "this", " ", "to", " ", 
+      "exclude", " ", "aggregates"}], "*)"}], "\[IndentingNewLine]", "\n", 
+    RowBox[{"minEccentricity", "=", 
+     RowBox[{"-", "0.1"}]}], ";", 
+    RowBox[{"(*", " ", 
+     RowBox[{
+      RowBox[{
+       RowBox[{
+        RowBox[{
+        "Eccentricity", " ", "of", " ", "best", " ", "fit", " ", "ellipse", 
+         " ", "goes", " ", "from", " ", "0", " ", "to", " ", "1"}], "-", 
+        "0"}], "=", 
+       RowBox[{"Perfect", " ", "Circle"}]}], ",", 
+      RowBox[{"1", "=", 
+       RowBox[{
+        RowBox[{"Line", ".", "Use"}], " ", "the", " ", "Minimum", " ", "to", 
+        " ", "exclude", " ", "round", " ", 
+        RowBox[{"objects", ".", "Set"}], " ", "it", " ", "to", " ", "any", 
+        " ", "negative", " ", "number", " ", "to", " ", "allow", " ", "all", 
+        " ", "round", " ", "objects"}]}]}], "*)"}], "\n", 
+    RowBox[{"maxEccentricity", "=", "1.1"}], ";", 
+    RowBox[{"(*", " ", 
+     RowBox[{
+      RowBox[{
+      "Use", " ", "the", " ", "maximum", " ", "to", " ", "exclude", " ", 
+       "long"}], ",", 
+      RowBox[{"thin", " ", 
+       RowBox[{"objects", ".", "Set"}], " ", "it", " ", "to", " ", "a", " ", 
+       "value", " ", "above", " ", "1", " ", "to", " ", "include", " ", 
+       "long"}], ",", 
+      RowBox[{"thin", " ", "objects"}]}], "*)"}], "\[IndentingNewLine]", "\n", 
+    RowBox[{"minLength", "=", "0"}], ";"}], 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "Minimum", " ", "number", " ", "of", " ", "pixels", " ", "for", " ", 
+     "the", " ", "major", " ", "axis", " ", "of", " ", "the", " ", "best", 
+     " ", "fit", " ", "ellipse"}], "*)"}], "\n", 
+   RowBox[{
+    RowBox[{"maxLength", "=", "10000"}], ";", 
+    RowBox[{"(*", " ", 
+     RowBox[{
+     "Maximum", " ", "number", " ", "of", " ", "pixels", " ", "for", " ", 
+      "the", " ", "major", " ", "axis", " ", "of", " ", "the", " ", "best", 
+      " ", "fit", " ", "ellipse"}], "*)"}], "\n", "\[IndentingNewLine]", 
+    RowBox[{"maxDistFromLinear", "=", "10000"}], ";", 
+    RowBox[{"(*", " ", 
+     RowBox[{
+      RowBox[{
+       RowBox[{
+       "Maximum", " ", "distance", " ", "that", " ", "a", " ", "pixel", " ", 
+        "can", " ", "diviate", " ", "from", " ", "the", " ", "major", " ", 
+        RowBox[{"axis", ".", "displayminmax"}]}], "=", 
+       RowBox[{"[", 
+        RowBox[{"0", " ", "1"}], "]"}]}], ";", 
+      RowBox[{
+      "%", " ", "This", " ", "just", " ", "adjusts", " ", "the", " ", 
+       "contrast", " ", "in", " ", "the", " ", "displayed", " ", 
+       RowBox[{"image", ".", "It"}], " ", "does", " ", "NOT", " ", "effect", 
+       " ", "detection"}]}], "*)"}], "\[IndentingNewLine]", 
+    "\[IndentingNewLine]", 
+    RowBox[{"displayMax", " ", "=", "2"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"displayMin", " ", "=", "0"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"cmd", " ", "=", " ", 
+     RowBox[{
+     "jimPath", "~~", "\"\<Detect_Particles.exe \\\"\>\"", "~~", "workingDir",
+       "~~", "\"\<Aligned_Partial_Mean.tiff\\\" \\\"\>\"", "~~", "workingDir",
+       "~~", "\"\<Detected\\\" -BinarizeCutoff \>\"", "~~", 
+      RowBox[{"ToString", "[", "cutoff", "]"}], "~~", "\"\< -minLength \>\"", 
+      "~~", 
+      RowBox[{"ToString", "[", "minLength", "]"}], "~~", 
+      "\"\< -maxLength \>\"", "~~", 
+      RowBox[{"ToString", "[", "maxLength", "]"}], "~~", 
+      "\"\< -minCount \>\"", "~~", 
+      RowBox[{"ToString", "[", "minCount", "]"}], "~~", "\"\< -maxCount \>\"",
+       "~~", 
+      RowBox[{"ToString", "[", "maxCount", "]"}], "~~", 
+      "\"\< -minEccentricity \>\"", "~~", 
+      RowBox[{"ToString", "[", "minEccentricity", "]"}], "~~", 
+      "\"\< -maxEccentricity \>\"", "~~", 
+      RowBox[{"ToString", "[", "maxEccentricity", "]"}], "~~", 
+      "\"\< -left \>\"", "~~", 
+      RowBox[{"ToString", "[", "left", "]"}], "~~", "\"\< -right \>\"", "~~", 
+      RowBox[{"ToString", "[", "right", "]"}], "~~", "\"\< -top \>\"", "~~", 
+      RowBox[{"ToString", "[", "top", "]"}], "~~", "\"\< -bottom \>\"", "~~", 
+      RowBox[{"ToString", "[", "bottom", "]"}], "~~", 
+      "\"\< -maxDistFromLinear \>\"", "~~", 
+      RowBox[{"ToString", "[", "maxDistFromLinear", "]"}]}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{"workingDir", "~~", "\"\<Aligned_Partial_Mean.tiff\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", "=", 
+     RowBox[{"Image", "[", 
+      RowBox[{"Clip", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"displayMax", " ", 
+          RowBox[{"Rescale", "[", 
+           RowBox[{"ImageData", "[", "channel1Im", "]"}], "]"}]}], "+", 
+         "displayMin"}], ",", 
+        RowBox[{"{", 
+         RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel2Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{"workingDir", "~~", "\"\<Detected_Regions.tif\>\""}], "]"}]}], 
+    ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel3Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{"workingDir", "~~", "\"\<Detected_Filtered_Regions.tif\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{
+         RowBox[{"ColorCombine", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel3Im"}]}]}], 
+            "}"}], ",", "\"\<RGB\>\""}], "]"}], ",", 
+         RowBox[{"ImageSize", "\[Rule]", "800"}]}], "]"}], "}"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+      "WindowTitle", "\[Rule]", 
+       "\"\<Detected Particles - Red Original Image - White Selected ROIs - \
+Green to Yellow->Excluded by filters\>\""}]}], "]"}], ";"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.755903093118*^9, 3.7559031334309998`*^9}, {
+   3.755903197517*^9, 3.755903252477*^9}, {3.755903299829*^9, 
+   3.755903539701*^9}, {3.755903986421*^9, 3.755904072885*^9}, {
+   3.755904495157*^9, 3.755904515109*^9}, 3.755904839637*^9, 
+   3.755905271429*^9, 3.755905422118*^9, {3.7731030177654004`*^9, 
+   3.7731030191014004`*^9}, 3.7731043629974003`*^9, {3.7731051774334*^9, 
+   3.7731052518224*^9}, {3.7731053243274*^9, 3.7731053863974004`*^9}, {
+   3.7731054238144007`*^9, 3.7731054243184004`*^9}, 3.7731054793984003`*^9, 
+   3.7731055289124002`*^9, 3.7731065022794003`*^9, {3.7788971295690002`*^9, 
+   3.778897129573*^9}, {3.778902406174*^9, 3.778902426648*^9}, {
+   3.778902470486*^9, 
+   3.7789025104309998`*^9}},ExpressionUUID->"fb46038d-dc1b-4acc-a9f7-\
+c449e889117f"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "7", ")"}], " ", "Calculate", " ", "Regions", " ", "for", 
+    " ", "Other", " ", "Channels"}], "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"cmd", "=", 
+     RowBox[{
+     "jimPath", "~~", "\"\<Other_Channel_Positions.exe \\\"\>\"", "~~", 
+      "workingDir", "~~", "\"\<Aligned_channel_alignment.csv\\\" \\\"\>\"", "~~",
+       "workingDir", "~~", "\"\<Aligned_Drifts.csv\\\" \\\"\>\"", "~~", 
+      "workingDir", "~~", 
+      "\"\<Detected_Filtered_Measurements.csv\\\" \\\"\>\"", "~~", 
+      "\[IndentingNewLine]", "workingDir", "~~", 
+      "\"\<Detected_Filtered\\\" -positions \\\"\>\"", "~~", "workingDir", 
+      "~~", "\"\<Detected_Filtered_Positions.csv\\\" -backgroundpositions \
+\\\"\>\"", "~~", "workingDir", "~~", "\"\<Detected_Positions.csv\\\"\>\""}]}],
+     ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Run", "[", "cmd", "]"}], ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.7789025498459997`*^9, 3.778902553316*^9}, {
+  3.7789026444309998`*^9, 
+  3.778902839821*^9}},ExpressionUUID->"c4315cc9-ece8-4131-baeb-f047fef7b3f2"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "8", ")"}], " ", "Expand", " ", "Regions"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"foregroundDist", "=", "4.1"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"backInnerDist", "=", "4.1"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"backOuterDist", "=", "20"}], ";"}], " ", "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"displayMax", " ", "=", "2"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"displayMin", " ", "=", "0"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"cmd", " ", "=", " ", 
+     RowBox[{
+     "jimPath", "~~", "\"\<Expand_Shapes.exe \\\"\>\"", "~~", "workingDir", 
+      "~~", "\"\<Detected_Filtered_Positions.csv\\\" \\\"\>\"", "~~", 
+      "workingDir", "~~", "\"\<Detected_Positions.csv\\\" \\\"\>\"", "~~", 
+      "workingDir", "~~", "\"\<Expanded_Channel_1\\\" -boundaryDist \>\"", "~~", 
+      RowBox[{"ToString", "[", "foregroundDist", "]"}], "~~", 
+      "\"\< -backgroundDist \>\"", "~~", 
+      RowBox[{"ToString", "[", "backOuterDist", "]"}], "~~", 
+      "\"\< -backInnerRadius \>\"", "~~", 
+      RowBox[{"ToString", "[", "backInnerDist", "]"}]}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\n", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Do", "[", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Expand_Shapes.exe \\\"\>\"", "~~", "workingDir",
+          "~~", "\"\<Detected_Filtered_Positions_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.csv\\\" \\\"\>\"", "~~",
+          "workingDir", "~~", 
+         "\"\<Detected_Filtered_Background_Positions_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.csv\\\" \\\"\>\"", "~~",
+          "workingDir", "~~", "\"\<Expanded_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", 
+         "\"\<\\\" -boundaryDist \>\"", "~~", 
+         RowBox[{"ToString", "[", "foregroundDist", "]"}], "~~", 
+         "\"\< -backgroundDist \>\"", "~~", 
+         RowBox[{"ToString", "[", "backOuterDist", "]"}], "~~", 
+         "\"\< -backInnerRadius \>\"", "~~", 
+         RowBox[{"ToString", "[", "backInnerDist", "]"}]}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\[IndentingNewLine]", ",", 
+      RowBox[{"{", 
+       RowBox[{"j", ",", "2", ",", "numberOfChannels"}], "}"}]}], "]"}], 
+    ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{
+      "workingDir", "~~", "\"\<Aligned_aligned_full_mean_1.tiff\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", "=", 
+     RowBox[{"Image", "[", 
+      RowBox[{"Clip", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"displayMax", " ", 
+          RowBox[{"Rescale", "[", 
+           RowBox[{"ImageData", "[", "channel1Im", "]"}], "]"}]}], "+", 
+         "displayMin"}], ",", 
+        RowBox[{"{", 
+         RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel2Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{"workingDir", "~~", "\"\<Expanded_Channel_1_ROIs.tif\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel3Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{
+      "workingDir", "~~", 
+       "\"\<Expanded_Channel_1_Background_Regions.tif\>\""}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{
+         RowBox[{"ColorCombine", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel3Im"}]}]}], 
+            "}"}], ",", "\"\<RGB\>\""}], "]"}], ",", 
+         RowBox[{"ImageSize", "\[Rule]", "800"}]}], "]"}], "}"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+      "WindowTitle", "\[Rule]", 
+       "\"\<Channel 1 Detected Particles - Red Original Image - Green ROIs - \
+Blue Background Regions\>\""}]}], "]"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{
+      "workingDir", "~~", "\"\<Aligned_initial_full_mean_2.tiff\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel1Im", "=", 
+     RowBox[{"Image", "[", 
+      RowBox[{"Clip", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"displayMax", " ", 
+          RowBox[{"Rescale", "[", 
+           RowBox[{"ImageData", "[", "channel1Im", "]"}], "]"}]}], "+", 
+         "displayMin"}], ",", 
+        RowBox[{"{", 
+         RowBox[{"0", ",", "1"}], "}"}]}], "]"}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel2Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{"workingDir", "~~", "\"\<Expanded_Channel_2_ROIs.tif\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"channel3Im", " ", "=", " ", 
+     RowBox[{"Import", "[", 
+      RowBox[{
+      "workingDir", "~~", 
+       "\"\<Expanded_Channel_2_Background_Regions.tif\>\""}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{
+         RowBox[{"ColorCombine", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "1", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "2", "]"}], "]"}], " ", "channel3Im"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"overlayColour1", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel1Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour2", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel2Im"}], "+", 
+              RowBox[{
+               RowBox[{"overlayColour3", "[", 
+                RowBox[{"[", "3", "]"}], "]"}], " ", "channel3Im"}]}]}], 
+            "}"}], ",", "\"\<RGB\>\""}], "]"}], ",", 
+         RowBox[{"ImageSize", "\[Rule]", "800"}]}], "]"}], "}"}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+      "WindowTitle", "\[Rule]", 
+       "\"\<Channel 2 Detected Particles - Red Original Image - Green ROIs - \
+Blue Background Regions\>\""}]}], "]"}], ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.755905038158*^9, 3.755905041492*^9}, {3.755905123495*^9,
+    3.755905170477*^9}, {3.7559052114370003`*^9, 3.755905304381*^9}, 
+   3.7731055435894003`*^9, {3.7731055857354*^9, 3.7731055905894003`*^9}, {
+   3.7731056967604003`*^9, 3.7731057216934004`*^9}, {3.7731057548704004`*^9, 
+   3.7731058132534003`*^9}, 3.7731058814074*^9, 3.7731059773824005`*^9, {
+   3.778897129576*^9, 3.778897129585*^9}, {3.778902895804*^9, 
+   3.778902902693*^9}, {3.778902945876*^9, 3.778903067158*^9}, {
+   3.778903104047*^9, 
+   3.778903165668*^9}},ExpressionUUID->"53fc2326-d44a-4928-90ce-65de420c4e6b"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "9", ")"}], " ", "Calculate", " ", "Traces"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"verboseOutput", "=", "False"}], ";"}], "\[IndentingNewLine]", 
+   "\n", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{"verboseOutput", ",", 
+      RowBox[{
+       RowBox[{"verboseString", "=", "\"\< -Verbose\>\""}], ";"}], ",", 
+      RowBox[{
+       RowBox[{"verboseString", "=", "\"\<\>\""}], ";"}]}], "]"}], ";"}], 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"cmd", " ", "=", " ", 
+     RowBox[{
+     "jimPath", "~~", "\"\<Calculate_Traces.exe \\\"\>\"", "~~", "workingDir",
+       "~~", "\"\<Images_Channel_1.tiff\\\" \\\"\>\"", "~~", "workingDir", 
+      "~~", "\"\<Expanded_Channel_1_ROI_Positions.csv\\\" \\\"\>\"", "~~", 
+      "workingDir", "~~", 
+      "\"\<Expanded_Channel_1_Background_Positions.csv\\\" \\\"\>\"", "~~", 
+      "workingDir", "~~", "\"\<Channel_1\\\" -Drift \>\"", "~~", "workingDir",
+       "~~", "\"\<Aligned_Drifts.csv\\\"\>\"", "~~", "verboseString"}]}], 
+    ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Do", "[", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Calculate_Traces.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.tiff\\\" \\\"\>\"", 
+         "~~", "workingDir", "~~", "\"\<Expanded_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", 
+         "\"\<_ROI_Positions.csv\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+         "\"\<Expanded_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", 
+         "\"\<_Background_Positions.csv\\\" \\\"\>\"", "~~", "workingDir", 
+         "~~", "\"\<Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<\\\" -Drift \>\"", "~~",
+          "workingDir", "~~", "\"\<Detected_Filtered_Drifts_Channel_\>\"", "~~", 
+         RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.csv\\\"\>\"", "~~", 
+         "verboseString"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\[IndentingNewLine]", ",", 
+      RowBox[{"{", 
+       RowBox[{"j", ",", "2", ",", "numberOfChannels"}], "}"}]}], "]"}], 
+    ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"currentDate", " ", "=", 
+     RowBox[{"StringJoin", "[", 
+      RowBox[{"Riffle", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{"ToString", "[", "#", "]"}], "&"}], "/@", 
+         RowBox[{"Take", "[", " ", 
+          RowBox[{
+           RowBox[{"DateList", "[", "]"}], ",", "3"}], "]"}]}], ",", 
+        "\"\<-\>\""}], "]"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"variablesString", "=", 
+     RowBox[{
+     "\"\<Date, \>\"", "~~", "currentDate", "~~", 
+      "\"\<\\nuseMetadataFile,\>\"", "~~", 
+      RowBox[{"ToString", "[", 
+       RowBox[{"If", "[", 
+        RowBox[{"useMetadataFile", ",", "1", ",", "0"}], "]"}], "]"}], "~~", 
+      "\"\<\\nnumberOfChannels,\>\"", "~~", 
+      RowBox[{"ToString", "[", "numberOfChannels", "]"}], "~~", 
+      "\"\<\\ninvertChannel,\>\"", "~~", 
+      RowBox[{"ToString", "[", 
+       RowBox[{"If", "[", 
+        RowBox[{"invertChannel", ",", "1", ",", "0"}], "]"}], "]"}], "~~", 
+      "\"\<\\nchannelToInvert,\>\"", "~~", 
+      RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+      "\"\<\\niterations,\>\"", "~~", 
+      RowBox[{"ToString", "[", "iterations", "]"}], "~~", 
+      "\"\<\\nalignStartFrame,\>\"", "~~", 
+      RowBox[{"ToString", "[", "alignStartFrame", "]"}], "~~", 
+      "\"\<\\nalignEndFrame,\>\"", "~~", 
+      RowBox[{"ToString", "[", "alignEndFrame", "]"}], "~~", 
+      "\"\<\\nmanualAlignment,\>\"", "~~", 
+      RowBox[{"ToString", "[", 
+       RowBox[{"If", "[", 
+        RowBox[{"manualAlignment", ",", "1", ",", "0"}], "]"}], "]"}], "~~", 
+      "\"\<\\nrotationAngle,\>\"", "~~", 
+      RowBox[{"ToString", "[", "rotationAngle", "]"}], "~~", 
+      "\"\<\\nscalingFactor,\>\"", "~~", 
+      RowBox[{"ToString", "[", "scalingFactor", "]"}], "~~", 
+      "\"\<\\nxoffset,\>\"", "~~", 
+      RowBox[{"ToString", "[", "xoffset", "]"}], "~~", "\"\<\\nyoffset,\>\"", 
+      "~~", 
+      RowBox[{"ToString", "[", "yoffset", "]"}], "~~", 
+      "\"\<\\nuseMaxProjection,\>\"", "~~", 
+      RowBox[{"ToString", "[", 
+       RowBox[{"If", "[", 
+        RowBox[{"useMaxProjection", ",", "1", ",", "0"}], "]"}], "]"}], "~~", 
+      "\"\<\\ndetectionStartFrame,\>\"", "~~", "detectionStartFrame", "~~", 
+      "\"\<\\ndetectionEndFrame,\>\"", "~~", "detectionEndFrame", "~~", 
+      "\"\<\\ncutoff,\>\"", "~~", 
+      RowBox[{"ToString", "[", "cutoff", "]"}], "~~", "\"\<\\nleft,\>\"", "~~", 
+      RowBox[{"ToString", "[", "left", "]"}], "~~", "\"\<\\nright,\>\"", "~~", 
+      RowBox[{"ToString", "[", "right", "]"}], "~~", "\"\<\\ntop,\>\"", "~~", 
+      RowBox[{"ToString", "[", "top", "]"}], "~~", "\"\<\\nbottom,\>\"", "~~", 
+      RowBox[{"ToString", "[", "bottom", "]"}], "~~", "\"\<\\nminCount,\>\"", 
+      "~~", 
+      RowBox[{"ToString", "[", "minCount", "]"}], "~~", 
+      "\"\<\\nmaxCount,\>\"", "~~", 
+      RowBox[{"ToString", "[", "maxCount", "]"}], "~~", 
+      "\"\<\\nminEccentricity,\>\"", "~~", 
+      RowBox[{"ToString", "[", "minEccentricity", "]"}], "~~", 
+      "\"\<\\nmaxEccentricity,\>\"", "~~", 
+      RowBox[{"ToString", "[", "maxEccentricity", "]"}], "~~", 
+      "\"\<\\nminLength,\>\"", "~~", 
+      RowBox[{"ToString", "[", "minLength", "]"}], "~~", 
+      "\"\<\\nmaxLength,\>\"", "~~", 
+      RowBox[{"ToString", "[", "maxLength", "]"}], "~~", 
+      "\"\<\\nmaxDistFromLinear,\>\"", "~~", 
+      RowBox[{"ToString", "[", "maxDistFromLinear", "]"}], "~~", 
+      "\"\<\\nforegroundDist,\>\"", "~~", 
+      RowBox[{"ToString", "[", "foregroundDist", "]"}], "~~", 
+      "\"\<\\nbackInnerDist,\>\"", "~~", 
+      RowBox[{"ToString", "[", "backInnerDist", "]"}], "~~", 
+      "\"\<\\nbackOuterDist,\>\"", "~~", 
+      RowBox[{"ToString", "[", "backOuterDist", "]"}], "~~", 
+      "\"\<\\nverboseOutput,\>\"", "~~", 
+      RowBox[{"ToString", "[", 
+       RowBox[{"If", "[", 
+        RowBox[{"verboseOutput", ",", "1", ",", "0"}], "]"}], "]"}]}]}], 
+    ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"fileID", " ", "=", " ", 
+     RowBox[{"OpenWrite", "[", 
+      RowBox[{"workingDir", "~~", "\"\<Trace_Generation_Variables.csv\>\""}], 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"WriteString", "[", 
+     RowBox[{"fileID", ",", "variablesString"}], "]"}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Close", "[", "fileID", "]"}], ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.75590545596*^9, 3.755905462524*^9}, {3.755905539685*^9, 
+   3.7559055633570004`*^9}, {3.7559056104449997`*^9, 3.755905700612*^9}, 
+   3.7731055448134003`*^9, {3.7731061461744003`*^9, 3.7731061489654007`*^9}, 
+   3.7731062080694003`*^9, {3.778897129586*^9, 3.77889712959*^9}, 
+   3.7788991019849997`*^9, {3.778903197916*^9, 3.778903232941*^9}, {
+   3.778903307093*^9, 3.778903412749*^9}, {3.778903450462*^9, 
+   3.778903467966*^9}, {3.7789036708529997`*^9, 3.778903766428*^9}, {
+   3.7789038003570004`*^9, 3.778903824957*^9}, {3.778903885262*^9, 
+   3.778903970156*^9}},ExpressionUUID->"7763fb18-c758-4a08-819d-1ddc505a19d0"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "10", ")"}], " ", "View", " ", "Traces"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"pageNumber", "=", "2"}], ";"}], "\n", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"traces", "=", 
+     RowBox[{"Drop", "[", 
+      RowBox[{
+       RowBox[{"Import", "[", 
+        RowBox[{
+        "workingDir", "~~", "\"\<Channel_1_Fluorescent_Intensities.csv\>\""}],
+         "]"}], ",", "1"}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"traces2", "=", 
+     RowBox[{"Drop", "[", 
+      RowBox[{
+       RowBox[{"Import", "[", 
+        RowBox[{
+        "workingDir", "~~", "\"\<Channel_2_Fluorescent_Intensities.csv\>\""}],
+         "]"}], ",", "1"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"measures", "=", 
+     RowBox[{"Drop", "[", 
+      RowBox[{
+       RowBox[{"Import", "[", 
+        RowBox[{
+        "workingDir", "~~", "\"\<Detected_Filtered_Measurements.csv\>\""}], 
+        "]"}], ",", "1"}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"channel1Im", "=", 
+     RowBox[{"Import", "[", 
+      RowBox[{
+      "workingDir", "~~", "\"\<Detected_Filtered_Region_Numbers.tif\>\""}], 
+      "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{"channel1Im", ",", 
+         RowBox[{"ImageSize", "\[Rule]", "800"}]}], "]"}], "}"}], ",", 
+      RowBox[{"WindowTitle", "\[Rule]", "\"\<Positions of Particles\>\""}]}], 
+     "]"}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"toout", " ", "=", " ", 
+     RowBox[{"GraphicsGrid", "[", 
+      RowBox[{
+       RowBox[{"Partition", "[", 
+        RowBox[{
+         RowBox[{"Table", "[", 
+          RowBox[{
+           RowBox[{"If", "[", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"i", "+", 
+               RowBox[{
+                RowBox[{"(", 
+                 RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+              "\[LessEqual]", 
+              RowBox[{"Length", "[", "traces", "]"}]}], ",", 
+             "\[IndentingNewLine]", 
+             RowBox[{"Labeled", "[", 
+              RowBox[{
+               RowBox[{"ListLinePlot", "[", 
+                RowBox[{
+                 RowBox[{"{", 
+                  RowBox[{
+                   RowBox[{"traces", "[", 
+                    RowBox[{"[", 
+                    RowBox[{"i", "+", 
+                    RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+                    "]"}], "]"}], ",", 
+                   RowBox[{"traces2", "[", 
+                    RowBox[{"[", 
+                    RowBox[{"i", "+", 
+                    RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+                    "]"}], "]"}]}], "}"}], ",", 
+                 RowBox[{"PlotStyle", "\[Rule]", 
+                  RowBox[{"{", 
+                   RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"Red", ",", 
+                    RowBox[{"Thickness", "[", "0.01", "]"}]}], "}"}], ",", 
+                    RowBox[{"{", 
+                    RowBox[{"Blue", ",", 
+                    RowBox[{"Thickness", "[", "0.01", "]"}]}], "}"}]}], 
+                   "}"}]}], ",", 
+                 RowBox[{"AxesStyle", "\[Rule]", 
+                  RowBox[{"{", 
+                   RowBox[{
+                    RowBox[{"{", 
+                    RowBox[{"Black", ",", "Thick", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}], 
+                    ",", "12"}], "}"}], ",", 
+                    RowBox[{"{", 
+                    RowBox[{"Black", ",", "Thick", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}], 
+                    ",", "12"}], "}"}]}], "}"}]}], ",", 
+                 RowBox[{"TicksStyle", "\[Rule]", "Black"}], ",", 
+                 RowBox[{"ImageSize", "\[Rule]", "170"}]}], "]"}], ",", 
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{"Rotate", "[", 
+                  RowBox[{
+                   RowBox[{"Style", "[", 
+                    RowBox[{"\"\<Intensity\>\"", ",", 
+                    RowBox[{"{", 
+                    RowBox[{"Black", ",", "12", ",", "Bold", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
+                    "}"}]}], "]"}], ",", 
+                   RowBox[{"\[Pi]", "/", "2"}]}], "]"}], ",", 
+                 RowBox[{"Style", "[", 
+                  RowBox[{"\"\<Frame\>\"", ",", 
+                   RowBox[{"{", 
+                    RowBox[{"Black", ",", "12", ",", "Bold", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
+                    "}"}]}], "]"}], ",", 
+                 RowBox[{"Style", "[", 
+                  RowBox[{
+                   RowBox[{"\"\<Particle \>\"", "~~", 
+                    RowBox[{"ToString", "[", 
+                    RowBox[{"i", "+", 
+                    RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+                    "]"}], "~~", "\"\< x \>\"", "~~", 
+                    RowBox[{"ToString", "[", 
+                    RowBox[{"Round", "[", 
+                    RowBox[{"measures", "[", 
+                    RowBox[{"[", 
+                    RowBox[{
+                    RowBox[{"i", "+", 
+                    RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+                    ",", "1"}], "]"}], "]"}], "]"}], "]"}], "~~", 
+                    "\"\< y \>\"", "~~", 
+                    RowBox[{"ToString", "[", 
+                    RowBox[{"Round", "[", 
+                    RowBox[{"measures", "[", 
+                    RowBox[{"[", 
+                    RowBox[{
+                    RowBox[{"i", "+", 
+                    RowBox[{
+                    RowBox[{"(", 
+                    RowBox[{"pageNumber", "-", "1"}], ")"}], "*", "36"}]}], 
+                    ",", "2"}], "]"}], "]"}], "]"}], "]"}]}], ",", 
+                   RowBox[{"{", 
+                    RowBox[{"Black", ",", "12", ",", "Bold", ",", 
+                    RowBox[{"FontFamily", "\[Rule]", "\"\<Helvetica\>\""}]}], 
+                    "}"}]}], "]"}]}], "}"}], ",", 
+               RowBox[{"{", 
+                RowBox[{"Left", ",", "Bottom", ",", "Top"}], "}"}]}], "]"}]}],
+             "]"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"i", ",", "1", ",", "36"}], "}"}]}], "]"}], ",", "6"}], 
+        "]"}], ",", 
+       RowBox[{"ImageSize", "\[Rule]", "1200"}], ",", 
+       RowBox[{"AspectRatio", "\[Rule]", "0.7"}]}], "]"}]}], ";"}], "\n", 
+   RowBox[{
+    RowBox[{"CreateDialog", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"DynamicImage", "[", 
+        RowBox[{"toout", ",", 
+         RowBox[{"ImageSize", "\[Rule]", "1200"}]}], "]"}], "}"}], ",", 
+      RowBox[{"WindowTitle", "\[Rule]", "\"\<Traces\>\""}]}], "]"}], 
+    ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.7789040926610003`*^9, 3.778904148829*^9}, {
+  3.778904183883*^9, 
+  3.778904227683*^9}},ExpressionUUID->"9e9a34df-d3c1-4cd2-a1e6-bf3e189d24f7"],
+
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  "\[IndentingNewLine]", "\[IndentingNewLine]", 
+  "\[IndentingNewLine]"}]], "Input",
+ CellChangeTimes->{{3.7731027777304*^9, 
+  3.7731027783564005`*^9}},ExpressionUUID->"af714e1d-63ed-4fec-8d0c-\
+c6d5a643edd0"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{"Batch", " ", "from", " ", "here"}], "*)"}], "\[IndentingNewLine]",
+   "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "1", ")"}], " ", "Select", " ", "folder", " ", "containing", 
+    " ", "all", " ", "image", " ", "stacks"}], "*)"}], "\[IndentingNewLine]", 
+  RowBox[{"FileNameSetter", "[", 
+   RowBox[{
+    RowBox[{"Dynamic", "[", "folderin", "]"}], ",", "\"\<Directory\>\""}], 
+   "]"}]}]], "Input",
+ CellChangeTimes->{{3.755911968494*^9, 3.75591201102*^9}, {3.755912208436*^9, 
+  3.755912250165*^9}, {3.7731071026684003`*^9, 
+  3.7731071085004005`*^9}},ExpressionUUID->"5149a033-9ba3-46ed-8f30-\
+c6fd794babe5"],
+
+Cell[BoxData[
+ TemplateBox[{Dynamic[$CellContext`folderin],"Directory",All},
+  "FileNameSetterBoxes"]], "Output",
+ CellChangeTimes->{{3.755912246533*^9, 
+  3.755912250811*^9}},ExpressionUUID->"e8e95ced-df71-4e81-a84d-108ddd7d6043"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "2", ")"}], " ", "Detect", " ", "Files"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"insubfolders", " ", "=", " ", "False"}], ";"}], 
+   "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"If", "[", 
+     RowBox[{
+      RowBox[{"insubfolders", "\[Equal]", "False"}], ",", 
+      RowBox[{"files", " ", "=", " ", 
+       RowBox[{"FileNames", "[", 
+        RowBox[{"folderin", "~~", "\"\<\\\\*.tif*\>\""}], "]"}]}], ",", 
+      "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"subfolders", " ", "=", " ", 
+        RowBox[{"Select", "[", 
+         RowBox[{
+          RowBox[{"FileNames", "[", 
+           RowBox[{"folderin", "~~", "\"\<\\\\*\>\""}], "]"}], ",", 
+          RowBox[{
+           RowBox[{"DirectoryQ", "[", "#", "]"}], " ", "&"}]}], "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"files", " ", "=", " ", 
+        RowBox[{"Flatten", "[", 
+         RowBox[{
+          RowBox[{
+           RowBox[{"FileNames", "[", 
+            RowBox[{"#", "~~", "\"\<\\\\*.tif*\>\""}], "]"}], "&"}], "/@", 
+          "subfolders"}], "]"}]}]}]}], "]"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"Print", "[", 
+     RowBox[{"\"\<There are \>\"", "~~", 
+      RowBox[{"ToString", "[", 
+       RowBox[{"Length", "[", "files", "]"}], "]"}], "~~", 
+      "\"\< files to analyse\>\""}], "]"}], ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.75591396863*^9, 3.755914139948*^9}, {3.755914178613*^9, 
+  3.755914239237*^9}, {3.755914358973*^9, 3.75591439602*^9}, {
+  3.7731071145174007`*^9, 3.7731071232774005`*^9}, {3.778904641962*^9, 
+  3.778904642722*^9}},ExpressionUUID->"99e7bc76-29f1-4759-991c-7b753e53081a"],
+
+Cell[BoxData["\<\"There are 3 files to analyse\"\>"], "Print",
+ CellChangeTimes->{3.755914396475*^9, 
+  3.7789046436730003`*^9},ExpressionUUID->"a9ae58f2-3dae-476d-bb54-\
+3cc121a888d0"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{" ", "3", ")"}], " ", "Batch", " ", "Process"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"ParallelDo", "[", "\[IndentingNewLine]", "\t", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"Print", "[", "i", "]"}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"completeName", " ", "=", " ", 
+        RowBox[{"files", "[", 
+         RowBox[{"[", "i", "]"}], "]"}]}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"workingDir", " ", "=", " ", 
+        RowBox[{
+         RowBox[{"FileNameJoin", "[", 
+          RowBox[{"Append", "[", 
+           RowBox[{
+            RowBox[{"Drop", "[", 
+             RowBox[{
+              RowBox[{"FileNameSplit", "[", "completeName", "]"}], ",", 
+              RowBox[{"-", "1"}]}], "]"}], ",", 
+            RowBox[{"FileBaseName", "[", "completeName", "]"}]}], "]"}], 
+          "]"}], "~~", "\"\<\\\\\>\""}]}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"DirectoryQ", "[", "workingDir", "]"}], "\[Equal]", 
+          "False"}], ",", 
+         RowBox[{"CreateDirectory", "[", "workingDir", "]"}]}], "]"}], ";", 
+       "\[IndentingNewLine]", "\[IndentingNewLine]", "\t", 
+       RowBox[{"If", "[", 
+        RowBox[{"useMetadataFile", ",", 
+         RowBox[{
+          RowBox[{"metaFileName", "=", 
+           RowBox[{
+            RowBox[{"FileNameJoin", "[", 
+             RowBox[{"Append", "[", 
+              RowBox[{
+               RowBox[{"Drop", "[", 
+                RowBox[{
+                 RowBox[{"FileNameSplit", "[", "completeName", "]"}], ",", 
+                 RowBox[{"-", "1"}]}], "]"}], ",", 
+               RowBox[{"FileBaseName", "[", "completeName", "]"}]}], "]"}], 
+             "]"}], "~~", "\"\<_metadata.txt\>\""}]}], ";", 
+          "\[IndentingNewLine]", "\t", 
+          RowBox[{"cmd", " ", "=", " ", 
+           RowBox[{
+           "jimPath", "~~", "\"\<TIFF_Channel_Splitter.exe \\\"\>\"", "~~", 
+            "completeName", "~~", "\"\<\\\" \\\"\>\"", "~~", "workingDir", 
+            "~~", "\"\<Images\\\" -MetadataFile \\\"\>\"", "~~", 
+            "metaFileName", "~~", "\"\<\\\"\>\""}]}], ";"}], 
+         "\[IndentingNewLine]", "\t", ",", "\[IndentingNewLine]", "\t", 
+         RowBox[{
+          RowBox[{"cmd", " ", "=", " ", 
+           RowBox[{
+           "jimPath", "~~", "\"\<TIFF_Channel_Splitter.exe \\\"\>\"", "~~", 
+            "completeName", "~~", "\"\<\\\" \\\"\>\"", "~~", "workingDir", 
+            "~~", "\"\<Images\\\" -numberOfChannels \>\"", "~~", 
+            RowBox[{"ToString", "[", "numberOfChannels", "]"}]}]}], ";"}]}], 
+        "\[IndentingNewLine]", "\t", "]"}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"Run", "[", "cmd", " ", "]"}], ";", "\[IndentingNewLine]", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"If", "[", 
+        RowBox[{"invertChannel", ",", "\[IndentingNewLine]", "\t", 
+         RowBox[{
+          RowBox[{"cmd", "=", 
+           RowBox[{
+           "jimPath", "~~", "\"\<Invert_Channel.exe \\\"\>\"", "~~", 
+            "workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+            "\"\<.tiff\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+            "\"\<Images_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+            "\"\<_Inverted.tiff\\\"\>\""}]}], ";", "\n", "\t\t", 
+          RowBox[{"Run", "[", "cmd", " ", "]"}], ";", "\n", "\t\t", 
+          RowBox[{"DeleteFile", "[", 
+           RowBox[{"workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+            "\"\<.tiff\>\""}], "]"}], ";", "\[IndentingNewLine]", "\t\t", 
+          RowBox[{"RenameFile", "[", 
+           RowBox[{
+            RowBox[{"workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+             RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+             "\"\<_Inverted.tiff\>\""}], ",", 
+            RowBox[{"workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+             RowBox[{"ToString", "[", "channelToInvert", "]"}], "~~", 
+             "\"\<.tiff\>\""}]}], "]"}], ";"}]}], "\[IndentingNewLine]", "\t",
+         "]"}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", "\t", 
+       RowBox[{"allChannelNames", "=", 
+        RowBox[{"StringJoin", "[", 
+         RowBox[{"Table", "[", 
+          RowBox[{
+           RowBox[{
+           "\"\< \\\"\>\"", "~~", "workingDir", "~~", 
+            "\"\<Images_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.tiff\\\"\>\""}], 
+           ",", 
+           RowBox[{"{", 
+            RowBox[{"j", ",", "1", ",", "numberOfChannels"}], "}"}]}], "]"}], 
+         "]"}]}], ";", "\[IndentingNewLine]", "\t", "\[IndentingNewLine]", 
+       "\t", 
+       RowBox[{"If", "[", 
+        RowBox[{"manualAlignment", ",", "\[IndentingNewLine]", "\t", 
+         RowBox[{
+          RowBox[{"cmd", " ", "=", " ", 
+           RowBox[{
+           "jimPath", "~~", "\"\<Align_Channels.exe \\\"\>\"", "~~", 
+            "workingDir", "~~", "\"\<Aligned\\\"\>\"", "~~", 
+            "allChannelNames", "~~", "\"\< -Start \>\"", "~~", 
+            RowBox[{"ToString", "[", "alignstartframe", "]"}], "~~", 
+            "\"\< -End \>\"", "~~", 
+            RowBox[{"ToString", "[", "alignendframe", "]"}], "~~", 
+            "\"\< -Iterations \>\"", "~~", 
+            RowBox[{"ToString", "[", "iterations", "]"}], "~~", 
+            "\[IndentingNewLine]", "\t", "\"\<-Alignment \>\"", "~~", 
+            RowBox[{"ToString", "[", "xoffset", "]"}], "~~", "\"\< \>\"", "~~", 
+            RowBox[{"ToString", "[", "yoffset", "]"}], "~~", "\"\< \>\"", "~~", 
+            RowBox[{"ToString", "[", "rotationAngle", "]"}], "~~", 
+            "\"\< \>\"", "~~", 
+            RowBox[{"ToString", "[", "scalingFactor", "]"}]}]}], ";"}], 
+         "\[IndentingNewLine]", "\t", ",", "\[IndentingNewLine]", "\t", 
+         RowBox[{
+          RowBox[{"cmd", " ", "=", " ", 
+           RowBox[{
+           "jimPath", "~~", "\"\<Align_Channels.exe \\\"\>\"", "~~", 
+            "workingDir", "~~", "\"\<Aligned\\\"\>\"", "~~", 
+            "allChannelNames", "~~", "\"\< -Start \>\"", "~~", 
+            RowBox[{"ToString", "[", "alignstartframe", "]"}], "~~", 
+            "\"\< -End \>\"", "~~", 
+            RowBox[{"ToString", "[", "alignendframe", "]"}], "~~", 
+            "\"\< -Iterations \>\"", "~~", 
+            RowBox[{"ToString", "[", "iterations", "]"}]}]}], ";"}]}], 
+        "\[IndentingNewLine]", "\t", "]"}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"Run", "[", "cmd", " ", "]"}], ";", "\n", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Mean_Of_Frames.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Aligned_channel_alignment.csv\\\" \\\"\>\"",
+          "~~", "workingDir", "~~", "\"\<Aligned_Drifts.csv\\\" \\\"\>\"", "~~",
+          "workingDir", "~~", "\"\<Aligned\\\"\>\"", "~~", "allChannelNames", 
+         "~~", "\"\< -Start \>\"", "~~", "detectionStartFrame", "~~", 
+         "\"\< -End \>\"", "~~", "detectionEndFrame", "~~", 
+         "maxProjectionString"}]}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"Run", "[", "cmd", "]"}], ";", "\[IndentingNewLine]", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Detect_Particles.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Aligned_Partial_Mean.tiff\\\" \\\"\>\"", "~~",
+          "workingDir", "~~", "\"\<Detected\\\" -BinarizeCutoff \>\"", "~~", 
+         RowBox[{"ToString", "[", "cutoff", "]"}], "~~", 
+         "\"\< -minLength \>\"", "~~", 
+         RowBox[{"ToString", "[", "minLength", "]"}], "~~", 
+         "\"\< -maxLength \>\"", "~~", 
+         RowBox[{"ToString", "[", "maxLength", "]"}], "~~", 
+         "\"\< -minCount \>\"", "~~", 
+         RowBox[{"ToString", "[", "minCount", "]"}], "~~", 
+         "\"\< -maxCount \>\"", "~~", 
+         RowBox[{"ToString", "[", "maxCount", "]"}], "~~", 
+         "\"\< -minEccentricity \>\"", "~~", 
+         RowBox[{"ToString", "[", "minEccentricity", "]"}], "~~", 
+         "\"\< -maxEccentricity \>\"", "~~", 
+         RowBox[{"ToString", "[", "maxEccentricity", "]"}], "~~", 
+         "\"\< -left \>\"", "~~", 
+         RowBox[{"ToString", "[", "left", "]"}], "~~", "\"\< -right \>\"", "~~", 
+         RowBox[{"ToString", "[", "right", "]"}], "~~", "\"\< -top \>\"", "~~", 
+         RowBox[{"ToString", "[", "top", "]"}], "~~", "\"\< -bottom \>\"", "~~", 
+         RowBox[{"ToString", "[", "bottom", "]"}], "~~", 
+         "\"\< -maxDistFromLinear \>\"", "~~", 
+         RowBox[{"ToString", "[", "maxDistFromLinear", "]"}]}]}], ";", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"Run", "[", "cmd", "]"}], ";", "\[IndentingNewLine]", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"cmd", "=", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Other_Channel_Positions.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Aligned_channel_alignment.csv\\\" \\\"\>\"",
+          "~~", "workingDir", "~~", "\"\<Aligned_Drifts.csv\\\" \\\"\>\"", "~~",
+          "workingDir", "~~", 
+         "\"\<Detected_Filtered_Measurements.csv\\\" \\\"\>\"", "~~", 
+         "\[IndentingNewLine]", "workingDir", "~~", 
+         "\"\<Detected_Filtered\\\" -positions \\\"\>\"", "~~", "workingDir", 
+         "~~", "\"\<Detected_Filtered_Positions.csv\\\" -backgroundpositions \
+\\\"\>\"", "~~", "workingDir", "~~", "\"\<Detected_Positions.csv\\\"\>\""}]}],
+        ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"Run", "[", "cmd", "]"}], ";", "\[IndentingNewLine]", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Expand_Shapes.exe \\\"\>\"", "~~", "workingDir",
+          "~~", "\"\<Detected_Filtered_Positions.csv\\\" \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Detected_Positions.csv\\\" \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Expanded_Channel_1\\\" -boundaryDist \>\"", 
+         "~~", 
+         RowBox[{"ToString", "[", "foregroundDist", "]"}], "~~", 
+         "\"\< -backgroundDist \>\"", "~~", 
+         RowBox[{"ToString", "[", "backOuterDist", "]"}], "~~", 
+         "\"\< -backInnerRadius \>\"", "~~", 
+         RowBox[{"ToString", "[", "backInnerDist", "]"}]}]}], ";", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"Run", "[", "cmd", "]"}], ";", "\[IndentingNewLine]", "\n", 
+       "\t", 
+       RowBox[{"Do", "[", "\[IndentingNewLine]", "\t", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"cmd", " ", "=", " ", 
+           RowBox[{
+           "jimPath", "~~", "\"\<Expand_Shapes.exe \\\"\>\"", "~~", 
+            "workingDir", "~~", 
+            "\"\<Detected_Filtered_Positions_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", 
+            "\"\<.csv\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+            "\"\<Detected_Filtered_Background_Positions_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", 
+            "\"\<.csv\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+            "\"\<Expanded_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", 
+            "\"\<\\\" -boundaryDist \>\"", "~~", 
+            RowBox[{"ToString", "[", "foregroundDist", "]"}], "~~", 
+            "\"\< -backgroundDist \>\"", "~~", 
+            RowBox[{"ToString", "[", "backOuterDist", "]"}], "~~", 
+            "\"\< -backInnerRadius \>\"", "~~", 
+            RowBox[{"ToString", "[", "backInnerDist", "]"}]}]}], ";", 
+          "\[IndentingNewLine]", "\t", 
+          RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\[IndentingNewLine]", ",", 
+         RowBox[{"{", 
+          RowBox[{"j", ",", "2", ",", "numberOfChannels"}], "}"}]}], "]"}], 
+       ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+       RowBox[{"cmd", " ", "=", " ", 
+        RowBox[{
+        "jimPath", "~~", "\"\<Calculate_Traces.exe \\\"\>\"", "~~", 
+         "workingDir", "~~", "\"\<Images_Channel_1.tiff\\\" \\\"\>\"", "~~", 
+         "workingDir", "~~", 
+         "\"\<Expanded_Channel_1_ROI_Positions.csv\\\" \\\"\>\"", "~~", 
+         "workingDir", "~~", 
+         "\"\<Expanded_Channel_1_Background_Positions.csv\\\" \\\"\>\"", "~~",
+          "workingDir", "~~", "\"\<Channel_1\\\" -Drift \>\"", "~~", 
+         "workingDir", "~~", "\"\<Aligned_Drifts.csv\\\"\>\"", "~~", 
+         "verboseString"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"Run", "[", "cmd", "]"}], ";", "\[IndentingNewLine]", 
+       RowBox[{"Do", "[", "\[IndentingNewLine]", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"cmd", " ", "=", " ", 
+           RowBox[{
+           "jimPath", "~~", "\"\<Calculate_Traces.exe \\\"\>\"", "~~", 
+            "workingDir", "~~", "\"\<Images_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", 
+            "\"\<.tiff\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+            "\"\<Expanded_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", 
+            "\"\<_ROI_Positions.csv\\\" \\\"\>\"", "~~", "workingDir", "~~", 
+            "\"\<Expanded_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", 
+            "\"\<_Background_Positions.csv\\\" \\\"\>\"", "~~", "workingDir", 
+            "~~", "\"\<Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<\\\" -Drift \>\"",
+             "~~", "workingDir", "~~", 
+            "\"\<Detected_Filtered_Drifts_Channel_\>\"", "~~", 
+            RowBox[{"ToString", "[", "j", "]"}], "~~", "\"\<.csv\\\"\>\"", "~~",
+             "verboseString"}]}], ";", "\[IndentingNewLine]", 
+          RowBox[{"Run", "[", "cmd", "]"}], ";"}], "\[IndentingNewLine]", ",", 
+         RowBox[{"{", 
+          RowBox[{"j", ",", "2", ",", "numberOfChannels"}], "}"}]}], "]"}], 
+       ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"fileID", " ", "=", " ", 
+        RowBox[{"OpenWrite", "[", 
+         RowBox[{
+         "workingDir", "~~", "\"\<Trace_Generation_Variables.csv\>\""}], 
+         "]"}]}], ";", "\[IndentingNewLine]", "\t", 
+       RowBox[{"WriteString", "[", 
+        RowBox[{"fileID", ",", "variablesString"}], "]"}], ";", 
+       "\[IndentingNewLine]", "\t", 
+       RowBox[{"Close", "[", "fileID", "]"}], ";"}], "\[IndentingNewLine]", 
+      ",", 
+      RowBox[{"{", 
+       RowBox[{"i", ",", "1", ",", 
+        RowBox[{"Length", "[", "files", "]"}]}], "}"}]}], "]"}], ";"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.755914514293*^9, 3.755914577109*^9}, {
+   3.7559146954449997`*^9, 3.755914733349*^9}, {3.755914829541*^9, 
+   3.755914862901*^9}, {3.7731064099024005`*^9, 3.7731064408944006`*^9}, {
+   3.7731065281664004`*^9, 3.7731065482624006`*^9}, {3.7731071272934003`*^9, 
+   3.7731071362384005`*^9}, {3.778897129594*^9, 3.778897129627*^9}, {
+   3.7788991019890003`*^9, 3.778899101999*^9}, {3.7789042925880003`*^9, 
+   3.778904411587*^9}, 3.77890446237*^9, {3.778904495043*^9, 
+   3.778904613966*^9}},ExpressionUUID->"dcff8af7-d808-41e9-84f0-081bafb828fb"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData["1"], "Print",
+ ShowCellLabel->True,
+ CellChangeTimes->{
+  3.778904657343*^9},ExpressionUUID->"161eec67-f46f-41e5-b301-87a4dd24afcd"],
+
+Cell[BoxData["2"], "Print",
+ ShowCellLabel->True,
+ CellChangeTimes->{
+  3.778904657415*^9},ExpressionUUID->"6c1d023f-6e4b-47b5-b42f-2a8fb398b6c6"],
+
+Cell[BoxData["3"], "Print",
+ ShowCellLabel->True,
+ CellChangeTimes->{
+  3.778904657441*^9},ExpressionUUID->"99278206-74ad-4c3c-9984-a2999c0707b6"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1920, 998},
+WindowMargins->{{-8, Automatic}, {Automatic, -8}},
+FrontEndVersion->"11.2 for Microsoft Windows (64-bit) (September 10, 2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 570, 12, 48, "Input",ExpressionUUID->"dd123db6-7f48-414d-b83c-372adafcd133"],
+Cell[1153, 36, 254, 5, 44, "Output",ExpressionUUID->"57f20bd3-583d-4c86-8a6c-4ebeabee2b04"]
+}, Open  ]],
+Cell[1422, 44, 2201, 57, 162, "Input",ExpressionUUID->"a12e2f3d-5274-45d5-8f85-424c08f4e89e"],
+Cell[3626, 103, 3037, 62, 219, "Input",ExpressionUUID->"cf914e1f-cf9f-41ef-81c5-08259bf06d36"],
+Cell[6666, 167, 2016, 42, 181, "Input",ExpressionUUID->"a6177961-5992-4581-82d2-c710a9cb77fb"],
+Cell[8685, 211, 16047, 389, 1321, "Input",ExpressionUUID->"5b49cb46-4b7e-45d5-a22b-ee7e6943f9fd"],
+Cell[24735, 602, 4272, 95, 352, "Input",ExpressionUUID->"215994fb-72fd-4a2c-9bac-34f931f332b1"],
+Cell[29010, 699, 11419, 255, 770, "Input",ExpressionUUID->"fb46038d-dc1b-4acc-a9f7-c449e889117f"],
+Cell[40432, 956, 1141, 24, 86, "Input",ExpressionUUID->"c4315cc9-ece8-4131-baeb-f047fef7b3f2"],
+Cell[41576, 982, 9520, 228, 675, "Input",ExpressionUUID->"53fc2326-d44a-4928-90ce-65de420c4e6b"],
+Cell[51099, 1212, 7592, 158, 504, "Input",ExpressionUUID->"7763fb18-c758-4a08-819d-1ddc505a19d0"],
+Cell[58694, 1372, 7307, 179, 276, "Input",ExpressionUUID->"9e9a34df-d3c1-4cd2-a1e6-bf3e189d24f7"],
+Cell[66004, 1553, 304, 6, 143, "Input",ExpressionUUID->"af714e1d-63ed-4fec-8d0c-c6d5a643edd0"],
+Cell[CellGroupData[{
+Cell[66333, 1563, 689, 16, 86, "Input",ExpressionUUID->"5149a033-9ba3-46ed-8f30-c6fd794babe5"],
+Cell[67025, 1581, 231, 4, 44, "Output",ExpressionUUID->"e8e95ced-df71-4e81-a84d-108ddd7d6043"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[67293, 1590, 1748, 43, 143, "Input",ExpressionUUID->"99e7bc76-29f1-4759-991c-7b753e53081a"],
+Cell[69044, 1635, 185, 3, 22, "Print",ExpressionUUID->"a9ae58f2-3dae-476d-bb54-3cc121a888d0"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[69266, 1643, 15305, 291, 1321, "Input",ExpressionUUID->"dcff8af7-d808-41e9-84f0-081bafb828fb"],
+Cell[CellGroupData[{
+Cell[84596, 1938, 146, 3, 22, "Print",ExpressionUUID->"161eec67-f46f-41e5-b301-87a4dd24afcd"],
+Cell[84745, 1943, 146, 3, 22, "Print",ExpressionUUID->"6c1d023f-6e4b-47b5-b42f-2a8fb398b6c6"],
+Cell[84894, 1948, 146, 3, 22, "Print",ExpressionUUID->"99278206-74ad-4c3c-9984-a2999c0707b6"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
