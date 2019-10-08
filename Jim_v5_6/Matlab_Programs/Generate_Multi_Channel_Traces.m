@@ -56,9 +56,9 @@ end
 
 
 %% 4) Align Channels and Calculate Drifts
-iterations = 1;
+iterations = 3;
 
-alignStartFrame = 15;
+alignStartFrame = 10;
 alignEndFrame = 15;
 
 manualAlignment = false; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
@@ -271,8 +271,6 @@ disp('Finished Generating Traces');
 %% 10) Plot Traces
     pageNumber = 1;
 
-    traces=csvread([workingDir,'Channel_1_Fluorescent_Intensities.csv'],1);
-    traces2=csvread([workingDir,'Channel_2_Fluorescent_Intensities.csv'],1);
     measures = csvread([workingDir,'Detected_Filtered_Measurements.csv'],1);
     channel1Im = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
     figure('Name','Particle Numbers');
@@ -280,14 +278,18 @@ disp('Finished Generating Traces');
     truesize([900 900]);
     figure
     set(gcf, 'Position', [100, 100, 1500, 800])
+    mycolors = ['-r';'-b';'-g';'-m';'-b';'-c';'-y'];
 
     for i=1:36
         if i+36*(pageNumber-1)<size(traces,1)
         subplot(6,6,i)
         hold on
         title(['Particle ' num2str(i+36*(pageNumber-1)) ' x ' num2str(round(measures(i+36*(pageNumber-1),1))) ' y ' num2str(round(measures(i+36*(pageNumber-1),2)))])
-        plot(traces(i+36*(pageNumber-1),:)./max(traces(i+36*(pageNumber-1),:)),'-r');
-        plot(traces2(i+36*(pageNumber-1),:)./max(traces2(i+36*(pageNumber-1),:)),'-b');
+        for j=1:numberOfChannels
+            traces=csvread([workingDir,'Channel_',num2str(j),'_Fluorescent_Intensities.csv'],1);
+            plot(traces(i+36*(pageNumber-1),:)./max(traces(i+36*(pageNumber-1),:)),mycolors(j,:));
+        
+        end
         plot([0 size(traces(i+36*(pageNumber-1),:),2)],[0 0] ,'-black');
         xlim([0 size(traces(i+36*(pageNumber-1),:),2)])
         hold off
