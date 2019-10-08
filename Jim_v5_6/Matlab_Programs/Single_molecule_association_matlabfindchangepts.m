@@ -1,8 +1,6 @@
 %%
 clear
 %% 1) get the working folder
-[jimpath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);
-JIM = [fileparts(jimpath),'\Jim_Programs\'];
 pathname = uigetdir();
 pathname=[pathname,'\'];
 
@@ -39,10 +37,10 @@ numofexps = size(channel1,2);
 disp(['There are ',num2str(numofexps),' files to analyse']);
 %%
 threshold =1.25;%1.35;%0.4;
-singleintensity = 12600;
+singleintensity = 4000;
 
 
-exptoplot = 5;
+exptoplot = 1;
 pagenumber = 1;
 
 firststeps = [];
@@ -60,7 +58,7 @@ fltotal = 0;
 figure
 set(gcf, 'Position', [100, 100, 1500, 800])
 
-for expcount=8:10%2:numofexps
+for expcount=1:numofexps
    
     traces=csvread(channel1{expcount},1);
     

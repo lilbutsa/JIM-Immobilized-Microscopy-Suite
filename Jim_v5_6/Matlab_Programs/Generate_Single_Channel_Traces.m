@@ -35,7 +35,7 @@ end
 iterations = 3;
 
 alignStartFrame = 1;
-alignEndFrame = 5;
+alignEndFrame = 1000;
 
 cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations)];%Run the Align_Channels program with the selected image stack as the input and save the results to the results folder with the Aligned prefix
 system(cmd);
@@ -58,7 +58,7 @@ disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
 useMaxProjection = false;
 
 detectionStartFrame = 1;
-detectionEndFrame = 25;
+detectionEndFrame = 1000;
 
 maxProjectionString = '';
 if useMaxProjection
@@ -77,17 +77,17 @@ truesize([900 900]);
 %% 4) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=0.85; % The curoff for the initial thresholding
+cutoff=0.3; % The curoff for the initial thresholding
 
 %Filtering
-left = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-right = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-top = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-bottom = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+left = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+right = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+top = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+bottom = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
 
-minCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-maxCount=100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+minCount = 15; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+maxCount=1000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 minEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
 maxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
@@ -99,7 +99,7 @@ maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from t
 
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 10; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
 cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
@@ -196,7 +196,7 @@ end
 %
 %
 %% 8) Detect files for batch
-filesInSubFolders = true; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 
 
@@ -228,8 +228,8 @@ parfor i=1:NumberOfFiles
     workingDir = [fileNamein,filesep,name];
     [fileNamein,name,~] = fileparts(workingDir);
     workingDir = [fileNamein,filesep,name,filesep];
-    if ~exist(workingdir, 'dir')
-        mkdir(workingdir)%make a subfolder with that name
+    if ~exist(workingDir, 'dir')
+        mkdir(workingDir)%make a subfolder with that name
     end
 
     if (exist([workingDir,'Channel_1_Fluorescent_Intensities.csv'],'file')==2 && overwritePreviouslyAnalysed==false)

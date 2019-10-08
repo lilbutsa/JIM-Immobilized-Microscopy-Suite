@@ -39,10 +39,10 @@ numofexps = size(channel1,2);
 disp(['There are ',num2str(numofexps),' files to analyse']);
 
 %% for channel 1
-channel1min = 5000;
-channel1lowercutoff = 15000;
-channel1uppercutoff = 100000;
-channel1max = 200000;
+channel1min = -500;
+channel1lowercutoff = 5000;
+channel1uppercutoff = 15000;
+channel1max = 20000;
 figure
 hold on
 
@@ -64,9 +64,9 @@ hold off
 
 %% for channel 2
 channel2min = -3000;
-channel2lowercutoff = 4000;
-channel2uppercutoff = 16000;
-channel2max = 20000;
+channel2lowercutoff = 1000;
+channel2uppercutoff = 1500;
+channel2max = 2000;
 figure
 hold on
 
