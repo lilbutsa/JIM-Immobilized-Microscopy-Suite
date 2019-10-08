@@ -330,8 +330,8 @@ disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %% 12) Batch Analyse
 overwritePreviouslyAnalysed = true;
 
-parfor i=1:filenum(1)
-    completeName = allfilescells{i};
+parfor i=1:NumberOfFiles
+    completeName = allFiles{i};
     disp(['Analysing ',completeName]);
     % 3.2) Create folder for results
     [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
@@ -339,8 +339,8 @@ parfor i=1:filenum(1)
     [fileNamein,name,~] = fileparts(workingDir);
     workingDir = [fileNamein,filesep,name,filesep];
     
-    if ~exist(workingdir, 'dir')
-        mkdir(workingdir)%make a subfolder with that name
+    if ~exist(workingDir, 'dir')
+        mkdir(workingDir)%make a subfolder with that name
     end
     
     if (exist([workingDir,'Channel_1_Fluorescent_Intensities.csv'],'file')==2 && exist([workingDir,'Channel_2_Fluorescent_Intensities.csv'],'file')==2 && overwritePreviouslyAnalysed==false)
