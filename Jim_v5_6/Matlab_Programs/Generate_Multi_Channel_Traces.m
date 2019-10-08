@@ -279,7 +279,8 @@ disp('Finished Generating Traces');
     figure
     set(gcf, 'Position', [100, 100, 1500, 800])
     mycolors = ['-r';'-b';'-g';'-m';'-b';'-c';'-y'];
-
+    traces=csvread([workingDir,'Channel_',num2str(j),'_Fluorescent_Intensities.csv'],1);
+    
     for i=1:36
         if i+36*(pageNumber-1)<size(traces,1)
         subplot(6,6,i)
