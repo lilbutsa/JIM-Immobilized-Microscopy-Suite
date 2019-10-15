@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void numberimage(std::vector< std::vector<float> >& filteredcents, std::vector<uint8_t>& fn, int iw,int ih) {
+void numberimage(std::vector<std::vector<float>>& filteredcents, std::vector<uint8_t>& fn, int iw,int ih) {
 	for (int i = 0; i < filteredcents.size(); i++) {
 		int xc = round(filteredcents[i][0]);
 		int y0 = round(filteredcents[i][1]) - 2;

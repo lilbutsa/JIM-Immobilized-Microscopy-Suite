@@ -138,9 +138,9 @@ int main(int argc, char *argv[])
 		else { pdeltax = deltay; pdeltay = deltax; }
 		int fillen = round(measurementresults[i][3]+ kymographextension);
 
-		for (int j = -round(kymographextension); j < fillen + 1; j++) {
-			xin = measurementresults[i][10] + j*deltax;
-			yin = measurementresults[i][11] + j*deltay;
+		for (int j = -fillen; j < fillen + 1; j++) {
+			xin = measurementresults[i][0] + j*deltax;
+			yin = measurementresults[i][1] + j*deltay;
 			linein.clear();
 			for (double k = -boundaryDist; k < boundaryDist + 0.05; k += 1) {
 				xfinal = min(imageWidth - 1, max(0, (int)round(xin + pdeltax*k)));
@@ -169,9 +169,9 @@ int main(int argc, char *argv[])
 		else { pdeltax = deltay; pdeltay = deltax; }
 		int fillen = round(measurementresults[i][3] + kymographextension);
 
-		for (int j = -round(kymographextension); j < fillen + 1; j++) {
-			xin = measurementresults[i][10] + j*deltax;
-			yin = measurementresults[i][11] + j*deltay;
+		for (int j = -fillen; j < fillen + 1; j++) {
+			xin = measurementresults[i][0] + j*deltax;
+			yin = measurementresults[i][1] + j*deltay;
 			linein.clear();
 			for (double k = -backgroundDist; k < backgroundDist + 0.05; k += 1) {
 				xfinal = min(imageWidth - 1, max(0, (int)round(xin + pdeltax*k)));

@@ -33,13 +33,13 @@ float FindMaxDistFromLinear(float& xcent, float& ycent, float& xvec, float& yvec
 	return maxdist;
 }
 
-void componentMeasurements(std::vector<std::vector<int> >& pos2 /*positions vector*/, int imagewidth, std::vector<std::vector<float> > & measurementresults, std::vector<float> & imagef) {
+void componentMeasurements(std::vector<std::vector<int>>& pos2 /*positions vector*/, int imagewidth, std::vector<std::vector<float>> & measurementresults, std::vector<float> & imagef) {
 	measurementresults.clear();
-	std::vector<float> xpos, ypos, newvec(14);//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x end 1, y end 1, x end 2, y end 2
+	std::vector<float> xpos, ypos, newvec(14);//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x min, x max, y min, y max
 	std::vector<float> vx2, vy2;
 	IppiSize roiSize2;
 	double x2, y2, xy;
-	float max, max2, min;
+	float max, max2;
 	int maxpos;
 	for (int i = 0; i < pos2.size(); i++) {
 		xpos.resize(pos2[i].size());
@@ -67,6 +67,18 @@ void componentMeasurements(std::vector<std::vector<int> >& pos2 /*positions vect
 
 		newvec[2] = 1 - sqrt(newvec[3]) / sqrt(newvec[2]);
 
+		vx2.resize(pos2[i].size());
+		vy2.resize(pos2[i].size());
+		ippsMul_32f(xpos.data(), xpos.data(), vx2.data(), vx2.size());
+		ippsMul_32f(ypos.data(), ypos.data(), vy2.data(), vy2.size());
+		ippsAdd_32f_I(vy2.data(), vx2.data(), vx2.size());
+		ippsMax_32f(vx2.data(), xpos.size(), &max);
+		newvec[3] = 2 * sqrt(max);
+
+		/*ippsMaxAbs_32f(&xpos[0], xpos.size(), &max);
+		ippsMaxAbs_32f(&ypos[0], ypos.size(), &max2);
+		newvec[3] = sqrt(max*max + max2*max2);*/
+
 		float norm = sqrt(newvec[4] * newvec[4] + newvec[5] * newvec[5]);
 		newvec[4] = newvec[4] / norm;
 		newvec[5] = newvec[5] / norm;
@@ -74,22 +86,6 @@ void componentMeasurements(std::vector<std::vector<int> >& pos2 /*positions vect
 		if (newvec[4] < 0) {
 			newvec[4] *= -1.0; newvec[5] *= -1.0;
 		}
-
-		vx2.resize(pos2[i].size());
-		vy2.resize(pos2[i].size());
-		float vx = newvec[4], vy = newvec[5];
-		ippsMulC_32f(xpos.data(), vx, vx2.data(), xpos.size());
-		ippsMulC_32f(ypos.data(), vy, vy2.data(), ypos.size());
-		ippsAdd_32f_I(vy2.data(), vx2.data(), vx2.size());
-		ippsMinMax_32f(vx2.data(), vx2.size(), &min, &max);
-
-		newvec[3] = max - min;
-
-		newvec[10] = newvec[0] + vx*min;
-		newvec[11] = newvec[1] + vy*min;
-
-		newvec[12] = newvec[0] + vx*max;
-		newvec[13] = newvec[1] + vy*max;
 
 
 		newvec[6] = xpos.size();
@@ -115,108 +111,36 @@ void componentMeasurements(std::vector<std::vector<int> >& pos2 /*positions vect
 		newvec[9] = FindMaxDistFromLinear(newvec[0], newvec[1], newvec[4], newvec[5], xpos, ypos);
 
 
+		ippsMin_32f(&xpos[0], xpos.size(), &max);
+		newvec[10] = max;
+		ippsMax_32f(&xpos[0], xpos.size(), &max);
+		newvec[11] = max;
+		ippsMin_32f(&ypos[0], xpos.size(), &max);
+		newvec[12] = max;
+		ippsMax_32f(&ypos[0], xpos.size(), &max);
+		newvec[13] = max;
+
 		measurementresults.push_back(newvec);
 	}
 
 }
 
-bool greater_than_length(const std::pair <std::vector<float>, std::vector<int> >& vec1, const std::pair <std::vector<float>, std::vector<int> >& vec2){
-		return ((vec1.first)[3] > (vec2.first)[3]);
-};
 
-
-void joinfragments(std::vector<std::vector<int> >& positions, std::vector<std::vector<float> >& measurements, float maxangle, float maxjoindist, float maxlineenddist, int imagewidth, std::vector<float> & imagef) {
-	float centroidx, vectorx, centroidy, vectory, length, endx1, endx2, endy1, endy2;
-	float incentroidx, invectorx, incentroidy, invectory, inlength, inendx1, inendx2, inendy1, inendy2;
-	float enddist, linepointdist, angle;
-	std::vector< std::pair <std::vector<float>, std::vector<int> > > pairMeasPos;
-	bool bjointoccurred = true;
-
-
-
-	while(bjointoccurred){
-		bjointoccurred = false;
-
-		componentMeasurements(positions, imagewidth, measurements, imagef);
-		pairMeasPos.clear();
-		for (int i = 0; i < positions.size(); i++)pairMeasPos.push_back(make_pair(measurements[i], positions[i]));
-		sort(pairMeasPos.begin(), pairMeasPos.end(), greater_than_length);
-
-		for (int i = 0; i < pairMeasPos.size() - 1; i++) {
-
-			vectorx = ((pairMeasPos[i]).first)[4];
-			vectory = ((pairMeasPos[i]).first)[5];
-
-			endx1 = ((pairMeasPos[i]).first)[10];
-			endy1 = ((pairMeasPos[i]).first)[11];
-
-			endx2 = ((pairMeasPos[i]).first)[12];
-			endy2 = ((pairMeasPos[i]).first)[13];
-
-
-			for (int j = i + 1; j < pairMeasPos.size(); j++) {
-
-				invectorx = ((pairMeasPos[j]).first)[4];
-				invectory = ((pairMeasPos[j]).first)[5];
-
-				inendx1 = ((pairMeasPos[j]).first)[10];
-				inendy1 = ((pairMeasPos[j]).first)[11];
-
-				inendx2 = ((pairMeasPos[j]).first)[12];
-				inendy2 = ((pairMeasPos[j]).first)[13];
-
-				enddist = min(min(min(SQUARE(endx1 - inendx1) + SQUARE(endy1 - inendy1),
-					SQUARE(endx1 - inendx2) + SQUARE(endy1 - inendy2)),
-					SQUARE(endx2 - inendx1) + SQUARE(endy2 - inendy1)),
-					SQUARE(endx2 - inendx2) + SQUARE(endy2 - inendy2));
-				enddist = sqrt(enddist);
-
-				linepointdist = min(abs((endy2 - endy1)*inendx1 - (endx2 - endx1)*inendy1 + endx2 * endy1 - endy2 * endx1) / sqrt(SQUARE(endy2 - endy1) + SQUARE(endx2 - endx1)),
-					abs((endy2 - endy1)*inendx2 - (endx2 - endx1)*inendy2 + endx2 * endy1 - endy2 * endx1) / sqrt(SQUARE(endy2 - endy1) + SQUARE(endx2 - endx1)));
-
-				angle = abs(vectorx * invectorx + vectory * invectory);
-				if (abs(angle) > 0.99999)angle = 0; else angle = acos(abs(angle));
-
-				if (enddist < maxjoindist && angle < maxangle && linepointdist < maxlineenddist) {
-					((pairMeasPos[i]).second).insert((pairMeasPos[i]).second.end(), (pairMeasPos[j]).second.begin(), (pairMeasPos[j]).second.end());
-					pairMeasPos.erase(pairMeasPos.begin() + j);
-					bjointoccurred = true;
-					break;
-				}
-			}
-			if (bjointoccurred)break;
-		}
-
-		positions.clear();
-		measurements.clear();
-		for (int i = 0; i < pairMeasPos.size(); i++) {
-			measurements.push_back(pairMeasPos[i].first);
-			positions.push_back(pairMeasPos[i].second);
-		}
-
-	}
-
-}
-
-
-/*
-void joinfragments(std::vector<std::vector<int> >& initialcullpos, std::vector<std::vector<float> >& icmeasurementresults, float maxangle, float maxjoindist, float maxendline, int imagewidth, std::vector<float> & imagef) {
-	std::vector<std::vector<int> > joinedpos;
-	float cx, vx, cy, vy, length, endx1, endx2, endy1, endy2, inendx1, inendy1, inendx2, inendy2, enddist, distin, distin2, angle, endline;
-	std::vector<std::vector<int> > tojoin(initialcullpos.size());
+void joinfragments(std::vector<std::vector<int>>& initialcullpos, std::vector<std::vector<float>>& icmeasurementresults, float maxangle, float maxjoindist, float maxendline, int imagewidth, std::vector<float> & imagef) {
+	std::vector<std::vector<int>> joinedpos;
+	float x1, x2, y1, y2, endx1, endx2, endy1, endy2, inendx1, inendy1, inendx2, inendy2, enddist, distin, distin2, angle, endline;
+	std::vector<std::vector<int>> tojoin(initialcullpos.size());
 	for (int i = 0; i < initialcullpos.size(); i++) {
-		cx = icmeasurementresults[i][0];
-		cy = icmeasurementresults[i][1];
-		vx = icmeasurementresults[i][0] + icmeasurementresults[i][4];
-		vy = icmeasurementresults[i][1] + icmeasurementresults[i][5];
-		length = icmeasurementresults[i][3];
+		x1 = icmeasurementresults[i][0];
+		y1 = icmeasurementresults[i][1];
+		x2 = icmeasurementresults[i][0] + icmeasurementresults[i][4];
+		y2 = icmeasurementresults[i][1] + icmeasurementresults[i][5];
 
+		endx1 = icmeasurementresults[i][0] + icmeasurementresults[i][3] * icmeasurementresults[i][4];
+		endy1 = icmeasurementresults[i][1] + icmeasurementresults[i][3] * icmeasurementresults[i][5];
 
-		endx1 = cx + 0.5 * length * vx;
-		endy1 = cy + 0.5 * length * vy;
-
-		endx2 = cx - 0.5 * length * vx;
-		endy2 = cy - 0.5 * length * vy;
+		endx2 = icmeasurementresults[i][0] - icmeasurementresults[i][3] * icmeasurementresults[i][4];
+		endy2 = icmeasurementresults[i][1] - icmeasurementresults[i][3] * icmeasurementresults[i][5];
 
 		for (int j = 0; j < initialcullpos.size(); j++)
 		{
@@ -265,7 +189,7 @@ void joinfragments(std::vector<std::vector<int> >& initialcullpos, std::vector<s
 		}
 	}
 
-	std::vector<std::vector<int> > tojoin2;
+	std::vector<std::vector<int>> tojoin2;
 	int valin;
 	bool found = false;
 	if (tojoin.size()>0)tojoin2.push_back(tojoin[0]);
@@ -299,4 +223,4 @@ void joinfragments(std::vector<std::vector<int> >& initialcullpos, std::vector<s
 	componentMeasurements(joinedpos, imagewidth, icmeasurementresults,imagef);//x centre, ycentre,eccentricity,length,x vec,yvec of major axis
 }
 
-*/
+
