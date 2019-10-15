@@ -185,11 +185,11 @@ histogram(allmeasures(:,4),round(length(allmeasures(:,4))/3))
 %% 6) Expand Regions and find kymograph lines
 
 kymExtensionDist = 10;
+kymWidth=6; % Perpendicular distance of foreground kymograph
+kymBackWidth = 20; % Background Kymograph Width
+backDist = 2; % Background Particles Expansion
 
-foregroundDist=6; % Perpendicular distance of foreground kymograph
-backInnerDist = 2; % Perpendicular distance of background kymograph
-backOuterDist = 20; % detected spot expansion
-cmd = [JIM,'Kymograph_Positions',fileEXE,' "',workingDir,'Joined_Measurements.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(foregroundDist),' -backgroundDist ',num2str(backOuterDist),' -backInnerRadius ',num2str(backInnerDist),' -ExtendKymographs ',num2str(kymExtensionDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
+cmd = [JIM,'Kymograph_Positions',fileEXE,' "',workingDir,'Joined_Measurements.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(kymWidth),' -backgroundDist ',num2str(kymBackWidth),' -backInnerRadius ',num2str(backDist),' -ExtendKymographs ',num2str(kymExtensionDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
 system(cmd)
 
 
@@ -219,9 +219,9 @@ variableString = ['Date, ', datestr(datetime('today')),'\n'...
     ,'left2,', num2str(left2),'\nright2,', num2str(right2),'\ntop2,', num2str(top2),'\nbottom2,', num2str(bottom2),'\n'...
     ,'minCount2,',num2str(minCount),'\nmaxCount2,', num2str(maxCount),'\nminEccentricity2,', num2str(minEccentricity2),'\nmaxEccentricity2,', num2str(maxEccentricity2),'\n'...
     ,'minLength2,',num2str(minLength2),'\nmaxLength2,', num2str(maxLength2),'\nmaxDistFromLinear2,', num2str(maxDistFromLinear2),'\n'...
-    ,'KymExtensionDist,',num2str(kymExtensionDist),'\nforegroundDist,',num2str(foregroundDist),'\nbackInnerDist,', num2str(backInnerDist),'\nbackOuterDist,', num2str(backOuterDist)];
+    ,'KymExtensionDist,',num2str(kymExtensionDist),'\nkymWidth,',num2str(kymWidth),'\nbackDist,', num2str(backDist),'\nkymBackWidth,', num2str(kymBackWidth)];
 
-fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
+fileID = fopen([workingDir,'Kymograph_Generation_Variables.csv'],'w');
 fprintf(fileID, variableString);
 fclose(fileID);
 
@@ -319,19 +319,20 @@ parfor i=1:NumberOfFiles
     
     cmd = [JIM,'Mean_of_Frames',fileEXE,' NULL "',workingDir,'Aligned_Drifts.csv" "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(detectionStartFrame),' -End ',num2str(detectionEndFrame),maxProjectionString];
     system(cmd);
+    
     % 3.4) Detect Particles
     cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
-    system(cmd);
+    system(cmd)
     
     cmd = [JIM,'Join_Filaments',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Joined"  -minLength ',num2str(minLength2),' -maxLength ',num2str(maxLength2),' -minCount ',num2str(minCount2),' -maxCount ',num2str(maxCount2),' -minEccentricity ',num2str(minEccentricity2),' -maxEccentricity ',num2str(maxEccentricity2),' -left ',num2str(left2),' -right ',num2str(right2),' -top ',num2str(top2),' -bottom ',num2str(bottom2),' -maxDistFromLinear ',num2str(maxDistFromLinear2),' -maxAngle ',num2str(maxAngle),' -maxJoinDist ',num2str(maxJoinDist),' -maxLine ',num2str(maxLine)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
-    system(cmd);
+    system(cmd)
 
     % 3.5) Fit areas around each shape
-    cmd = [JIM,'Kymograph_Positions',fileEXE,' "',workingDir,'Joined_Measurements.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(foregroundDist),' -backgroundDist ',num2str(backInnerDist),' -backInnerRadius ',num2str(backOuterDist),' -ExtendKymographs ',num2str(kymExtensionDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
-    system(cmd);
+    cmd = [JIM,'Kymograph_Positions',fileEXE,' "',workingDir,'Joined_Measurements.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(kymWidth),' -backgroundDist ',num2str(kymBackWidth),' -backInnerRadius ',num2str(backDist),' -ExtendKymographs ',num2str(kymExtensionDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
+    system(cmd)
     % 3.6) Calculate Sum of signal and background for each frame
-    cmd = [JIM,'Calculate_Traces',fileEXE,' "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
-    system(cmd);
+    cmd = [JIM,'Calculate_Traces',fileEXE,' "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"',' -Verbose']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+    system(cmd)
     
     variableString = ['Date, ', datestr(datetime('today')),'\n'...
     ,'iterations,',num2str(iterations),'\nalignStartFrame,', num2str(alignStartFrame),'\nalignEndFrame,', num2str(alignEndFrame),'\n'...
@@ -343,9 +344,9 @@ parfor i=1:NumberOfFiles
     ,'left2,', num2str(left2),'\nright2,', num2str(right2),'\ntop2,', num2str(top2),'\nbottom2,', num2str(bottom2),'\n'...
     ,'minCount2,',num2str(minCount),'\nmaxCount2,', num2str(maxCount),'\nminEccentricity2,', num2str(minEccentricity2),'\nmaxEccentricity2,', num2str(maxEccentricity2),'\n'...
     ,'minLength2,',num2str(minLength2),'\nmaxLength2,', num2str(maxLength2),'\nmaxDistFromLinear2,', num2str(maxDistFromLinear2),'\n'...
-    ,'KymExtensionDist,',num2str(kymExtensionDist),'\nforegroundDist,',num2str(foregroundDist),'\nbackInnerDist,', num2str(backInnerDist),'\nbackOuterDist,', num2str(backOuterDist)];
+    ,'KymExtensionDist,',num2str(kymExtensionDist),'\nkymWidth,',num2str(kymWidth),'\nbackDist,', num2str(backDist),'\nkymBackWidth,', num2str(kymBackWidth)];
 
-    fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
+    fileID = fopen([workingDir,'Kymograph_Generation_Variables.csv'],'w');
     fprintf(fileID, variableString);
     fclose(fileID);
     
@@ -353,7 +354,7 @@ parfor i=1:NumberOfFiles
     kymdir = [workingDir,'\Kymographs\'];
     mkdir(kymdir);
     cmd = [JIM,'Make_Kymographs',fileEXE,' "',workingDir,'Channel_1_Fluorescent_Intensities.csv" "',workingDir,'Channel_1_Fluorescent_Backgrounds.csv" "',workingDir,'Expanded_ROI_Positions.csv" "',kymdir,'Kymograph"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
-    system(cmd);
+    system(cmd)
 end
 
 
