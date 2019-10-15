@@ -39,7 +39,8 @@ float stepprob(vector<float> datain, int numofbootstraps) {
 
 
 	for (int i = 0; i < numofbootstraps; i++) {
-		shuffle(datain.begin(), datain.end(), std::default_random_engine(seed));
+		auto gen = std::default_random_engine(seed);
+		std::shuffle(datain.begin(), datain.end(), gen);
 		if (cusum(datain) < sdiff0)lowerrand++;
 	}
 

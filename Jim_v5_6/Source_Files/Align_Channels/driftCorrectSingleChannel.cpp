@@ -29,7 +29,10 @@ void driftCorrectSingleChannel(string& inputfilename, int& start, int& end,int i
 	ippsDivC_32f_I((Ipp32f)(end - start + 1), imagetoalign.data(), is.imagePoints);
 
 	vector<float> gaussblurred(is.imagePoints, 0);
-	IppiSize roiSize = { is.imageWidth, is.imageHeight };
+
+	int imageHeight = is.imageHeight;
+
+	IppiSize roiSize = { imageWidth, imageHeight };
 	Ipp32u kernelSize = 5;
 	int iTmpBufSize = 0, iSpecSize = 0;
 	ippiFilterGaussianGetBufferSize(roiSize, kernelSize, ipp32f, 1, &iSpecSize, &iTmpBufSize);

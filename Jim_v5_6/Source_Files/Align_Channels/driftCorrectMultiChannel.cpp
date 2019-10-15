@@ -47,7 +47,10 @@ void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& en
 
 
 	vector<float> gaussblurred(vis[0]->imagePoints, 0);
-	IppiSize roiSize = { vis[0]->imageWidth, vis[0]->imageHeight };
+
+	int imageHeight = vis[0]->imageHeight;
+
+	IppiSize roiSize = { imageWidth, imageHeight };
 	Ipp32u kernelSize = 5;
 	int iTmpBufSize = 0, iSpecSize = 0;
 	ippiFilterGaussianGetBufferSize(roiSize, kernelSize, ipp32f, 1, &iSpecSize, &iTmpBufSize);
