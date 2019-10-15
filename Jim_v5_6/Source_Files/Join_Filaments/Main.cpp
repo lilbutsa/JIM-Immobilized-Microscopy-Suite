@@ -20,9 +20,8 @@ int main(int argc, char *argv[])
 {
 	if (argc < 4) { std::cout << "could not read file name" << endl; return 1; }
 	std::string inputfile = argv[1];
-	std::string inputmeasurefile = argv[2];
-	std::string inputpos = argv[3];
-	std::string output = argv[4];
+	std::string inputpos = argv[2];
+	std::string output = argv[3];
 
 	double minDistFromEdge = -0.1, minEccentricity = -0.1, maxEccentricity = 1.1, minLength = 0, maxLength = 10000000000, minCount = 0, maxCount = 1000000000, maxDistFromLinear = 10000000;
 	double leftminDistFromEdge = -0.1, rightminDistFromEdge = -0.1, topminDistFromEdge = -0.1, bottomminDistFromEdge = -0.1;
@@ -152,7 +151,6 @@ int main(int argc, char *argv[])
 
 
 	vector<vector<float> > centroidresults;
-	BLCSVIO::readVariableWidthCSV(inputmeasurefile, centroidresults,headerLine);
 
 
 

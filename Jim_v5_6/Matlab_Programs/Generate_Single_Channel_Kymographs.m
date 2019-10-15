@@ -57,7 +57,7 @@ disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
 %% 3) Make a SubAverage of Frames for Detection 
 useMaxProjection = false;
 
-detectionStartFrame = 80;
+detectionStartFrame = 60;
 detectionEndFrame = 100;
 
 maxProjectionString = '';
@@ -77,7 +77,7 @@ truesize([900 900]);
 %% 4) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=0.6; % The curoff for the initial thresholding
+cutoff=0.5; % The curoff for the initial thresholding
 
 %Filtering
 left = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
@@ -99,7 +99,7 @@ maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from t
 
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 5; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
 cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
@@ -123,7 +123,7 @@ disp('Finish detecting particles');
 %Joining
 maxAngle =5;
 maxJoinDist = 7;
-maxLine = 7; % maximum joining distance to line of best fit
+maxLineDist = 7; % maximum joining distance to line of best fit
 
 
 %Filtering
@@ -139,17 +139,17 @@ maxCount2=1000000; % Maximum number of pixels in a ROI to be counted as a partic
 minEccentricity2 = 0.0; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
 maxEccentricity2 = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
-minLength2 = 20; %Minimum number of pixels for the major axis of the best fit ellipse
-maxLength2 = 100000; %Maximum number of pixels for the major axis of the best fit ellipse
+minLength2 = 70; %Minimum number of pixels for the major axis of the best fit ellipse
+maxLength2 = 80; %Maximum number of pixels for the major axis of the best fit ellipse
 
 maxDistFromLinear2 = 1000000; % Maximum distance that a pixel can diviate from the major axis.
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 5; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 
 %the actual program
 
-cmd = [JIM,'Join_Filaments',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Joined"  -minLength ',num2str(minLength2),' -maxLength ',num2str(maxLength2),' -minCount ',num2str(minCount2),' -maxCount ',num2str(maxCount2),' -minEccentricity ',num2str(minEccentricity2),' -maxEccentricity ',num2str(maxEccentricity2),' -left ',num2str(left2),' -right ',num2str(right2),' -top ',num2str(top2),' -bottom ',num2str(bottom2),' -maxDistFromLinear ',num2str(maxDistFromLinear2),' -maxAngle ',num2str(maxAngle),' -maxJoinDist ',num2str(maxJoinDist),' -maxLine ',num2str(maxLine)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
+cmd = [JIM,'Join_Filaments',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Joined"  -minLength ',num2str(minLength2),' -maxLength ',num2str(maxLength2),' -minCount ',num2str(minCount2),' -maxCount ',num2str(maxCount2),' -minEccentricity ',num2str(minEccentricity2),' -maxEccentricity ',num2str(maxEccentricity2),' -left ',num2str(left2),' -right ',num2str(right2),' -top ',num2str(top2),' -bottom ',num2str(bottom2),' -maxDistFromLinear ',num2str(maxDistFromLinear2),' -maxAngle ',num2str(maxAngle),' -maxJoinDist ',num2str(maxJoinDist),' -maxLine ',num2str(maxLineDist)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
 system(cmd)
 
 figure('Name','Input Regions - Red Original Image,  Green to Yellow->Original Regions, Blue-> Initial Lines')
@@ -186,8 +186,8 @@ histogram(allmeasures(:,4),round(length(allmeasures(:,4))/3))
 
 kymExtensionDist = 10;
 kymWidth=6; % Perpendicular distance of foreground kymograph
-kymBackWidth = 20; % Background Kymograph Width
-backDist = 2; % Background Particles Expansion
+kymBackWidth = 30; % Background Kymograph Width
+backDist = 3; % Background Particles Expansion
 
 cmd = [JIM,'Kymograph_Positions',fileEXE,' "',workingDir,'Joined_Measurements.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(kymWidth),' -backgroundDist ',num2str(kymBackWidth),' -backInnerRadius ',num2str(backDist),' -ExtendKymographs ',num2str(kymExtensionDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
 system(cmd)
@@ -215,7 +215,7 @@ variableString = ['Date, ', datestr(datetime('today')),'\n'...
     ,'cutoff,',num2str(cutoff),'\nleft,', num2str(left),'\nright,', num2str(right),'\ntop,', num2str(top),'\nbottom,', num2str(bottom),'\n'...
     ,'minCount,',num2str(minCount),'\nmaxCount,', num2str(maxCount),'\nminEccentricity,', num2str(minEccentricity),'\nmaxEccentricity,', num2str(maxEccentricity),'\n'...
     ,'minLength,',num2str(minLength),'\nmaxLength,', num2str(maxLength),'\nmaxDistFromLinear,', num2str(maxDistFromLinear),'\n'...
-    ,'maxAngle,', num2str(maxAngle),'\nmaxJoinDist,', num2str(maxJoinDist),'\nmaxLine,', num2str(maxLine),'\n'...
+    ,'maxAngle,', num2str(maxAngle),'\nmaxJoinDist,', num2str(maxJoinDist),'\nmaxLineDist,', num2str(maxLineDist),'\n'...
     ,'left2,', num2str(left2),'\nright2,', num2str(right2),'\ntop2,', num2str(top2),'\nbottom2,', num2str(bottom2),'\n'...
     ,'minCount2,',num2str(minCount),'\nmaxCount2,', num2str(maxCount),'\nminEccentricity2,', num2str(minEccentricity2),'\nmaxEccentricity2,', num2str(maxEccentricity2),'\n'...
     ,'minLength2,',num2str(minLength2),'\nmaxLength2,', num2str(maxLength2),'\nmaxDistFromLinear2,', num2str(maxDistFromLinear2),'\n'...
@@ -234,7 +234,7 @@ system(cmd)
 
 pageNumber = 1;
 
-numberOfRows = 2;
+numberOfRows = 3;
 numberOfColumns = 4;
 
 
@@ -324,7 +324,7 @@ parfor i=1:NumberOfFiles
     cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
     system(cmd)
     
-    cmd = [JIM,'Join_Filaments',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Joined"  -minLength ',num2str(minLength2),' -maxLength ',num2str(maxLength2),' -minCount ',num2str(minCount2),' -maxCount ',num2str(maxCount2),' -minEccentricity ',num2str(minEccentricity2),' -maxEccentricity ',num2str(maxEccentricity2),' -left ',num2str(left2),' -right ',num2str(right2),' -top ',num2str(top2),' -bottom ',num2str(bottom2),' -maxDistFromLinear ',num2str(maxDistFromLinear2),' -maxAngle ',num2str(maxAngle),' -maxJoinDist ',num2str(maxJoinDist),' -maxLine ',num2str(maxLine)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
+    cmd = [JIM,'Join_Filaments',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Joined"  -minLength ',num2str(minLength2),' -maxLength ',num2str(maxLength2),' -minCount ',num2str(minCount2),' -maxCount ',num2str(maxCount2),' -minEccentricity ',num2str(minEccentricity2),' -maxEccentricity ',num2str(maxEccentricity2),' -left ',num2str(left2),' -right ',num2str(right2),' -top ',num2str(top2),' -bottom ',num2str(bottom2),' -maxDistFromLinear ',num2str(maxDistFromLinear2),' -maxAngle ',num2str(maxAngle),' -maxJoinDist ',num2str(maxJoinDist),' -maxLine ',num2str(maxLineDist)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
     system(cmd)
 
     % 3.5) Fit areas around each shape
@@ -340,7 +340,7 @@ parfor i=1:NumberOfFiles
     ,'cutoff,',num2str(cutoff),'\nleft,', num2str(left),'\nright,', num2str(right),'\ntop,', num2str(top),'\nbottom,', num2str(bottom),'\n'...
     ,'minCount,',num2str(minCount),'\nmaxCount,', num2str(maxCount),'\nminEccentricity,', num2str(minEccentricity),'\nmaxEccentricity,', num2str(maxEccentricity),'\n'...
     ,'minLength,',num2str(minLength),'\nmaxLength,', num2str(maxLength),'\nmaxDistFromLinear,', num2str(maxDistFromLinear),'\n'...
-    ,'maxAngle,', num2str(maxAngle),'\nmaxJoinDist,', num2str(maxJoinDist),'\nmaxLine,', num2str(maxLine),'\n'...
+    ,'maxAngle,', num2str(maxAngle),'\nmaxJoinDist,', num2str(maxJoinDist),'\nmaxLine,', num2str(maxLineDist),'\n'...
     ,'left2,', num2str(left2),'\nright2,', num2str(right2),'\ntop2,', num2str(top2),'\nbottom2,', num2str(bottom2),'\n'...
     ,'minCount2,',num2str(minCount),'\nmaxCount2,', num2str(maxCount),'\nminEccentricity2,', num2str(minEccentricity2),'\nmaxEccentricity2,', num2str(maxEccentricity2),'\n'...
     ,'minLength2,',num2str(minLength2),'\nmaxLength2,', num2str(maxLength2),'\nmaxDistFromLinear2,', num2str(maxDistFromLinear2),'\n'...
