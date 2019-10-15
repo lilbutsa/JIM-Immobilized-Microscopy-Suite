@@ -12,8 +12,9 @@
 
 using namespace std;
 
-void joinfragments(std::vector<std::vector<int>>& initialcullpos, std::vector<std::vector<float>>& icmeasurementresults, float maxangle, float maxjoindist, float maxendline, int imagewidth, std::vector<float> & imagef);
-
+void joinfragments(std::vector<std::vector<int> >& initialcullpos, std::vector<std::vector<float> >& icmeasurementresults, float maxangle, float maxjoindist, float maxendline, int imagewidth, std::vector<float> & imagef);
+void componentMeasurements(std::vector<std::vector<int> >& pos2 /*positions vector*/, int imagewidth, std::vector<std::vector<float> > & measurementresults, std::vector<float> & imagef);
+void numberimage(std::vector<std::vector<float> >& filteredcents, std::vector<uint8_t>& fn, int iw, int ih);
 
 int main(int argc, char *argv[])
 {
@@ -144,27 +145,30 @@ int main(int argc, char *argv[])
 	vector<float> imagef(inputstack.imagePoints, 0);
 	inputstack.read1dImage(0, imagef);
 
-	std::vector<std::vector<int>> labelledpos(3000, vector<int>(1000, 0));
+	std::vector<std::vector<int> > labelledpos(3000, vector<int>(1000, 0));
 	std::vector<std::string> headerLine;
 	BLCSVIO::readVariableWidthCSV(inputpos, labelledpos,headerLine);
 	labelledpos.erase(labelledpos.begin());
 
 
-	vector<vector<float>> centroidresults;
+	vector<vector<float> > centroidresults;
 	BLCSVIO::readVariableWidthCSV(inputmeasurefile, centroidresults,headerLine);
+
 
 
 	int imageWidth = inputstack.imageWidth;
 	int imageHeight = inputstack.imageHeight;
-	std::vector<std::vector<int>> filteredpos;
-	std::vector<std::vector<float>> filteredcents;
+	std::vector<std::vector<int> > filteredpos;
+	std::vector<std::vector<float> > filteredcents;
+
+	componentMeasurements(labelledpos, imageWidth, centroidresults, imagef);
 
 
 	vector<uint8_t> initiallines(inputstack.imagePoints, 0);
 	int posin,xin,yin;
-	for (int i = 0; i < centroidresults.size(); i++)for (int j = -1000; j < 1000; j++) {
-		xin = (centroidresults[i][0] - ((float)j) *0.001*centroidresults[i][3] * centroidresults[i][4]);
-		yin = (centroidresults[i][1] - ((float)j) *0.001*centroidresults[i][3] * centroidresults[i][5]);
+	for (int i = 0; i < centroidresults.size(); i++)for (int j = 0; j < 1001; j++) {
+		xin = centroidresults[i][10] + ((float)j) * 0.001*(centroidresults[i][12] - centroidresults[i][10]);
+		yin = centroidresults[i][11] + ((float)j) * 0.001*(centroidresults[i][13] - centroidresults[i][11]);
 		for (int n = -1; n < 2; n++)for (int m = -1; m < 2; m++) {
 			posin =n+ xin + imageWidth*(m+yin);
 			initiallines[posin] = 255;
@@ -189,9 +193,9 @@ int main(int argc, char *argv[])
 	}
 
 	vector<uint8_t> filtereddetected(inputstack.imagePoints, 0);
-	for (int i = 0; i < filteredcents.size(); i++)for (int j = -1000; j < 1000; j++) {
-		xin = (filteredcents[i][0] - ((float)j) *0.001*filteredcents[i][3] * filteredcents[i][4]);
-		yin = (filteredcents[i][1] - ((float)j) *0.001*filteredcents[i][3] * filteredcents[i][5]);
+	for (int i = 0; i < filteredcents.size(); i++)for (int j = 0; j < 1001; j++) {
+		xin = filteredcents[i][10] + ((float)j) * 0.001*(filteredcents[i][12] - filteredcents[i][10]);
+		yin = filteredcents[i][11] + ((float)j) * 0.001*(filteredcents[i][13] - filteredcents[i][11]);
 		for (int n = -1; n < 2; n++)for (int m = -1; m < 2; m++) {
 			posin = n + xin + imageWidth*(m + yin);
 			filtereddetected[posin] = 255;
@@ -200,10 +204,18 @@ int main(int argc, char *argv[])
 	}
 	BLTiffIO::TiffOutput(output + "_Joined_Lines.tif", imageWidth, imageHeight, 8).write1dImage(filtereddetected);
 
+	filtereddetected = vector<uint8_t>(inputstack.imagePoints, 0);
+	for (int i = 0; i < filteredpos.size(); i++)for (int j = 0; j<filteredpos[i].size(); j++) filtereddetected[filteredpos[i][j]] = 255;
+	BLTiffIO::TiffOutput(output + "_Filtered_Regions.tif", imageWidth, imageHeight, 8).write1dImage(filtereddetected);
+
+	vector<uint8_t> numberedimage(inputstack.imagePoints, 0);
+	numberimage(filteredcents, numberedimage, imageWidth, imageHeight);
+	BLTiffIO::TiffOutput(output + "_Region_Numbers.tif", imageWidth, imageHeight, 8).write1dImage(numberedimage);
+
 
 	labelledpos.insert(labelledpos.begin(), {imageWidth, imageHeight, (int) inputstack.imagePoints });
 	BLCSVIO::writeCSV(output + "_ROI_Positions.csv", labelledpos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
-	BLCSVIO::writeCSV(output + "_Measurements.csv", filteredcents, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, x Min Bounding Box,x Max Bounding Box, y Min Bounding Box,y Max Bounding Box\n");
+	BLCSVIO::writeCSV(output + "_Measurements.csv", filteredcents, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, End 1 x,End 1 Y, End 2 X,End 2 Y\n");
 
 	//system("PAUSE");
 	return 0;
