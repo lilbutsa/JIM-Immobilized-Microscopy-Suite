@@ -77,7 +77,7 @@ float FindMaxDistFromLinear(float& xcent, float& ycent, float& xvec, float& yvec
 
 void componentMeasurements(std::vector<std::vector<int> >& pos2 /*positions vector*/, int imagewidth, std::vector<std::vector<float> > & measurementresults, std::vector<float> & imagef) {
 	measurementresults.clear();
-	std::vector<float> xpos, ypos, newvec(14);//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x end 1, y end 1, x end 2, y end 2
+	std::vector<float> xpos, ypos, newvec(18);//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x end 1, y end 1, x end 2, y end 2,X bounding Box Min, X Bounding Box Max,Y bounding Box Min, Y Bounding Box Max
 	std::vector<float> vx2, vy2;
 	IppiSize roiSize2;
 	double x2, y2, xy;
@@ -155,6 +155,15 @@ void componentMeasurements(std::vector<std::vector<int> >& pos2 /*positions vect
 			xpos[j] = pos2[i][j] % imagewidth; ypos[j] = (int)(pos2[i][j] / imagewidth);
 		}
 		newvec[9] = FindMaxDistFromLinear(newvec[0], newvec[1], newvec[4], newvec[5], xpos, ypos);
+
+		ippsMin_32f(&xpos[0], xpos.size(), &max);
+		newvec[14] = max;
+		ippsMax_32f(&xpos[0], xpos.size(), &max);
+		newvec[15] = max;
+		ippsMin_32f(&ypos[0], xpos.size(), &max);
+		newvec[16] = max;
+		ippsMax_32f(&ypos[0], xpos.size(), &max);
+		newvec[17] = max;
 
 
 		measurementresults.push_back(newvec);

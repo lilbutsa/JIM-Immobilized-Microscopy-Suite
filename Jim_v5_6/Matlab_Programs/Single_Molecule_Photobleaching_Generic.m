@@ -1,42 +1,31 @@
 %%
 clear
 %% 1) get the working folder
-[jimpath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);
-JIM = [fileparts(jimpath),'\Jim_Programs\'];
-pathname = uigetdir();
-pathname=[pathname,'\'];
-
-%% 2) Find all traces
-insubfolders = true;
-
-channel1 = {};
-
-allfiles = dir(pathname);
-allfiles(~[allfiles.isdir]) = [];
-allfiles=allfiles(3:end);
-
-if insubfolders
-    for i=1:size(allfiles,1)
-        innerfolder = dir([pathname,allfiles(i).name,'\']);
-        innerfolder(~[innerfolder.isdir]) = [];
-        innerfolder=innerfolder(3:end);
-        for j=1:size(innerfolder,1)
-            if size(dir([pathname,allfiles(i).name,'\',innerfolder(j).name,'\Channel_1_Fluorescent_Intensities.csv']),1)==1
-                channel1 = [channel1 [pathname,allfiles(i).name,'\',innerfolder(j).name,'\Channel_1_Fluorescent_Intensities.csv']];
-            end
-        end
-    end
-else
-    for i=1:size(allfiles,1)
-        if size(dir([pathname,allfiles(i).name,'\Channel_1_Fluorescent_Intensities.csv']),1)==1
-            channel1 = [channel1 [pathname,allfiles(i).name,'\Channel_1_Fluorescent_Intensities.csv']];
-        end 
-    end
+if ismac
+    fileSep = '/';
+elseif ispc
+    fileSep = '\';
 end
 
-numofexps = size(channel1,2);
+fileName = uigetdir(); % open the dialog box to select the folder for batch files
+fileName=[fileName,fileSep];
+%% Find all traces
+filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
-disp(['There are ',num2str(numofexps),' files to analyse']);
+if filesInSubFolders
+    allFolders = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name,fileSep],dir(cell2mat(y))','UniformOutput',false),dir(fileName),'UniformOutput',false);
+    allFolders = allFolders(arrayfun(@(x) isfolder(cell2mat(x)),allFolders));
+    allFolders = allFolders(3:end);
+else
+    allFolders = arrayfun(@(x)[fileName,x.name,fileSep],dir(fileName),'UniformOutput',false); % find everything in the input folder
+    allFolders = allFolders(arrayfun(@(x) isfolder(cell2mat(x)),allFolders));
+    allFolders = allFolders(3:end);
+end
+allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),allFolders','UniformOutput',false);
+allFiles = horzcat(allFiles{:})';
+channel1 = allFiles(contains(allFiles,'Channel_1_Fluorescent_Intensities.csv','IgnoreCase',true));
+NumberOfFiles=size(channel1,1);
+disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 
 %% Step Fit all experiments
 parfor i=1:numofexps

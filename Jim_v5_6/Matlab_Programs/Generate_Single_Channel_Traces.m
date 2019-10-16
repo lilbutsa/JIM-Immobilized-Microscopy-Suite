@@ -58,7 +58,7 @@ disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
 useMaxProjection = false;
 
 detectionStartFrame = 1;
-detectionEndFrame = 1000;
+detectionEndFrame = 10;
 
 maxProjectionString = '';
 if useMaxProjection
@@ -77,20 +77,20 @@ truesize([900 900]);
 %% 4) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=0.3; % The curoff for the initial thresholding
+cutoff=0.5; % The curoff for the initial thresholding
 
 %Filtering
-left = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-right = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-top = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-bottom = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+left = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+right = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+top = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+bottom = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
 
 minCount = 15; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 maxCount=1000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 minEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-maxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+maxEccentricity = 0.4;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
 minLength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
 maxLength = 100000; % Maximum number of pixels for the major axis of the best fit ellipse
@@ -99,7 +99,7 @@ maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from t
 
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 10; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 4; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
 cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_

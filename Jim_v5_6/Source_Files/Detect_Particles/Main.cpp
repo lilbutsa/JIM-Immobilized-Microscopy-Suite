@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 		if (std::string(argv[i]) == "-left") {
 			if (i + 1 < argc) {
 				leftminDistFromEdge = stod(argv[i + 1]);
-				cout << "Left Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				cout << "Left Minimum Distance From Edge of Image set to " << leftminDistFromEdge << endl;
 				filtering = true;
 			}
 			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 		if (std::string(argv[i]) == "-right") {
 			if (i + 1 < argc) {
 				rightminDistFromEdge = stod(argv[i + 1]);
-				cout << "Right Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				cout << "Right Minimum Distance From Edge of Image set to " << rightminDistFromEdge << endl;
 				filtering = true;
 			}
 			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 		if (std::string(argv[i]) == "-top") {
 			if (i + 1 < argc) {
 				topminDistFromEdge = stod(argv[i + 1]);
-				cout << "Top Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				cout << "Top Minimum Distance From Edge of Image set to " << topminDistFromEdge << endl;
 				filtering = true;
 			}
 			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 		if (std::string(argv[i]) == "-bottom") {
 			if (i + 1 < argc) {
 				bottomminDistFromEdge = stod(argv[i + 1]);
-				cout << "Bottom Minimum Distance From Edge of Image set to " << minDistFromEdge << endl;
+				cout << "Bottom Minimum Distance From Edge of Image set to " << bottomminDistFromEdge << endl;
 				filtering = true;
 			}
 			else { std::cout << "error inputting Minimum Distance From Edge" << std::endl; return 1; }
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 		if (std::string(argv[i]) == "-maxDistFromLinear") {
 			if (i + 1 < argc) {
 				maxDistFromLinear = stod(argv[i + 1]);
-				cout << "Maximum Distance From Linear set to " << minDistFromEdge << endl;
+				cout << "Maximum Distance From Linear set to " << maxDistFromLinear << endl;
 				filtering = true;
 			}
 			else { std::cout << "error inputting Maximum Distance From Linear" << std::endl; return 1; }
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 
 
 	BLTiffIO::TiffOutput(output + "_Regions.tif", imageWidth, imageHeight,8).write1dImage(detectedimage);
-	BLCSVIO::writeCSV(output + "_Measurements.csv", centroidresults, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, End 1 x,End 1 Y, End 2 X,End 2 Y\n");
+	BLCSVIO::writeCSV(output + "_Measurements.csv", centroidresults, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, End 1 x,End 1 Y, End 2 X,End 2 Y,X bounding Box Min, X Bounding Box Max,Y bounding Box Min, Y Bounding Box Max\n");
 	std::vector<std::vector<int> > labelledposout = labelledpos;
 	labelledposout.insert(labelledposout.begin(), { imageWidth,imageHeight,imagePoints });
 	BLCSVIO::writeCSV(output + "_Positions.csv", labelledposout, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 	if (filtering == false)return 0;
 
 	for (int i = 0; i < centroidresults.size(); i++) {
-		if (centroidresults[i][10] >= leftminDistFromEdge && centroidresults[i][11] <= imageWidth - 1 - rightminDistFromEdge && centroidresults[i][12] >= topminDistFromEdge && centroidresults[i][13] <= imageHeight - 1 - bottomminDistFromEdge
+		if (centroidresults[i][14] >= leftminDistFromEdge && centroidresults[i][15] <= imageWidth - 1 - rightminDistFromEdge && centroidresults[i][16] >= topminDistFromEdge && centroidresults[i][17] <= imageHeight - 1 - bottomminDistFromEdge
 			&& centroidresults[i][2] >= minEccentricity && centroidresults[i][2] <= maxEccentricity && centroidresults[i][3] >= minLength && centroidresults[i][3] <= maxLength
 			&& centroidresults[i][6] >= minCount && centroidresults[i][6] <= maxCount && centroidresults[i][9] <= maxDistFromLinear) {
 			filteredpos.push_back(labelledpos[i]);
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 
 	BLTiffIO::TiffOutput(output + "_Filtered_Regions.tif", imageWidth, imageHeight,8).write1dImage(filtereddetected);
 
-	BLCSVIO::writeCSV(output + "_Filtered_Measurements.csv", filteredcents, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, End 1 x,End 1 Y, End 2 X,End 2 Y\n");
+	BLCSVIO::writeCSV(output + "_Filtered_Measurements.csv", filteredcents, "x Centroid, y Centroid,Eccentricity, Length ,x Vector of major axis,Y Vector of major axis, Count,X Max Pos, Y Max Pos, Max Dist From Linear Fit, End 1 x,End 1 Y, End 2 X,End 2 Y,X bounding Box Min, X Bounding Box Max,Y bounding Box Min, Y Bounding Box Max\n");
 	//BLCSVIO::writeCSV(output + "_Filtered_Labelled_Positions.csv", filteredpos, "Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
 	labelledposout = filteredpos;
 	labelledposout.insert(labelledposout.begin(), { imageWidth,imageHeight,imagePoints });

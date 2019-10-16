@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
 
 
 	for (int i = 0; i < centroidresults.size(); i++) {
-		if (centroidresults[i][10] >= leftminDistFromEdge && centroidresults[i][11] <= imageWidth - 1 - rightminDistFromEdge && centroidresults[i][12] >= topminDistFromEdge && centroidresults[i][13] <= imageHeight - 1 - bottomminDistFromEdge
+		if (centroidresults[i][14] >= leftminDistFromEdge && centroidresults[i][15] <= imageWidth - 1 - rightminDistFromEdge && centroidresults[i][16] >= topminDistFromEdge && centroidresults[i][17] <= imageHeight - 1 - bottomminDistFromEdge
 			&& centroidresults[i][2] >= minEccentricity && centroidresults[i][2] <= maxEccentricity && centroidresults[i][3] >= minLength && centroidresults[i][3] <= maxLength
 			&& centroidresults[i][6] >= minCount && centroidresults[i][6] <= maxCount && centroidresults[i][9] <= maxDistFromLinear) {
 			filteredpos.push_back(labelledpos[i]);
