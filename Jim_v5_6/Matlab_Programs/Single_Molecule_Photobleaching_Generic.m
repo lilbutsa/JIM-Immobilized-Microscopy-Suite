@@ -55,7 +55,7 @@ disp('Step fitting completed');
     end
 
 %% Show single stepfits
-    pagenumber = 1;
+    pagenumber = 2;
     
     stepheight = stepsdata(:,4)-stepsdata(:,5);
     steptime = stepsdata(:,3); 

@@ -205,7 +205,7 @@ imshow(combinedImage)
 truesize([900 900]);
 
 %% 7) Calculate Traces and Make kymographs
-cmd = [JIM,'Calculate_Traces',fileEXE,' "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"',' -Verbose']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+cmd = [JIM,'Calculate_Traces',fileEXE,' "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
 system(cmd)
 
 
@@ -331,7 +331,7 @@ parfor i=1:NumberOfFiles
     cmd = [JIM,'Kymograph_Positions',fileEXE,' "',workingDir,'Joined_Measurements.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(kymWidth),' -backgroundDist ',num2str(kymBackWidth),' -backInnerRadius ',num2str(backDist),' -ExtendKymographs ',num2str(kymExtensionDist)]; % Run Fit_Arbitrary_Shapes.exe on the Detected_Filtered_Positions and output the result with the prefix Expanded
     system(cmd)
     % 3.6) Calculate Sum of signal and background for each frame
-    cmd = [JIM,'Calculate_Traces',fileEXE,' "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"',' -Verbose']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
+    cmd = [JIM,'Calculate_Traces',fileEXE,' "',completeName,'" "',workingDir,'Expanded_ROI_Positions.csv" "',workingDir,'Expanded_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,'Aligned_Drifts.csv"']; % Generate traces using AS_Measure_Each_Frame.exe and write out with the prefix Channel_1
     system(cmd)
     
     variableString = ['Date, ', datestr(datetime('today')),'\n'...

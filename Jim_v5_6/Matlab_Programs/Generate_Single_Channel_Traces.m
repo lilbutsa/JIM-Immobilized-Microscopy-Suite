@@ -198,9 +198,6 @@ end
 %% 8) Detect files for batch
 filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
-
-
-
 fileName = uigetdir(); % open the dialog box to select the folder for batch files
 fileName=[fileName,fileSep];
 
