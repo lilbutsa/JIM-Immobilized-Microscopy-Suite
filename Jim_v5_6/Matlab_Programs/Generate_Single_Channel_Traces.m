@@ -24,9 +24,9 @@ overlayColour3 = [0, 0, 1];
 
 completeName = [pathName,fileName];
 [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
-workingDir = [fileNamein,filesep,name];
+workingDir = [fileNamein,fileSep,name];
 [fileNamein,name,~] = fileparts(workingDir);
-workingDir = [fileNamein,filesep,name,filesep];
+workingDir = [fileNamein,fileSep,name,fileSep];
 
 if ~exist(workingDir, 'dir')
    mkdir(workingDir)%make a subfolder with that name
@@ -35,7 +35,7 @@ end
 iterations = 3;
 
 alignStartFrame = 1;
-alignEndFrame = 1000;
+alignEndFrame = 5;
 
 cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations)];%Run the Align_Channels program with the selected image stack as the input and save the results to the results folder with the Aligned prefix
 system(cmd);
@@ -58,7 +58,7 @@ disp(['Maximum drift is ', num2str(max(max(abs(drifts))))]);
 useMaxProjection = false;
 
 detectionStartFrame = 1;
-detectionEndFrame = 10;
+detectionEndFrame = 25;
 
 maxProjectionString = '';
 if useMaxProjection
@@ -77,7 +77,7 @@ truesize([900 900]);
 %% 4) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=0.5; % The curoff for the initial thresholding
+cutoff=0.85; % The curoff for the initial thresholding
 
 %Filtering
 left = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
@@ -86,11 +86,11 @@ top = 10;% Excluded particles closer to the edge than this. Make sure this value
 bottom = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
 
-minCount = 15; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-maxCount=1000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+minCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+maxCount=100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 minEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-maxEccentricity = 0.4;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+maxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
 minLength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
 maxLength = 100000; % Maximum number of pixels for the major axis of the best fit ellipse
@@ -208,7 +208,7 @@ if filesInSubFolders
 else
     allFolders = {fileName};
 end
-allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),allFolders','UniformOutput',false);
+allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),fileSep,x.name],dir(cell2mat(y))','UniformOutput',false),allFolders','UniformOutput',false);
 allFiles = horzcat(allFiles{:})';
 allFiles = allFiles(contains(allFiles,'.tif','IgnoreCase',true));
 NumberOfFiles=size(allFiles,1);
@@ -222,9 +222,9 @@ parfor i=1:NumberOfFiles
     disp(['Analysing ',completeName]);
     % 3.2) Create folder for results
     [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
-    workingDir = [fileNamein,filesep,name];
+    workingDir = [fileNamein,fileSep,name];
     [fileNamein,name,~] = fileparts(workingDir);
-    workingDir = [fileNamein,filesep,name,filesep];
+    workingDir = [fileNamein,fileSep,name,fileSep];
     if ~exist(workingDir, 'dir')
         mkdir(workingDir)%make a subfolder with that name
     end

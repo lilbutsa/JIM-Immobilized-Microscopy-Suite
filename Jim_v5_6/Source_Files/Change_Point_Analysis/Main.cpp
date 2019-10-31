@@ -5,7 +5,6 @@
 #include <array>        // std::array
 #include <random>       // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
-#include <cfloat> 
 #include "ipp.h"
 #include <numeric>
 #include <cstdlib>      // std::rand, std::srand
@@ -39,8 +38,7 @@ float stepprob(vector<float> datain, int numofbootstraps) {
 
 
 	for (int i = 0; i < numofbootstraps; i++) {
-		auto gen = std::default_random_engine(seed);
-		std::shuffle(datain.begin(), datain.end(), gen);
+		shuffle(datain.begin(), datain.end(), std::default_random_engine(seed));
 		if (cusum(datain) < sdiff0)lowerrand++;
 	}
 
@@ -140,33 +138,35 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	std::vector< std::vector<float> > alltofit(3000, vector<float>(1000, 0));
-	std::vector<std::string> headerLine;
-	BLCSVIO::readVariableWidthCSV(inputfile, alltofit,headerLine);
+	std::vector<std::vector<float>> alltofit(3000, vector<float>(1000, 0));
+	BLCSVIO::readVariableWidthCSV(inputfile, alltofit);
 
 	if (bmultistepfit) {
-		vector< vector<int> > steps(alltofit.size());;
-		vector< vector<float> > stepheights(alltofit.size());
+		vector<vector<int>> steps(alltofit.size());;
+		vector<vector<float>> stepheights(alltofit.size());
 		for (int i = 0; i < alltofit.size(); i++)ChangePointAnalysis(alltofit[i], threshold, steps[i], stepheights[i], iterations);
 		for (int i = 0; i < steps.size(); i++)if (steps[i].size() == 0)steps[i].push_back(0);
 		BLCSVIO::writeCSV(output + "_Frame_of_Steps.csv", steps, "Each value is the first frame of that step starting from 0\n");
 		BLCSVIO::writeCSV(output + "_Step_Heights.csv", stepheights, "Each value is height of each step\n");
 	}
 	else {
-		vector< vector<float> > onestepresults(alltofit.size(), vector<float>(7, 0.0));
+		vector<vector<float>> onestepresults(alltofit.size(), vector<float>(7, 0.0));
 		for (int i = 0; i < alltofit.size(); i++) {
+			onestepresults[i][0] = i + 1;
 			int steppos;
-			ippsMean_32f(alltofit[i].data(), alltofit[i].size(), &onestepresults[i][0], ippAlgHintFast);
-			onestepresults[i][1] = stepprob(alltofit[i], iterations);
+			ippsMean_32f(alltofit[i].data(), alltofit[i].size(), &onestepresults[i][1], ippAlgHintFast);
+			onestepresults[i][2] = stepprob(alltofit[i], iterations);
 			steppos = findstep(alltofit[i]);
-			onestepresults[i][2] = (float)steppos;
-			ippsMean_32f(alltofit[i].data(), steppos, &onestepresults[i][3], ippAlgHintFast);
-			ippsMean_32f(&alltofit[i][steppos], alltofit[i].size() - steppos, &onestepresults[i][4], ippAlgHintFast);
-			onestepresults[i][5] = stepprob(vector<float>(alltofit[i].data(), &alltofit[i][steppos - 1]), iterations);
-			onestepresults[i][6] = stepprob(vector<float>(alltofit[i].data(), &alltofit[i][steppos - 1]), iterations);
+			onestepresults[i][3] = (float)steppos;
+			ippsMean_32f(alltofit[i].data(), steppos, &onestepresults[i][4], ippAlgHintFast);
+			ippsMean_32f(&alltofit[i][steppos], alltofit[i].size() - steppos, &onestepresults[i][5], ippAlgHintFast);
+
+			ippsSubC_32f_I(onestepresults[i][4], alltofit[i].data(), steppos);
+			ippsSubC_32f_I(onestepresults[i][5], &alltofit[i][steppos], alltofit[i].size()-steppos);
+			onestepresults[i][6] = stepprob(alltofit[i], iterations);
 
 		}
-		BLCSVIO::writeCSV(output + "_Single_Step_Fits.csv", onestepresults, "No step mean,One or more Step Probability,Step Position, Initial Mean, Final Mean, Probability of more initial steps, Probability of more final steps \n");
+		BLCSVIO::writeCSV(output + "_Single_Step_Fits.csv", onestepresults, "Trace Number, No step mean,One or more Step Probability,Step Position, Initial Mean, Final Mean, Probability of more steps \n");
 	}
 
 

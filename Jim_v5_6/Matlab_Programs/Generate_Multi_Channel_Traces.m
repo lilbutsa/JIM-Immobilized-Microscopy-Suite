@@ -24,9 +24,9 @@ overlayColour3 = [0, 0, 1];
 
 completeName = [pathName,fileName];
 [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
-workingDir = [fileNamein,filesep,name];
+workingDir = [fileNamein,fileSep,name];
 [fileNamein,name,~] = fileparts(workingDir);
-workingDir = [fileNamein,filesep,name,filesep];
+workingDir = [fileNamein,fileSep,name,fileSep];
 
 if ~exist(workingDir, 'dir')
    mkdir(workingDir)%make a subfolder with that name
@@ -321,7 +321,7 @@ if filesInSubFolders
 else
     allFolders = {fileName};
 end
-allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),allFolders','UniformOutput',false);
+allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),fileSep,x.name],dir(cell2mat(y))','UniformOutput',false),allFolders','UniformOutput',false);
 allFiles = horzcat(allFiles{:})';
 allFiles = allFiles(contains(allFiles,'.tif','IgnoreCase',true));
 NumberOfFiles=size(allFiles,1);
@@ -335,9 +335,9 @@ parfor i=1:NumberOfFiles
     disp(['Analysing ',completeName]);
     % 3.2) Create folder for results
     [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
-    workingDir = [fileNamein,filesep,name];
+    workingDir = [fileNamein,fileSep,name];
     [fileNamein,name,~] = fileparts(workingDir);
-    workingDir = [fileNamein,filesep,name,filesep];
+    workingDir = [fileNamein,fileSep,name,fileSep];
     
     if ~exist(workingDir, 'dir')
         mkdir(workingDir)%make a subfolder with that name
