@@ -119,6 +119,6 @@ int fitExp(vector<double>& xdata, vector<double>& ydata, vector<double>& paramve
 		return 0;
 	}
 
-
+	return 0;
 }
 

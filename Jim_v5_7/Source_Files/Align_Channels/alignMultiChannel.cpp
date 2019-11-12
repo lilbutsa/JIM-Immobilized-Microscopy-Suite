@@ -1,13 +1,13 @@
-#include "myHeader.h"
+#include "myHeader.hpp"
 
 
-void alignMultiChannel(vector<string>& inputfilenames, int& start, int& end, int iterations, string outputfile, vector<vector<float>> &driftsout, int& imageWidth) {
+void alignMultiChannel(vector<string>& inputfilenames, int& start, int& end, int iterations, string outputfile, vector< vector<float> > &driftsout, int& imageWidth) {
 
 	int numofChannels = inputfilenames.size();
 
 	vector<float> initialmeanimage;
-	vector<vector<float>> meanimage(numofChannels);
-	vector<vector<float>> drifts;
+	vector< vector<float> > meanimage(numofChannels);
+	vector< vector<float> > drifts;
 	string adjustedOutputFilename;
 
 	for (int i = 0; i < numofChannels; i++) {
@@ -40,7 +40,7 @@ void alignMultiChannel(vector<string>& inputfilenames, int& start, int& end, int
 	float xoffset, yoffset, maxangle, maxscale, maxcc, deltain, hmaxscale, hmaxangle;
 	vector<float> vxoffset, vyoffset, vangle, vscale;
 
-	vector<vector<float>> channelalignment(numofChannels-1,vector<float>(11,0));
+	vector< vector<float> > channelalignment(numofChannels-1,vector<float>(11,0));
 	vector<float> combinedmean = meanimage[0];
 
 
@@ -75,23 +75,27 @@ void alignMultiChannel(vector<string>& inputfilenames, int& start, int& end, int
 
 		}
 
+		std::cout << "Channels Aligned \n";
+
 		//cout << "maxcc = " << maxcc << " max angle =  " << maxangle << " max scale = " << maxscale << "  x offset = " << xoffset << " y offset = " << yoffset << endl;
 
-		if (abs(maxangle) > 10 || abs(maxscale - 1) >100 * 0.1) {
+		if (::std::abs(maxangle) > 10 || ::std::abs(maxscale - 1) >100 * 0.1) {
 			std::cout << "WARNING SEEM TO BE FITTING NOISE:WILL IGNORE ROTATION AND SCALING" << endl;
 			maxcc = 0;
 			maxangle = 0;
 			maxscale = 1;
 		}
-
+		std::cout << "transforms \n";
 		transformclass.transform(meanimage[i], initialmeanimage, maxangle*3.14159 / 180.0, maxscale, 0, 0);
+		std::cout << "align \n";
 		alignclass.imageAlign(meanimage[0], initialmeanimage);
+		std::cout << "end transforms \n";
 		xoffset = alignclass.offsetx;
 		yoffset = alignclass.offsety;
 
 		std::cout << "maxcc = " << maxcc << " max angle =  " << maxangle << " max scale = " << maxscale << "  x offset = " << xoffset << " y offset = " << yoffset << endl;
 
-		if (abs(xoffset) > 40 || abs(yoffset) > 40) {
+		if (::std::abs(xoffset) > 40 || ::std::abs(yoffset) > 40) {
 			std::cout << "alignment failed" << endl;
 			maxcc = 0;
 			maxangle = 0;
@@ -110,7 +114,7 @@ void alignMultiChannel(vector<string>& inputfilenames, int& start, int& end, int
 
 	cout << "Calculating final combined drifts\n";
 
-	vector<vector<float>> vecinitialmeanimage,vecfinalmeanimage;
+	vector< vector<float> > vecinitialmeanimage,vecfinalmeanimage;
 
 	driftCorrectMultiChannel(inputfilenames, start, end, iterations, vangle, vscale, vxoffset, vyoffset, vecinitialmeanimage, vecfinalmeanimage, driftsout, imageWidth);
 

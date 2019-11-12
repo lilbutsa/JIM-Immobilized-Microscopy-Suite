@@ -143,6 +143,6 @@ int fitGaus(vector<double>& xdata, vector<double>& ydata, vector<double>& paramv
 		return 0;
 	}
 
-
+	return 0;
 }
 

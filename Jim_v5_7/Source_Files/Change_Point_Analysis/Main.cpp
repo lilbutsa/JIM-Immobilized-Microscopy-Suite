@@ -9,6 +9,7 @@
 #include <numeric>
 #include <cstdlib>      // std::rand, std::srand
 #include "BLCSVIO.h"
+#include <cfloat>
 
 using namespace std;
 
@@ -217,7 +218,8 @@ int main(int argc, char *argv[])
 	}
 
 	std::vector<std::vector<float>> alltofit(3000, vector<float>(1000, 0));
-	BLCSVIO::readVariableWidthCSV(inputfile, alltofit);
+	std::vector<std::string> headerLine;
+	BLCSVIO::readVariableWidthCSV(inputfile, alltofit,headerLine);
 
 	if (bIndStepDist && bmultistepfit) {
 

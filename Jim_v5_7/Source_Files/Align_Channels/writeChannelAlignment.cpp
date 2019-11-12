@@ -1,10 +1,10 @@
-#include "myHeader.h"
+#include "myHeader.hpp"
 
 void writeChannelAlignment(string outputfile, vector<float>&angle, vector<float>&scale, vector<float>&xoffset, vector<float>&yoffset,int imageWidth, int imageHeight) {
 
 	int numchan = angle.size();
 
-	vector<vector<float>> channelalignment(numchan, vector<float>(11, 0.0));
+	vector< vector<float> > channelalignment(numchan, vector<float>(11, 0.0));
 
 	for (int i = 0; i < numchan; i++) {
 		channelalignment[i][0] = i+2;

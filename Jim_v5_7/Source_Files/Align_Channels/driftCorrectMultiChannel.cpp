@@ -1,7 +1,7 @@
-#include "myHeader.h"
+#include "myHeader.hpp"
 
 
-void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& end, int iterations, vector<float>&angle, vector<float>&scale, vector<float>&xoffset, vector<float>&yoffset,vector<vector<float>>& initialmeanimage, vector<vector<float>>& finalmeanimage, vector<vector<float>> &driftsout, int& imageWidth) {
+void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& end, int iterations, vector<float>&angle, vector<float>&scale, vector<float>&xoffset, vector<float>&yoffset,vector< vector<float> >& initialmeanimage, vector< vector<float> >& finalmeanimage, vector< vector<float> > &driftsout, int& imageWidth) {
 
 	int numInputFiles = inputfilename.size();
 
@@ -47,7 +47,10 @@ void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& en
 
 
 	vector<float> gaussblurred(vis[0]->imagePoints, 0);
-	IppiSize roiSize = { vis[0]->imageWidth, vis[0]->imageHeight };
+
+	int imageHeight = vis[0]->imageHeight;
+
+	IppiSize roiSize = { imageWidth, imageHeight };
 	Ipp32u kernelSize = 5;
 	int iTmpBufSize = 0, iSpecSize = 0;
 	ippiFilterGaussianGetBufferSize(roiSize, kernelSize, ipp32f, 1, &iSpecSize, &iTmpBufSize);

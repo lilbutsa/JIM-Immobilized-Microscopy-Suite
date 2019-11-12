@@ -5,6 +5,7 @@
 #include "ipp.h"
 #include<vector>
 #include "BLCSVIO.h"
+#include <cfloat>
 
 using namespace std;
 

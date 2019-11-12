@@ -1,4 +1,4 @@
-#include "myHeader.h"
+#include "myHeader.hpp"
 
 
 int main(int argc, char *argv[])
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
 
 	
-	vector<vector<float>> drifts;
+	vector< vector<float> > drifts;
 	string adjustedOutputFilename;
 	int imageWidth;
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 		BLCSVIO::writeCSV(outputfile + "_Drifts.csv", drifts, "X Drift, Y Drift\n");
 	}
 	else if (inputalignment) {
-		vector<vector<float>> vinitialmeanimage,vfinalmeanimage;
+		vector< vector<float> > vinitialmeanimage,vfinalmeanimage;
 		driftCorrectMultiChannel(inputfiles, start, end, iterations, vangle, vscale, vxoffset, vyoffset, vinitialmeanimage, vfinalmeanimage, drifts, imageWidth);
 
 		for (int i = 0; i < numInputFiles; i++) {
