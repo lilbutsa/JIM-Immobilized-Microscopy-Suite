@@ -32,7 +32,7 @@ if ~exist(workingDir, 'dir')
    mkdir(workingDir)%make a subfolder with that name
 end
 %% 2) Split File into individual channels 
-useMetadataFile = false; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
+useMetadataFile = true; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
 numberOfChannels = 2;
 if useMetadataFile
     metaFileName = [pathName,name,'_metadata.txt']; % Finds the metadaata file in the same folder as the tiff imagestack with the suffix _metadata.txt
@@ -58,8 +58,8 @@ end
 %% 4) Align Channels and Calculate Drifts
 iterations = 3;
 
-alignStartFrame = 10;
-alignEndFrame = 15;
+alignStartFrame = 150;
+alignEndFrame = 160;
 
 manualAlignment = false; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 rotationAngle = -0.2;
@@ -130,8 +130,8 @@ disp('Alignment and drift correction completed');
 %% 5) Make a SubAverage of Frames for each Channel for Detection 
 useMaxProjection = false;
 
-detectionStartFrame = '1 20';
-detectionEndFrame = '10 30';
+detectionStartFrame = '1 340';
+detectionEndFrame = '20 360';
 
 maxProjectionString = '';
 if useMaxProjection
@@ -151,7 +151,7 @@ disp('Average projection completed');
 %% 6) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=0.85; % The curoff for the initial thresholding
+cutoff=0.5; % The curoff for the initial thresholding
 
 %Filtering
 left = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
@@ -173,7 +173,7 @@ maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from t
 
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 20; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
 cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
@@ -269,7 +269,7 @@ fclose(fileID);
 
 disp('Finished Generating Traces');
 %% 10) Plot Traces
-    pageNumber = 1;
+    pageNumber = 2;
 
     measures = csvread([workingDir,'Detected_Filtered_Measurements.csv'],1);
     channel1Im = imread([workingDir,'Detected_Filtered_Region_Numbers.tif']);
@@ -352,7 +352,7 @@ parfor i=1:NumberOfFiles
    % 3.3) Split File into individual channels 
     
     if useMetadataFile
-        metaFileName = [pathNamein,fileSep,name,'_metadata.txt'];
+        metaFileName = [fileNamein,fileSep,name,'_metadata.txt'];
         cmd = [JIM,'TIFF_Channel_Splitter',fileEXE,' "',completeName,'" "',workingDir,'Images" -MetadataFile "',metaFileName,'"'];
     else
         cmd = [JIM,'TIFF_Channel_Splitter',fileEXE,' "',completeName,'" "',workingDir,'Images" -NumberOfChannels ',num2str(numberOfChannels)];

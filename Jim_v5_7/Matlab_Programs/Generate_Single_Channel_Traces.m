@@ -35,7 +35,7 @@ end
 iterations = 3;
 
 alignStartFrame = 1;
-alignEndFrame = 5;
+alignEndFrame = 10;
 
 cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned" "',completeName,'" -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations)];%Run the Align_Channels program with the selected image stack as the input and save the results to the results folder with the Aligned prefix
 system(cmd);
@@ -77,7 +77,7 @@ truesize([900 900]);
 %% 4) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=1.7; % The cutoff for the initial thresholding
+cutoff=2.25; % The cutoff for the initial thresholding
 
 %Filtering
 left = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
@@ -99,7 +99,7 @@ maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from t
 
 
 displayMin = -2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 10; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 20; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
 cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
@@ -196,7 +196,7 @@ end
 %
 %
 %% 8) Detect files for batch
-filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = true; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 fileName = uigetdir(); % open the dialog box to select the folder for batch files
 fileName=[fileName,fileSep];

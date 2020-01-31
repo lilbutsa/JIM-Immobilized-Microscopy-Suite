@@ -222,12 +222,12 @@ end
 
 %%
 frameinterval = 10;
-concentrations = ['1   nM';'0.5 nM';'2   nM';'5   nM';'3   nM';'1.5 nM';'0.8 nM'];
-connum = [1 0.5 2 5 3 1.5 0.75];
+concentrations = ['1 nM';'0.5 nM';'2 nM';'5 nM';' 3 nM';' 1.5 nM';' 0.75 nM';' 6 nM';' 5 nM'];
+connum = [1 0.5 20 10 9 8 7 6 5];
 
 figure
 hold on
-g  = [1:7];
+g  = [1:9];
 for i =1:length(g)
     diffsout = diff(allpoptimeshistedges{g(i)});
     plot(frameinterval.*allpoptimeshistedges{g(i)},1-diffsout(1).*cumsum(allpoptimeshist{g(i)}))
@@ -249,7 +249,7 @@ end
 title('Popping Time Distribution');
 xlabel('Time (s)')
 ylabel('Percent Popping')
-xlim([0 3600])
+xlim([0 120])
 hold off
 legend(concentrations)
 
@@ -258,7 +258,7 @@ figure
 hold on
 for i =1: length(g)
     toplot = rescale(backmean2{g(i)});
-    plot(1:length(toplot),toplot)
+    plot(-9:length(toplot)-10,toplot)
 end
 title('Mean of Channel 1 backgrounds MES pH 6.5 Max Pixel Count 40');
 xlim([-10 40])
@@ -275,7 +275,7 @@ figure
 hold on
 for i =1: length(g)
     toplot = rescale(backmean2{g(i)});
-    plot(1:length(toplot),toplot)
+    plot(-9:length(toplot)-10,toplot)
 end
 title('Mean of Channel 1 backgrounds MES pH 6.5 Max Pixel Count 40');
 xlim([-10 200])
@@ -294,7 +294,7 @@ plot(frameinterval.*([1:length(allch2singlesteptrace{g(i)})]),allch2singlesteptr
 end
 title('Mean of All Binding to Single Popping Liposome');
 hold off
-xlim([0 3600])
+xlim([0 100])
 xlabel('Time (s)')
 ylabel('Intensity')
 legend(concentrations,'Location','northwest')

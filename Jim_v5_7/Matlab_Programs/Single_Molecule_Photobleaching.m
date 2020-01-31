@@ -1,7 +1,7 @@
 %%
 clear
 %% 1) Select Input Folder
-filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 [jimPath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 fileEXE = '';
@@ -259,6 +259,13 @@ end
     fprintf(fid,'%s\n','Each Line is the step height from a single experiment');
     fclose(fid);
     
+    
+    fileout2 = [photobleachFile 'Step_Heights_Logs.csv'];
+    filein2 = [photobleachFile 'Step_Heights_Logs'];
+    fid = fopen(fileout2,'w'); 
+    fprintf(fid,'%s\n','Each Line is the log of the step height from a single experiment');
+    fclose(fid);    
+    
     allStepHeights = [];
     
 for fileNo = 1:NumberOfFiles    
@@ -268,7 +275,7 @@ for fileNo = 1:NumberOfFiles
     stepHeights = singleStepStepData(:,5)'-singleStepStepData(:,6)';
     allStepHeights = [allStepHeights,stepHeights];
     dlmwrite(fileout,stepHeights,'-append');   
-    
+    dlmwrite(fileout2,log(stepHeights),'-append'); 
 end    
         
 
@@ -277,11 +284,15 @@ end
     cmd = [JIM,'Gaussian_Fit',fileEXE,' "',fileout,'" "',filein,'" -ymaxPercent ',num2str(gausYMaxPercent),' -yminPercent ',num2str(gausYMinPercent)];
     system(cmd);
     
+    cmd = [JIM,'Gaussian_Fit',fileEXE,' "',fileout2,'" "',filein2,'" -ymaxPercent ',num2str(gausYMaxPercent),' -yminPercent ',num2str(gausYMinPercent)];
+    system(cmd);
+    
     cmd = [JIM,'Make_Histogram',fileEXE,' "',fileout,'" "',filein,'"'];
     system(cmd);    
 
 
     bleachFits = csvread([filein,'_GaussFit.csv'],1,0);
+    logfits = csvread([filein2,'_GaussFit.csv'],1,0);
     hists = csvread([filein,'_Histograms.csv'],1,0);
 
     singleMolIntMode = zeros(size(hists,1)/2,1);
@@ -306,8 +317,9 @@ end
     ylabel('Probability (PDF)')
     plot(hists(end-1,:),hists(end,:))
     plot(1:max(allStepHeights),1/(sqrt(2.*3.1415926.*bleachFits(end,2).^2)).*exp(-(([1:max(allStepHeights)]-bleachFits(end,1)).^2)./(2.*bleachFits(end,2).^2)))
+    plot(1:max(allStepHeights),1./((1:max(allStepHeights)).*sqrt(2.*3.1415926.*logfits(end,2).^2)).*exp(-((log((1:max(allStepHeights)))-logfits(end,1)).^2)./(2.*logfits(end,2).^2)))
     xlim([0 allStepHeights(round(0.99.*size(allStepHeights,2)))])
-    legend('Experiment','Gaussian Fit')
+    legend('Experiment','Gaussian Fit','Log Normal Fit')
     hold off
     set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
     fig.PaperPositionMode   = 'auto';
