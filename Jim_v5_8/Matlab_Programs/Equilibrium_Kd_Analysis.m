@@ -74,9 +74,9 @@ Concentrationunits = 'uM';
  concentration = [0.2 0.2 0.2 1 1 1 10 10 10 0.5 0.5 0.5 5 5 5 0.1 0.1 0.1 20 20 20];
 
 %% 5) Measure the ratio of flourescence between channels for each area 
-singleChannelData = true;
+singleChannelData = false;
 channelOneSubstrate = true;
-constantSizeSubstrate = true;
+constantSizeSubstrate = false;
 
 substrate_photobleaching = 114;
 binder_photobleaching = 265;
@@ -84,8 +84,8 @@ substrate_partial_labelling = 1/50; %this is the ratio of label to unlabelled CA
 binder_partial_labelling = 1./concentration;
 
 minSubstrate = 0;
-maxSubstrate = 50000;
-minBinder = 100;
+maxSubstrate = 10000000;
+minBinder = 0;
 maxBinder = 1000000000;
 
 

@@ -62,8 +62,8 @@ end
 %% 4) Align Channels and Calculate Drifts
 iterations = 1;
 
-alignStartFrame = 15;
-alignEndFrame = 15;
+alignStartFrame = 1;
+alignEndFrame = 1;
 
 manualAlignment = false; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 rotationAngle = -2.86;
@@ -89,7 +89,7 @@ if manualAlignment
     channel2Im = im2double(imread([workingDir,'Aligned_aligned_partial_mean_2.tiff']));
     if numberOfChannels > 2
         channel3Im = im2double(imread([workingDir,'Aligned_aligned_partial_mean_3.tiff']));
-        channel3Im = (channel3Im-min(min(channel3Im)))./(max(max(channel3Im))-min(min(channel3Im)));
+        channel3Im = (channel3Im-min(min(channel3Im)))./(prctile(reshape(channel3Im.',1,[]),99.5)-min(min(channel3Im)));
     else
         channel3Im = 0.*channel2Im;
         
@@ -99,13 +99,13 @@ else
     channel2Im = im2double(imread([workingDir,'Aligned_initial_partial_mean_2.tiff']));
     if numberOfChannels > 2
         channel3Im = im2double(imread([workingDir,'Aligned_initial_partial_mean_3.tiff']));
-        channel3Im = (channel3Im-min(min(channel3Im)))./(max(max(channel3Im))-min(min(channel3Im)));
+        channel3Im = (channel3Im-min(min(channel3Im)))./(prctile(reshape(channel3Im.',1,[]),99.5)-min(min(channel3Im)));
     else
         channel3Im = 0.*channel2Im;
     end    
 end
-channel1Im = (channel1Im-min(min(channel1Im)))./(max(max(channel1Im))-min(min(channel1Im)));
-channel2Im = (channel2Im-min(min(channel2Im)))./(max(max(channel2Im))-min(min(channel2Im)));
+channel1Im = (channel1Im-min(min(channel1Im)))./(prctile(reshape(channel1Im.',1,[]),99.5)-min(min(channel1Im)));
+channel2Im = (channel2Im-min(min(channel2Im)))./(prctile(reshape(channel2Im.',1,[]),99.5)-min(min(channel2Im)));
 combinedImage = cat(3, overlayColour1(1).*channel1Im+overlayColour2(1).*channel2Im+overlayColour3(1).*channel3Im,overlayColour1(2).*channel1Im+overlayColour2(2).*channel2Im+overlayColour3(2).*channel3Im,overlayColour1(3).*channel1Im+overlayColour2(3).*channel2Im+overlayColour3(3).*channel3Im);
 figure('Name','Before Drift Correction and Alignment')
 imshow(combinedImage);
@@ -114,13 +114,13 @@ truesize([900 900]);
 
 %view alignment after
 channel1Im = im2double(imread([workingDir,'Aligned_aligned_full_mean_1.tiff']));
-channel1Im = (channel1Im-min(min(channel1Im)))./(max(max(channel1Im))-min(min(channel1Im)));
+channel1Im = (channel1Im-min(min(channel1Im)))./(prctile(reshape(channel1Im.',1,[]),99.5)-min(min(channel1Im)));
 channel2Im = im2double(imread([workingDir,'Aligned_aligned_full_mean_2.tiff']));
-channel2Im = (channel2Im-min(min(channel2Im)))./(max(max(channel2Im))-min(min(channel2Im)));
+channel2Im = (channel2Im-min(min(channel2Im)))./(prctile(reshape(channel2Im.',1,[]),99.5)-min(min(channel2Im)));
 
 if numberOfChannels > 2
     channel3Im = im2double(imread([workingDir,'Aligned_aligned_full_mean_3.tiff']));
-    channel3Im = (channel3Im-min(min(channel3Im)))./(max(max(channel3Im))-min(min(channel3Im)));
+    channel3Im = (channel3Im-min(min(channel3Im)))./(prctile(reshape(channel3Im.',1,[]),99.5)-min(min(channel3Im)));
 else
     channel3Im = 0.*channel2Im;
 end
@@ -134,8 +134,8 @@ disp('Alignment and drift correction completed');
 %% 5) Make a SubAverage of Frames for each Channel for Detection 
 useMaxProjection = false;
 
-detectionStartFrame = '1 20';
-detectionEndFrame = '10 30';
+detectionStartFrame = '1 0';
+detectionEndFrame = '1 0';
 
 maxProjectionString = '';
 if useMaxProjection
@@ -147,7 +147,7 @@ system(cmd);
 
 figure
 channel1Im = im2double(imread([workingDir,'Aligned_Partial_Mean.tiff']));
-channel1Im = (channel1Im-min(min(channel1Im)))./(max(max(channel1Im))-min(min(channel1Im)));
+channel1Im = (channel1Im-min(min(channel1Im)))./(prctile(reshape(channel1Im.',1,[]),99.5)-min(min(channel1Im)));
 imshow(channel1Im);
 truesize([900 900]);
 disp('Average projection completed');
@@ -155,13 +155,13 @@ disp('Average projection completed');
 %% 6) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=0.4; % The curoff for the initial thresholding
+cutoff=1; % The curoff for the initial thresholding
 
 %Filtering
-left = 0;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-right = 30;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-top = 20;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-bottom = 12;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+left = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+right = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+top = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+bottom = 10;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
 
 minCount = 15; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
@@ -170,14 +170,14 @@ maxCount=1000; % Maximum number of pixels in a ROI to be counted as a particle. 
 minEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
 maxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
-minLength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
+minLength = 10; % Minimum number of pixels for the major axis of the best fit ellipse
 maxLength = 100000; % Maximum number of pixels for the major axis of the best fit ellipse
 
 maxDistFromLinear = 10000000; % Maximum distance that a pixel can diviate from the major axis.
 
 
 displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-displayMax = 2; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 10; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 % Detection Program
 
 cmd = [JIM,'Detect_Particles',fileEXE,' "',workingDir,'Aligned_Partial_Mean.tiff" "',workingDir,'Detected" -BinarizeCutoff ', num2str(cutoff),' -minLength ',num2str(minLength),' -maxLength ',num2str(maxLength),' -minCount ',num2str(minCount),' -maxCount ',num2str(maxCount),' -minEccentricity ',num2str(minEccentricity),' -maxEccentricity ',num2str(maxEccentricity),' -left ',num2str(left),' -right ',num2str(right),' -top ',num2str(top),' -bottom ',num2str(bottom),' -maxDistFromLinear ',num2str(maxDistFromLinear)]; % Run the program Find_Particles.exe with the users values and write the output to the reults file with the prefix Detected_
