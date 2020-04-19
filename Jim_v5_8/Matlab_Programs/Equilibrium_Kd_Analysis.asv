@@ -80,13 +80,13 @@ channelOneSubstrate = true;
 
 substrate_photobleaching = 1;%114;
 binder_photobleaching = 1;%265;
-substrate_partial_labelling = 1;%1/50; %this is the ratio of label to unlabelled CA, so if it is 1 fluorophore per 50, the ratio is 1/50
+substrate_partial_labelling = 1;1/50; %this is the ratio of label to unlabelled CA, so if it is 1 fluorophore per 50, the ratio is 1/50
 binder_partial_labelling = 1;%1./concentration;
 
-minSubstrate = 4000;
-maxSubstrate = 15000;
-minBinder = 4000;
-maxBinder = 15000;
+minSubstrate = 2000;
+maxSubstrate = 4000;
+minBinder = 2000;
+maxBinder = 4000;
 
 
 

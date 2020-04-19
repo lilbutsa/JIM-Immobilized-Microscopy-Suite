@@ -1,5 +1,7 @@
 clear
-%% 1) Select the input tiff file and Create folder for results
+%% 1) Select the input tiff file Create a Folder for results
+extensionsToRemove = 0;
+
 [jimPath,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 fileEXE = '';
 fileSep = '';
@@ -24,8 +26,10 @@ overlayColour3 = [0, 0, 1];
 
 completeName = [pathName,fileName];
 [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
-workingDir = [fileNamein,fileSep,name];
-[fileNamein,name,~] = fileparts(workingDir);
+for j=1:extensionsToRemove
+    workingDir = [fileNamein,fileSep,name];
+    [fileNamein,name,~] = fileparts(workingDir);
+end
 workingDir = [fileNamein,fileSep,name,fileSep];
 
 if ~exist(workingDir, 'dir')
