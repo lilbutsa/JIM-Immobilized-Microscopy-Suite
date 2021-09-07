@@ -1,0 +1,34 @@
+Date, 2020-08-12
+additionalExtensionsToRemove,0
+multipleFilesPerImageStack,0
+useMetadataFile,0
+numberOfChannels,2
+invertChannel,0
+channelToInvert,2
+iterations,3
+alignStartFrame,10
+alignEndFrame,11
+manualAlignment,0
+rotationAngle,0.00
+scalingFactor,1.00
+xoffset,0.00
+yoffset,0.00
+useMaxProjection,0
+detectionStartFrame,1 20
+detectionEndFrame,10 30
+cutoff,0.85
+left,5
+right,10
+top,10
+bottom,10
+minCount,10
+maxCount,100
+minEccentricity,-0.10
+maxEccentricity,1.10
+minLength,0.00
+maxLength,10000000.00
+maxDistFromLinear,10000000.00
+foregroundDist,4.10
+backInnerDist,4.10
+backOuterDist,20.00
+verboseOutput,0
