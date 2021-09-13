@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 		outputFiles.resize(numInputFiles);
 		for (int i = 0; i < numInputFiles; i++) {
 			adjustedOutputFilename = outputfile + "_Channel_" + to_string(i + 1) +".tiff";
-			outputFiles[i] = new BLTiffIO::TiffOutput(adjustedOutputFilename, is.imageWidth, is.imagePoints / is.imageWidth, 16);
+			outputFiles[i] = new BLTiffIO::TiffOutput(adjustedOutputFilename, is.imageWidth, is.imagePoints / is.imageWidth, 16,is.bigtiff);
 		}
 	}
 

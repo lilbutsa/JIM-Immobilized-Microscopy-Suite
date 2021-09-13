@@ -1,7 +1,7 @@
 clear
 %% 1) Select the input tiff file Create a Folder for results
-additionalExtensionsToRemove = 1;
-multipleFilesPerImageStack = true;
+additionalExtensionsToRemove = 0;
+multipleFilesPerImageStack = false;
 
 [JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 %Convert to the file path for the C++ Jim Programs
@@ -48,7 +48,7 @@ else
 end
 
 %% 2) Organise Channels 
-numberOfChannels = 2;
+numberOfChannels = 1;
 useMetadataFile = true; % Set to true to read in a micromanager metadata file to ensure the tiff is split correctly. If this is not used the program assumes the tiff stack is saved in order
 if useMetadataFile
     cmd = [JIM,'Tiff_Channel_Splitter',fileEXE,' "',workingDir,'Images" ',completeName,'-NumberOfChannels ',num2str(numberOfChannels)]; % Run TIFFChannelSplitter',fileEXE,' using the metadata  and write the split channels to the reults folder with the prefix Images
@@ -72,8 +72,8 @@ end
 %% 4) Align Channels and Calculate Drifts
 iterations = 3;
 
-alignStartFrame = 300;
-alignEndFrame = 400;
+alignStartFrame = 1;
+alignEndFrame = 10;
 
 manualAlignment = true; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 rotationAngle = 0;
@@ -82,7 +82,7 @@ xoffset = 0;
 yoffset = 0;
 
 maxShift = 1000;
-maxIntesities = '50000 40000';
+maxIntensities = '500000000';
 
 SNRCutoff = 1.005;
 
@@ -99,9 +99,9 @@ if outputAlignedStacks
 end
 
 if manualAlignment
-    cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Alignment ',num2str(xoffset),' ',num2str(yoffset),' ',num2str(rotationAngle),' ',num2str(scalingFactor),' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntesities,' -SNRCutoff ',num2str(SNRCutoff),outputFiles];
+    cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Alignment ',num2str(xoffset),' ',num2str(yoffset),' ',num2str(rotationAngle),' ',num2str(scalingFactor),' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntensities,' -SNRCutoff ',num2str(SNRCutoff),outputFiles];
 else
-    cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntesities,' -SNRCutoff ',num2str(SNRCutoff),outputFiles];
+    cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntensities,' -SNRCutoff ',num2str(SNRCutoff),outputFiles];
 end
 system(cmd)
 
@@ -185,13 +185,13 @@ disp('Average projection completed');
 %% 6) Detect Particles
 % User Defined Parameters 
 %Thresholding
-cutoff=1.5; % The cutoff for the initial thresholding
+cutoff=1.4; % The cutoff for the initial thresholding
 
 %Filtering
-leftEdge = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-rightEdge = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-topEdge = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-bottomEdge = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+leftEdge = 100;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+rightEdge = 100;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+topEdge = 100;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+bottomEdge = 100;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
 
 
 minCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
@@ -291,7 +291,7 @@ variableString = ['Date, ', datestr(datetime('today')),'\nadditionalExtensionsTo
     ,'\ninvertChannel,',num2str(invertChannel),'\nchannelToInvert,', num2str(channelToInvert)...
     ,'\niterations,',num2str(iterations),'\nalignStartFrame,', num2str(alignStartFrame),'\nalignEndFrame,', num2str(alignEndFrame)...
     ,'\nmanualAlignment,',num2str(manualAlignment),'\nrotationAngle,',num2str(rotationAngle),'\nscalingFactor,', num2str(scalingFactor),'\nxoffset,', num2str(xoffset),'\nyoffset,', num2str(yoffset),'\nmaxShift,', num2str(maxShift)...
-    ,'\nmaxIntesities,',maxIntesities,'\nSNRCutoff,',num2str(SNRCutoff)...
+    ,'\nmaxIntesities,',maxIntensities,'\nSNRCutoff,',num2str(SNRCutoff)...
     ,'\nuseMaxProjection,',num2str(useMaxProjection),'\ndetectionStartFrame,', detectionStartFrame,'\ndetectionEndFrame,', detectionEndFrame...
     ,'\ncutoff,',num2str(cutoff),'\nleft,', num2str(leftEdge),'\nright,', num2str(rightEdge),'\ntop,', num2str(topEdge),'\nbottom,', num2str(bottomEdge)...
     ,'\nminCount,',num2str(minCount),'\nmaxCount,', num2str(maxCount),'\nminEccentricity,', num2str(minEccentricity),'\nmaxEccentricity,', num2str(maxEccentricity)...
@@ -436,9 +436,9 @@ parfor i=1:NumberOfFiles
     end
 
     if manualAlignment
-        cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Alignment ',num2str(xoffset),' ',num2str(yoffset),' ',num2str(rotationAngle),' ',num2str(scalingFactor),' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntesities,' -SNRCutoff ',num2str(SNRCutoff)];
+        cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Alignment ',num2str(xoffset),' ',num2str(yoffset),' ',num2str(rotationAngle),' ',num2str(scalingFactor),' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntensities,' -SNRCutoff ',num2str(SNRCutoff)];
     else
-        cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntesities,' -SNRCutoff ',num2str(SNRCutoff)];
+        cmd = [JIM,'Align_Channels',fileEXE,' "',workingDir,'Aligned"',allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(iterations),' -MaxShift ',num2str(maxShift),' -MaxIntensities ',maxIntensities,' -SNRCutoff ',num2str(SNRCutoff)];
     end
     system(cmd);
 

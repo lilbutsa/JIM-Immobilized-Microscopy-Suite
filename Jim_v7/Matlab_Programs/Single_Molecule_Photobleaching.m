@@ -70,12 +70,12 @@ end
 disp('Step fitting completed');
 
 %% 3) View Single Step Filters
-    fileToCheck = 6;
+    fileToCheck = 4;
     pageNumber = 1;
     
     minFirstStepProb = 0.5;
     maxSecondMeanFirstMeanRatio=0.25;
-    maxMoreStepProb=0.99;
+    maxMoreStepProb=0.95;
     
     
     traces=csvread(channel1{fileToCheck},1);
@@ -136,7 +136,6 @@ for fileNo = 1:NumberOfFiles
     multiStepStepData = stepsdata(~singleStepTraceQ,:);
     
     allResults(fileNo,1) = size(traces,1);
-    allResults(fileNo,2) = size(singleStepStepData,1);
     allResults(fileNo,2) = size(singleStepStepData,1);
     allResults(fileNo,19) = nnz(stepsdata(:,7)>0.999);
 
