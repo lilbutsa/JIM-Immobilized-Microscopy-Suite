@@ -17,6 +17,7 @@ Contents
 
    installation	
    getting_started
+   begin_here_generate_traces
 
 .. toctree::
    :maxdepth: 2
