@@ -7,9 +7,10 @@ File selection
 --------------
 
 **additionalExtensionsToRemove**
+
 **multipleFilesPerImageStack**
 
-Arrange Channels
+Organise Channels
 ----------------
 
 Split Channels
