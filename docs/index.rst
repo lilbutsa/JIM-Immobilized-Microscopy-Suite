@@ -18,6 +18,7 @@ Contents
    installation	
    getting_started
    begin_here_generate_traces
+   Jimbob
 
 .. toctree::
    :maxdepth: 2
