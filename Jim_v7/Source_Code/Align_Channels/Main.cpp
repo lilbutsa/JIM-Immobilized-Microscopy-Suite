@@ -1,142 +1,147 @@
 #include "myHeader.hpp"
+#include <stdexcept> 
 
 
 int main(int argc, char *argv[])
 {
 
-	if (argc < 2) { std::cout << "could not read files" << endl; return 1; }
-	string outputfile = argv[1];
 
+	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
+		cout << "Standard input: [Output File Base] [Input Image Stack Channel 1]... Options\n";
+		cout << "Options:\n";
+		cout << "-Start i (Default i = 1) Specify frame i initially align from\n";
+		cout << "-End i (Default i = total number of frames) Specify frame i to initially align to\n";
+		cout << "-Iterations i (Default i = 1) Specify the number of alignment iterations to run\n";
+		cout << "-MaxShift i (Default i = unlimited) The maximum amount of drift in x and y that will be searched for during alignment\n";
+		cout << "-MaxIntensities i j ... to number of channels (Default i = unlimited) Pixels over this intensity are ignored during alignment\n";
+		cout << "-SNRCutoff i (Default i = 1.05) SNR of alignment below which an alignment error is thrown\n";
+		cout << "-OutputAligned (Default false) Save the aligned imade stacks\n";
+		cout << "-SkipIndependentDrifts (Default false) Only Generate combined drifts, For Channel to Channel alignment use the reference frames\n";
+		cout << "-Alignment Manually input the alignment between channels. Requires 4 values per extra channel (x offset ch2, ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n";
+		return 0;
+	}
+
+
+	string fileBase;
 	int numInputFiles = 0;
-	vector<string> inputfiles;
-	int iterations = 2;
-
-	for (int i = 2; i < argc && std::string(argv[i]) != "-Alignment" && std::string(argv[i]) != "-Start"&& std::string(argv[i]) != "-End"&& std::string(argv[i]) != "-Iterations" && std::string(argv[i]) != "-MaxShift" && std::string(argv[i]) != "-MaxIntensities" && std::string(argv[i]) != "-OutputAligned" && std::string(argv[i]) != "-SNRCutoff"; i++) { numInputFiles++; inputfiles.push_back(argv[i]);}
-
-	bool inputalignment = false;
-	int start=0,end=1000000000;
-	vector<float> vxoffset, vyoffset, vangle, vscale;
-
-	float maxShift = 1000000;
-	vector<float> maxIntensities(numInputFiles, 1000000000000000000.0);
-
-	double SNRCutoff = 1.05;
-
+	vector<BLTiffIO::TiffInput*> vcinput;
+	bool inputalignment = false,skipIndependentDrifts = false;
+	uint32_t iterations = 2,start = 0, end = 1000000000;
+	vector<float> maxIntensities;
+	vector<vector<float>> alignments;
+	float maxShift = 1000000, SNRCutoff = 1.05;
 	bool outputAligned = false;
 
-	for (int i = 1; i < argc; i++) {
-		if (std::string(argv[i]) == "-Alignment") {
-			inputalignment = true;
-			for (int j = 0; j < numInputFiles - 1; j++) {
-				if (i + 4 * j < argc) {
-					vxoffset.push_back(stod(argv[i + (4 * j) + 1]));
-					vyoffset.push_back(stod(argv[i + (4 * j) + 2]));
-					vangle.push_back(stod(argv[i + (4 * j) + 3]));
-					vscale.push_back(stod(argv[i + (4 * j) + 4]));
-					std::cout << "Alignment for Channel " << j + 2 << " xoffset set to  " << vxoffset[j] << " yoffset set to  " << vyoffset[j] << " rotation set to  " << vangle[j] << " scale set to  " << vscale[j] << "\n";
-				}
-				else { std::cout << "error inputting alignment" << std::endl; return 1; }
-			}
+
+	try {
+		if (argc < 3)throw std::invalid_argument("Insufficient Arguments");
+		fileBase = std::string(argv[1]);
+
+		for (int i = 2; i < argc && std::string(argv[i]).substr(0, 1) != "-"; i++) numInputFiles++;
+		if (numInputFiles == 0)throw std::invalid_argument("No Input Image Stacks Detected");
+
+		vector<string> inputfiles(numInputFiles);
+		for (int i = 0; i < numInputFiles; i++)inputfiles[i] = argv[i + 2];
+		vcinput.resize(numInputFiles);
+		for (int i = 0; i < numInputFiles; i++) {
+			vcinput[i] = new BLTiffIO::TiffInput(inputfiles[i]);
 		}
-		if (std::string(argv[i]) == "-Start") {
-			if (i + 1 < argc) {
-				start = stoi(argv[i + 1]) - 1;
-				start = max(start, 0);
-				std::cout << "Calculating initial mean starting from " << start + 1 << endl;
+
+		alignments = vector<vector<float>>(numInputFiles-1, {0,0,0,1});
+		maxIntensities = vector<float>(numInputFiles, 1000000000000);
+
+		for (int i = 1; i < argc; i++) {
+			if (std::string(argv[i]) == "-Iterations") {
+				if (i + 1 >= argc)throw std::invalid_argument("No Iterations Input Value");
+				try { iterations = stoi(argv[i + 1]); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Iterations Number\nInput :" + std::string(argv[i + 1]) + "\n"); }
+				std::cout << "Running alignments with " << iterations << " iterations\n";
 			}
-			else { std::cout << "error inputting start" << std::endl; return 1; }
-		}
-		if (std::string(argv[i]) == "-End") {
-			if (i + 1 < argc) {
-				end = stoi(argv[i + 1]);
-				std::cout << "Calculating initial mean up to frame " << end << endl;
+			if (std::string(argv[i]) == "-Start") {
+				if (i + 1 >= argc)throw std::invalid_argument("No Start Input Value");
+				try { start = stoi(argv[i + 1]) - 1; }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Start Value\nInput :" + std::string(argv[i + 1]) + "\n"); }
+				start = max(start, (uint32_t) 0);
+				cout << "Isolating the particle starting from frame " << start + 1 << endl;
 			}
-			else { std::cout << "error inputting end" << std::endl; return 1; }
-		}
-		if (std::string(argv[i]) == "-Iterations") {
-			if (i + 1 < argc) {
-				iterations = stoi(argv[i + 1]);
-				std::cout << "Running alignments with " <<iterations<<" iterations\n";
+			if (std::string(argv[i]) == "-End") {
+				if (i + 1 >= argc)throw std::invalid_argument("No End Input Value");
+				try { end = stoi(argv[i + 1]); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid End Value\nInput :" + std::string(argv[i + 1]) + "\n"); }
+				end = min(end, vcinput[0]->numOfFrames);
+				cout << "Isolating the particle up to frame " << end << endl;
 			}
-			else { std::cout << "error inputting end" << std::endl; return 1; }
-		}
-		if (std::string(argv[i]) == "-MaxShift") {
-			if (i + 1 < argc) {
-				maxShift = stod(argv[i + 1]);
+			if (std::string(argv[i]) == "-MaxShift") {
+				if (i + 1 >= argc)throw std::invalid_argument("No Delta Input Value");
+				try { maxShift = stoi(argv[i + 1]); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Max Shift Value\nInput :" + std::string(argv[i + 1]) + "\n"); }
 				std::cout << "Max Shift = " << maxShift << " \n";
 			}
-			else { std::cout << "error inputting end" << std::endl; return 1; }
-		}
-		if (std::string(argv[i]) == "-MaxIntensities") {
-			for (int j = 0; j < numInputFiles; j++) {
-				if (i + 1 + j < argc) {
-					maxIntensities[j] = stod(argv[i + 1 + j]);
-					std::cout << "Max Intensity for channel " <<j+1<<" = "<< maxIntensities[j] << " \n";
-				}
-				else { std::cout << "error inputting max intensities" << std::endl; return 1; }
-			}
-		}
-		if (std::string(argv[i]) == "-SNRCutoff") {
-			if (i + 1 < argc) {
-				SNRCutoff = stod(argv[i + 1]);
+			if (std::string(argv[i]) == "-SNRCutoff") {
+				if (i + 1 >= argc)throw std::invalid_argument("No Avergaing Input Value");
+				try {SNRCutoff = stod(argv[i + 1]);}
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Averaging Value\nInput :" + std::string(argv[i + 1]) + "\n"); }
 				std::cout << "Alignment SNR Cutoff = " << SNRCutoff << " \n";
 			}
-			else { std::cout << "error inputting SNR cutoff" << std::endl; return 1; }
-		}
-		if (std::string(argv[i]) == "-OutputAligned") {
-			std::cout << "Outputting Aligned Image Stacks\n";
-			outputAligned = true;
+			if (std::string(argv[i]) == "-OutputAligned") {
+				std::cout << "Outputting Aligned Image Stacks\n";
+				outputAligned = true;
+			}
+			if (std::string(argv[i]) == "-SkipIndependentDrifts") {
+				std::cout << "Skipping Calculating Independent Drifts\n";
+				skipIndependentDrifts = true;
+			}
+			if (std::string(argv[i]) == "-Alignment") {
+				inputalignment = true;
+				if (i + 4 * (numInputFiles-1) >= argc)throw std::invalid_argument("Not Enough Alignment Inputs.\nRequires 4 values per extra channel (x offset ch2 ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n");
+				for (int j = 0; j < 4; j++)for (int k = 0; k < numInputFiles - 1; k++)
+					try { alignments[k][j] = stod(argv[i + 1 + k + j * (numInputFiles - 1)]); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid alignment Value\nInput :" + std::string(argv[i + 1 + k + j * (numInputFiles - 1)]) + "\nRequires 4 values per extra channel (x offset ch2, ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n"); }
+			}
+			if (std::string(argv[i]) == "-MaxIntensities") {
+				if (i + (numInputFiles) >= argc)throw std::invalid_argument("Not Enough Max Intensity Inputs.\nRequires one value per channel\n");
+				for (int k = 0; k < numInputFiles; k++)
+					try { maxIntensities[k] = stod(argv[i + 1 + k]); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Max Intensity Value\nInput :" + std::string(argv[i + 1 + k]) + "\nRequires one value per channel\n"); }
+			}
+
 		}
 	}
+	catch (const std::invalid_argument & e) {
+		std::cout << "Error Inputting Parameters\n";
+		std::cout << e.what() << "\n";
+		std::cout << "See -Help for help\n";
+		return 1;
+	}
 
+	try {
+		if (numInputFiles == 1) {
+			vector<float> outputImage, finalmeanimage;
+			std::string outputFilename = fileBase + "_Combined_Drift.csv";
+			driftCorrect(vcinput, alignments, start, end, iterations, maxShift, fileBase, outputAligned, outputImage, outputFilename);
 
-	
-	vector< vector<float> > drifts;
-	string adjustedOutputFilename;
-	int imageWidth;
-
-	vector< BLTiffIO::TiffOutput*> outputFiles;
-	if (outputAligned) {
-		BLTiffIO::TiffInput is(inputfiles[0]);
-		outputFiles.resize(numInputFiles);
-		for (int i = 0; i < numInputFiles; i++) {
-			adjustedOutputFilename = outputfile + "_Channel_" + to_string(i + 1) +".tiff";
-			outputFiles[i] = new BLTiffIO::TiffOutput(adjustedOutputFilename, is.imageWidth, is.imagePoints / is.imageWidth, 16,is.bigtiff);
 		}
-	}
+		else if (inputalignment) {
+			vector<float> outputImage, finalmeanimage;
+			std::string outputFilename;
+			if (skipIndependentDrifts == false) {
+				for (int i = 1; i < vcinput.size(); i++) {
+					outputFilename = fileBase + "_Channel_" + to_string(i + 1) + "_Drift.csv";
+					driftCorrect({ vcinput[i] }, { {} }, start, end, iterations, maxShift, "", false, finalmeanimage, outputFilename);
+				}
+			}
+			outputFilename = fileBase + "_Combined_Drift.csv";
+			driftCorrect(vcinput, alignments, start, end, iterations, maxShift, fileBase, outputAligned, outputImage, outputFilename);
 
-	if (numInputFiles == 1) {
-		vector<float> initialmeanimage, finalmeanimage;
-		driftCorrectSingleChannel(inputfiles[0], start, end, iterations, initialmeanimage, finalmeanimage, drifts,imageWidth,maxShift, outputFiles);
-
-		adjustedOutputFilename = outputfile + "_initial_partial_mean_1.tiff";
-		BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth,(uint32_t) initialmeanimage.size() / imageWidth, 16).write1dImage(initialmeanimage);
-
-		adjustedOutputFilename = outputfile + "_aligned_full_mean_1.tiff";
-		BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, (uint32_t)initialmeanimage.size() / imageWidth, 16).write1dImage(finalmeanimage);
-
-		BLCSVIO::writeCSV(outputfile + "_Drifts.csv", drifts, "X Drift, Y Drift\n");
-	}
-	else if (inputalignment) {
-		vector< vector<float> > vinitialmeanimage,vfinalmeanimage;
-
-		driftCorrectMultiChannel(inputfiles, start, end, iterations, vangle, vscale, vxoffset, vyoffset, vinitialmeanimage, vfinalmeanimage, drifts, imageWidth,maxShift, outputFiles);
-
-		for (int i = 0; i < numInputFiles; i++) {
-			adjustedOutputFilename = outputfile + "_aligned_partial_mean_" + to_string(i + 1) + ".tiff";
-			BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, (uint32_t)vfinalmeanimage[0].size() / imageWidth, 16).write1dImage(vinitialmeanimage[i]);
-
-			adjustedOutputFilename = outputfile + "_aligned_full_mean_" + to_string(i + 1) + ".tiff";
-			BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, (uint32_t)vfinalmeanimage[0].size() / imageWidth, 16).write1dImage(vfinalmeanimage[i]);
+			writeChannelAlignment(fileBase, alignments, vcinput[0]->imageWidth, vcinput[0]->imageHeight);
 		}
-		writeChannelAlignment(outputfile, vangle, vscale, vxoffset, vyoffset, imageWidth, vfinalmeanimage[0].size() / imageWidth);
+		else alignMultiChannel(vcinput, start, end, iterations, maxShift, fileBase, outputAligned, maxIntensities, SNRCutoff, skipIndependentDrifts);
 	}
-	else alignMultiChannel(inputfiles, start, end, iterations, outputfile, drifts, imageWidth,maxShift,maxIntensities,SNRCutoff, outputFiles);
-		
-
-	//Write out drifts
-	BLCSVIO::writeCSV(outputfile + "_Drifts.csv", drifts, "X Drift, Y Drift\n");
-
+	catch (const std::invalid_argument & e) {
+		std::cout << "Error During Drift Correction\n";
+		std::cout << e.what() << "\n";
+		return 2;
+	}
 
 	//system("PAUSE");
 	return 0;

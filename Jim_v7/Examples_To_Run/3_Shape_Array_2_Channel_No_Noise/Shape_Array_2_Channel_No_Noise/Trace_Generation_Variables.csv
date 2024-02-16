@@ -1,0 +1,52 @@
+Date, 09-Sep-2022
+additionalExtensionsToRemove,0
+multipleFilesPerImageStack,0
+imStackNumberOfChannels,2
+imStackChannelsToTransform,
+imStackNumberOfChannels,2
+imStackVerticalFlipChannel,
+imStackHorizontalFlipChannel,
+imStackRotateChannel,
+imStackStartFrame,1
+imStackEndFrame,-1
+imStackDisableMetadata,0
+imStackPreSplitChannels,0
+alignIterations,1
+alignStartFrame,15
+alignEndFrame,15
+alignManually,0
+alignRotationAngle,0
+alignScalingFactor,1
+alignXoffset,0
+alignYoffset,0
+alignMaxShift,30
+alignMaxIntensities,64000 64000
+alignSNRCutoff,1
+detectUsingMaxProjection,0
+detectNormalizeBetweenChannels,1
+detectionStartFrame,1 -5
+detectionEndFrame,5 -1
+detectionCutoff,0.1
+detectLeftEdge,10
+detectRightEdge,10
+detectTopEdge,10
+detectBottomEdge,10
+detectMinCount,10
+detectMaxCount,100
+detectMinEccentricity,-0.1
+detectMaxEccentricity,0.4
+detectMinLength,0
+detectMaxLength,10000000
+detectMaxDistFromLinear,10000000
+detectMinSeparation,0
+additionBackgroundDetect,1
+additionalBackgroundNormalizeBetweenChannels,1
+additionBackgroundUseMaxProjection,1
+additionalBackgroundStartFrame,1 1
+additionalBackgroundEndFrame,-1 -1
+additionBackgroundCutoff,0.1
+expandForegroundDist,4.1
+expandBackInnerDist,4.1
+expandBackOuterDist,30
+traceVerboseOutput,0
+traceIndependentDrifts,0

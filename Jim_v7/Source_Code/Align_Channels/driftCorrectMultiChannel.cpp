@@ -35,7 +35,7 @@ void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& en
 	finalmeanimage.resize(numInputFiles);
 	for (int i = 0; i < numInputFiles; i++)finalmeanimage[i] = vector<float>(vis[0]->imagePoints, 0.0);
 
-	for(int chancount = 0;chancount<numInputFiles;chancount++)
+/*	for(int chancount = 0;chancount<numInputFiles;chancount++)
 	for (int imcount = start; imcount < end; imcount++) {
 		if(chancount==0)vis[0]->read1dImage(imcount, imaget);
 		else {
@@ -44,9 +44,25 @@ void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& en
 		}
 		ippsAdd_32f_I(imaget.data(), initialmeanimage[chancount].data(), vis[0]->imagePoints);
 	}
+
 	for (int i = 0; i < numInputFiles; i++) {
 		ippsDivC_32f_I((Ipp32f)(end - start + 1), initialmeanimage[i].data(), vis[0]->imagePoints);
 		ippsAdd_32f_I(initialmeanimage[i].data(), imagetoalign.data(), vis[0]->imagePoints);
+	}
+
+	ippsDivC_32f_I((Ipp32f)numInputFiles, imagetoalign.data(), vis[0]->imagePoints);*/
+
+	for (int chancount = 0; chancount < numInputFiles; chancount++)
+		for (int imcount = start; imcount < end; imcount++) {
+			vis[chancount]->read1dImage(imcount, imaget);
+			ippsAdd_32f_I(imaget.data(), initialmeanimage[chancount].data(), vis[0]->imagePoints);
+		}
+
+	for (int chancount = 0; chancount < numInputFiles; chancount++) {
+		ippsDivC_32f_I((Ipp32f)(end - start + 1), initialmeanimage[chancount].data(), vis[0]->imagePoints);
+		if (chancount > 0) transformclass.transform(initialmeanimage[chancount], imaget, angle[chancount - 1] * 3.14159 / 180.0, scale[chancount - 1], -xoffset[chancount - 1], -yoffset[chancount - 1]);
+		else imaget = initialmeanimage[chancount];
+		ippsAdd_32f_I(imaget.data(), imagetoalign.data(), vis[0]->imagePoints);
 	}
 
 	ippsDivC_32f_I((Ipp32f)numInputFiles, imagetoalign.data(), vis[0]->imagePoints);

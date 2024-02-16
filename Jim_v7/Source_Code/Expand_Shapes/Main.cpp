@@ -87,7 +87,10 @@ int main(int argc, char *argv[])
 
 
 	for (int i = 0; i < labelledpos.size(); i++) {
-		for (int j = 0; j < labelledpos[i].size(); j++) initialBoundary[labelledpos[i][j]] = 255;
+		for (int j = 0; j < labelledpos[i].size(); j++) {
+			initialBoundary[labelledpos[i][j]] = 255;
+			if(labelledpos[i][j]==0)std::cout << "WARNING: Position " << j <<" of sample "<< i << " claims to be at 0. Total length = " << labelledpos[i].size() << "\n";
+		}
 		ippiDilateBorder_8u_C1R(initialBoundary.data(), imageWidth * sizeof(Ipp8u), expandedBoundary.data(), imageWidth * sizeof(Ipp8u), roiSize, borderType, borderValue, pSpec, pBuffer);
 		expandedpos[i].clear();
 		for (int j = 0; j < expandedBoundary.size(); j++)if (expandedBoundary[j] > 1)expandedpos[i].push_back(j);
@@ -105,11 +108,16 @@ int main(int argc, char *argv[])
 	//read in alternative background
 
 	std::vector<std::vector<int>> backgroundinit(3000, vector<int>(1000, 0));
+	alledgeboundaries = vector<uint8_t>(imagePoints, 0);
+	vector<uint8_t> expandedbackground(imagePoints, 0);
+
+	BLCSVIO::readVariableWidthCSV(foregroundposfile, backgroundinit, headerLine);
+	backgroundinit.erase(backgroundinit.begin());
+	for (int i = 0; i < backgroundinit.size(); i++)for (int j = 0; j < backgroundinit[i].size(); j++) alledgeboundaries[backgroundinit[i][j]] = 255;
 
 	BLCSVIO::readVariableWidthCSV(backgroundposfile, backgroundinit, headerLine);
 	backgroundinit.erase(backgroundinit.begin());
-	alledgeboundaries = vector<uint8_t>(imagePoints, 0);
-	vector<uint8_t> expandedbackground(imagePoints, 0);
+
 	for (int i = 0; i < backgroundinit.size(); i++)for (int j = 0; j < backgroundinit[i].size(); j++) alledgeboundaries[backgroundinit[i][j]] = 255;
 
 	for (int i = 0; i < masklength*masklength; i++) {

@@ -3,6 +3,7 @@ from sys import platform as _platform
 import sys
 import os
 import tkinter as tk
+print(sys.path)
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import csv
@@ -14,99 +15,169 @@ sectionNumber = 1
 # Sections
 # 1 - Select input file and create a folder for results
 # 2 - Split File into Individual Channels
-# 3 - Invert Channel
-# 4 - Align Channels and Calculate Drifts
-# 5 - Make a SubAverage of Frames for Detection
-# 6 - Detect Particles
-# 7 - Calculate Regions for Other Channels
+# 3 - Align Channels and Calculate Drifts
+# 4 - Make a SubAverage of the Image Stack for Detection
+# 5 - Detect Particles
+# 6 - Additional Background Detection Subaverage
+# 7 - Additional Background Detect
 # 8 - Expand Regions
 # 9 - Calculate Traces
 # 10 - View Traces
-# 11 - Detect files for batch
-# 12 - Batch Analyse
+# 11 - Extract Trace
+# 12 - Detect files for batch
+# 13 - Batch Analyse
+# 14 - Export Traces
 
 # ~~~~PARAMETER INPUTS~~~~ #
 
 # General Display Parameters
 
+# Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1
 overlayColours1 = [1, 0, 0]
 overlayColours2 = [0, 1, 0]
 overlayColours3 = [0, 0, 1]
 
-displayMin = 1
-displayMax = 3
+# This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMin = 0
+displayMax = 1
 
 # 1 - Select Input File
-additionalExtensionsToRemove = 0
-multipleFilesPerImageStack = False
+additionalExtensionsToRemove = 0  # remove extra .ome from working folder name if you want to
+multipleFilesPerImageStack = False   # choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
 
 # 2 - Split File into Individual Channels Parameters
-useMetadataFile = False
-numberOfChannels = 2
+imStackNumberOfChannels = 2  # Input the number of channels in the data
 
-# 3 - Invert Channel Parameters
-invertChannel = False
-channelToInvert = 2
+imStackChannelsToTransform = ''  # If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3
+imStackVerticalFlipChannel = '1'  # For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
+imStackHorizontalFlipChannel = '0'  #  Same as vertical
+imStackRotateChannel = '0'  #  Rotate should either be 0, 90, 180 or 270 for the angle to rotate each selected channel
 
-# 4 - Align Channels and Calculate Drifts Parameters
-iterations = 1
-alignStartFrame = 15
-alignEndFrame = 15
+imStackDisableMetadata = False  # Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
-manualAlignment = False
-rotationAngle = -2.86
-scalingFactor = 1
-xoffset = -5
-yoffset = -5
+imStackStartFrame = 1  # Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
+imStackEndFrame = -1  # Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
-# 5 - Make a SubAverage of the Image Stack for Detection Parameters
-useMaxProjection = False
-detectionStartFrame = '1 20'
-detectionEndFrame = '10 30'
+imStackPreSplitChannels = False  # Some scopes output channels as individual files. These files can be organised in another script, in which case set this to true.
 
-# 6 - Detect Particles Parameters
-cutoff = 0.85  # The cutoff for the initial threshold
+
+# 3 - Align Channels and Calculate Drifts Parameters
+alignIterations = 3  # Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
+
+alignStartFrame = 1  # Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 5
+
+alignMaxShift = 20  # Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+
+#Output the aligned image stacks. Note this is not required by JIM but can
+#be helpful for visualization. To save space, aligned stack will not output in batch
+#regarless of this value
+outputAlignedStacks = True
+
+# Multi Channel Alignment
+alignManually = False  # Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
+alignXoffset = '0'
+alignYoffset = '0'
+alignRotationAngle = '0'
+alignScalingFactor = '1'
+
+#Parmeters for Automatic Alignment
+alignMaxIntensities = '64000'  # Set a threshold so that during channel to channel alignment agregates are ignored
+alignSNRCutoff = 1  # Set a minimum alignment SNR to throw warnings
+
+skipIndependentDrifts = False  # If there is strong signal in both channels, or using manual alignment, this can speed up alignment. Don't use if you want independent drifts
+
+# 4 - Make a SubAverage of the Image Stack for Detection Parameters
+detectUsingMaxProjection = False  # Use a max projection rather than mean. This is better for short lived blinking particles
+
+detectionStartFrame = '1'  # first frame of the reference region for detection for each channel
+detectionEndFrame = '5'  # last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+
+# Normalizing makes all channels the same max to min intensity before combining.
+# This is good if you want to detect bright things in one channel and dim things in another
+# This is bad if you want to detect dim things in both channels but one has bright things as well
+detectNormalizeBetweenChannels = False
+
+# 5 - Detect Particles Parameters
+# Thresholding
+detectionCutoff = 0.5  # The cutoff for the initial thresholding. Typically in range 0.25-2
 
 # Filtering
-left = 10  # Excludes particles closer to the left edge than this (in pixels).
-right = 10  # Excludes particles closer to the right edge than this (in pixels).
-top = 10  # Excludes particles closer to the top edge than this (in pixels).
-bottom = 10  # Excluded particles closer to the bottom edge than this (in pixels).
+detectLeftEdge = 10  # Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 10  # Excluded particles closer to the Right edge than this.
+detectTopEdge = 10  # Excluded particles closer to the Top edge than this.
+detectBottomEdge = 10  # Excluded particles closer to the Bottom edge than this.
 
-minCount = 10  # Minimum number of pixels in a region to be included
-maxCount = 100  # Maximum number of pixels in a region to be included
+detectMinCount = 10  # Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+detectMaxCount = 100  # Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-# Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line.
-minEccentricity = -0.1  # Use the Minimum to exclude round objects. Set below zero to allow all round objects
-maxEccentricity = 1.1  # Use the Maximum to exclude long, thin objects. Set  above 1 to include all long, thin objects
+detectMinEccentricity = -0.1  # Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
+detectMaxEccentricity = 0.4  # Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects
 
-minLength = 0  # Minimum length of the region
-maxLength = 10000000  # Maximum length of the region
+detectMinLength = 0  # Minimum number of pixels for the major axis of the best fit ellipse
+detectMaxLength = 10000000  # Maximum number of pixels for the major axis of the best fit ellipse
 
-maxDistFromLinear = 10000000  # Maximum distance that a pixel can deviate from the major axis.
+detectMaxDistFromLinear = 10000000  # Maximum distance that a pixel can diviate from the major axis.
+
+detectMinSeparation = 0  # Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+
+# 6 - Additional Background Detection Subaverage - Use this to detect all other particles that are not in the detection image to cut around for background
+
+additionBackgroundDetect = False  # enable the additional detection. Disable if all particles were detected (before filtering) above.
+
+additionBackgroundUseMaxProjection = True  #Use a max projection rather than mean. This is better for short lived blinking particles
+
+additionalBackgroundStartFrame = '1'  #first frame of the reference region for background detection
+additionalBackgroundEndFrame = '-1'  #last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+
+
+additionalBackgroundNormalizeBetweenChannels = True
+
+# 7 - Additional Background Detect
+
+additionBackgroundCutoff = 0.5  # Threshold for particles to be detected for background
 
 # 8 - Expand Regions Parameters
 
-foregroundDist = 4.1  # Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-backInnerDist = 4.1
-backOuterDist = 20  # Distance to dilate beyond the ROI to measure the local background
+expandForegroundDist = 4.1  # Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+expandBackInnerDist = 4.1  # Minimum distance to dilate beyond the ROI to measure the local background
+expandBackOuterDist = 30  # Maximum distance to dilate beyond the ROI to measure the local background
 
 # 9 - Calculate Traces Parameter
-verboseOutput = False
+traceVerboseOutput = False  # Create additional file with additional statistics on each particle in each frame. Warning, this file can get very large. In general you don't want this.
+
+traceIndependentDrifts = False  # Use separate drifts for each channel. Do not use unless you have a good reason to. This will only be needed if stage moves alot between images with sequential imaging or drift is coming from camera movement.
 
 # 10 - View Traces Parameter
-pageNumber = 1
+montagePageNumber =1  # Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montageTimePerFrame = 0  # Set to zero to just have frames
+montageTimeUnits = 's'  # Unit to use for x axis
 
-# 11 - Detect files for batch
+# 11 - Extract Trace
+montageTraceNo = 23
+montageStart = 1
+montageEnd = 50
+montageDelta = 5
+montageAverage = 7
+
+montageOutputParticleImageStack = False  # Create a Tiff stack of the ROI of the particle
+
+# 12 - Detect files for batch
 filesInSubFolders = False
 
-# 12 - Batch Analysis
+# 13 - Batch Analysis
 overwritePreviouslyAnalysed = True
+deleteWorkingImageStacks = True
+
+
+
+
 
 # ~~~~ Don't touch from here ~~~~ #
 
 pyfile = sys.argv[0]
+fileSep = '\\'
 if _platform == "linux" or _platform == "linux2":
     JIM = os.path.dirname(os.path.dirname(pyfile)) + "/Jim_Programs_Linux/"
     fileSep = '/'
@@ -117,8 +188,95 @@ elif _platform == "darwin":
     fileEXE = ''
 elif _platform == "win32" or _platform == "win64":
     JIM = os.path.dirname(os.path.dirname(pyfile)) + "\\Jim_Programs\\"
-    fileEXE = '' + fileEXE + ''
+    fileEXE = '.exe'
 #  Change if not running in original distribution folder e.g. JIM = "C:\\Users\\James\\Desktop\\Jim_v#\\Jim_Programs\\"
+
+
+
+# 1 - Select input file and create a folder for results
+if sectionNumber == 1:
+    root = tk.Tk()
+    root.withdraw()
+
+    completeName = filedialog.askopenfilename()
+    completeName = completeName.replace("/", fileSep)
+    completeName = completeName.replace("\\", fileSep)
+    print(completeName)
+    baseName = os.path.basename(completeName);
+    splitBaseName = baseName.split(".");
+    baseNameOut = splitBaseName[0]
+    for x in range(1, len(splitBaseName) - additionalExtensionsToRemove-1):
+        baseNameOut = baseNameOut + "." + splitBaseName[x]
+
+    workingDir = os.path.dirname(completeName) + fileSep + baseNameOut + fileSep
+
+    if not os.path.isdir(workingDir):
+        os.makedirs(workingDir)
+    savedFilenameFile = open(os.path.dirname(pyfile) + fileSep + "saveFilename.csv", "w")
+    savedFilenameFile.write(completeName)
+    savedFilenameFile.close()
+
+
+# 12 - Detect all files for batch
+if sectionNumber == 12:
+    root = tk.Tk()
+    root.withdraw()
+    topFolder = filedialog.askdirectory(parent=root)
+
+    fileList = []
+    if filesInSubFolders:
+        for folder in os.listdir(topFolder):
+            folderin = os.path.join(topFolder, folder)
+            if os.path.isdir(folderin):
+                for file in os.listdir(folderin):
+                    if file.endswith(".tif") or file.endswith(".tiff") or file.endswith(".TIF") or file.endswith(
+                            ".TIFF"):
+                        fileList.append(os.path.join(folderin, file).replace("/", fileSep))
+    else:
+        for file in os.listdir(topFolder):
+            if file.endswith(".tif") or file.endswith(".tiff") or file.endswith(".TIF") or file.endswith(".TIFF"):
+                fileList.append(os.path.join(topFolder, file).replace("/", fileSep))
+
+    print('There are ' + str(len(fileList)) + ' files to analyse')
+    print(fileList)
+    savedFilenameFile = open(os.path.dirname(pyfile) + fileSep + "saveFilename.csv", "w")
+    for i in range(len(fileList)):
+        savedFilenameFile.write(fileList[i] + "\n")
+    savedFilenameFile.close()
+
+if sectionNumber != 1 and sectionNumber != 12:
+    channelFile = os.path.dirname(pyfile) + fileSep + "saveFilename.csv"
+    fileList = list(csv.reader(open(channelFile)))
+
+    for filein in fileList:
+        completeName = filein[0]
+
+        print('Analysing file '+completeName)
+        workingDir = os.path.dirname(completeName) + fileSep + str(os.path.basename(completeName).split(".", 1)[0]) + fileSep
+        if os.path.isfile(workingDir + "Channel_1_Fluorescent_Intensities.csv"):
+            print('Skipping '+ completeName + ' - Analysis already exists')
+            continue
+
+        if not os.path.isdir(workingDir):
+            os.makedirs(workingDir)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+
+
+
 
 if sectionNumber != 1 and sectionNumber != 11:
     channelFile = os.path.dirname(pyfile) + fileSep + "saveFilename.csv"
@@ -133,29 +291,7 @@ if sectionNumber != 1 and sectionNumber != 11:
 
     workingDir = os.path.dirname(completeName) + fileSep + baseNameOut + fileSep
 
-# 1 - Select input file and create a folder for results
-if sectionNumber == 1:
-    root = tk.Tk()
-    root.withdraw()
 
-    completeName = filedialog.askopenfilename()
-    completeName = completeName.replace("/", fileSep)
-    completeName = completeName.replace("\\", fileSep)
-    print(completeName)
-    baseName = os.path.basename(completeName);
-    splitBaseName = baseName.split(".");
-    baseNameOut = splitBaseName[0]
-    for x in range(1, len(splitBaseName) - additionalExtensionsToRemove):
-        baseNameOut = baseNameOut + "." + splitBaseName[x]
-
-    workingDir = os.path.dirname(completeName) + fileSep + baseNameOut + fileSep
-
-    print(workingDir)
-    if not os.path.isdir(workingDir):
-        os.makedirs(workingDir)
-    savedFilenameFile = open(os.path.dirname(pyfile) + fileSep + "saveFilename.csv", "w")
-    savedFilenameFile.write(completeName)
-    savedFilenameFile.close()
 
 # 2 - Split File into Individual Channels Parameters
 if sectionNumber == 2:
@@ -390,32 +526,6 @@ if sectionNumber == 10:
     plt.tight_layout()
     plt.show()
 
-# 11 - Detect files for batch
-if sectionNumber == 11:
-    root = tk.Tk()
-    root.withdraw()
-    topFolder = filedialog.askdirectory(parent=root)
-
-    fileList = []
-    if filesInSubFolders:
-        for folder in os.listdir(topFolder):
-            folderin = os.path.join(topFolder, folder)
-            if os.path.isdir(folderin):
-                for file in os.listdir(folderin):
-                    if file.endswith(".tif") or file.endswith(".tiff") or file.endswith(".TIF") or file.endswith(
-                            ".TIFF"):
-                        fileList.append(os.path.join(folderin, file).replace("/", fileSep))
-    else:
-        for file in os.listdir(topFolder):
-            if file.endswith(".tif") or file.endswith(".tiff") or file.endswith(".TIF") or file.endswith(".TIFF"):
-                fileList.append(os.path.join(topFolder, file).replace("/", fileSep))
-
-    print('There are ' + str(len(fileList)) + ' files to analyse')
-    print(fileList)
-    savedFilenameFile = open(os.path.dirname(pyfile) + fileSep + "saveFilename.csv", "w")
-    for i in range(len(fileList)):
-        savedFilenameFile.write(fileList[i] + "\n")
-    savedFilenameFile.close()
 
 # 12 - Batch Analysis
 
@@ -562,4 +672,4 @@ if sectionNumber == 12:
 
     print('Batch Analysis Completed')
 
-
+"""

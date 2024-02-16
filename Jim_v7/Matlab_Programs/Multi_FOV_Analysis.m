@@ -83,7 +83,7 @@ singleChannelData = false;
 channelOneSubstrate = false;
 
 substrate_photobleaching = 1;
-binder_photobleaching = 6591;
+binder_photobleaching = 1;
 substrate_partial_labelling = 1;
 binder_partial_labelling = 1;
 

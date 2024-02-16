@@ -11,11 +11,6 @@
 
 
 using namespace std;
-
-void driftCorrectSingleChannel(string& inputfilename, int& start, int& end, int iterations, vector<float>& initialmeanimage, vector<float>& finalmeanimage, vector< vector<float> > &driftsout, int& imageWidth, float maxShift, vector< BLTiffIO::TiffOutput*>& outputFiles);
-void alignMultiChannel(vector<string>& inputfilenames, int& start, int& end, int iterations, string outputfile, vector< vector<float> > &driftsout, int& imageWidth, float maxShift, vector<float>& maxIntensities,double SNRCutoff, vector< BLTiffIO::TiffOutput*>& outputFiles);
-
-void driftCorrectMultiChannel(vector<string>& inputfilename, int& start, int& end, int iterations, vector<float>&angle, vector<float>&scale, vector<float>&xoffset, 
-vector<float>&yoffset, vector< vector<float> >& initialmeanimage, vector<vector<float> >& finalmeanimage, vector< vector<float> > &driftsout, int& imageWidth, float maxShift, vector< BLTiffIO::TiffOutput*>& outputFiles);
-
-void writeChannelAlignment(string outputfile, vector<float>&angle, vector<float>&scale, vector<float>&xoffset, vector<float>&yoffset, int imageWidth, int imageHeight);
+void driftCorrect(vector<BLTiffIO::TiffInput*> is, vector< vector<float>> alignment, uint32_t start, uint32_t end, uint32_t iterations, uint32_t maxShift, string fileBase, bool bOutputStack, vector<float>& outputImage, std::string driftFileName);
+void alignMultiChannel(vector<BLTiffIO::TiffInput*> is,uint32_t start, uint32_t end, uint32_t iterations, uint32_t maxShift, string fileBase, bool bOutputStack, vector<float>& maxIntensities, double SNRCutoff, bool bIndependentDrifts);
+void writeChannelAlignment(string outputfile, vector< vector< float>>& alignments, int imageWidth, int imageHeight);
