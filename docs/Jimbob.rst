@@ -33,20 +33,20 @@ Parameters
 
 **Align ROI size** - *Size of Region of Interest for Alignment* : The region at the centre of the image that will be used for alignment. Has to be a power of 2 (ie 256,512,1024). Larger areas will be more robust but also slower to calculate.
 
-**Max Shift** - *Maximum Shift allowed for Dift Correction* : Limit drift correctiion to correct by less than this value. This can halp avoid abborent alignment with weak signals.
+**Max Shift** - *Maximum Shift allowed for Drift Correction* : Limit drift correction to correct by less than this value. This can halp avoid abborent alignment with weak signals.
 
 **Drift Correct Detection** - *Drift Correct Image Used for Detection* : Whether or not to drift correct the stack before creating the image used for detection
 
 **Channel** - *Channel to Use for Detection and Alignment* : Set to 0 to detect using the sum of all channels, otherwise 1 for channel 1 etc.
 
-**Start Frame** - *Detection Start Frames* : first frame of the reference region for detection for each channel
+**Start Frame** - *Detection Start Frames* : The first frame of the reference region which is averaged to create the image for detection. Set to 1 to got from the first frame in the stack.
 
-**End Frame** - *Detection End Frames* : last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
-
-
+**End Frame** - *Detection End Frames* : The last frame in reference region which is averaged to create the image for detection. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 
-**Cutoff** - *Threshold Cutoff* :  The cutoff for the initial thresholding. Typically in range 0.5-4
+
+
+**Cutoff** - *Threshold Cutoff* :  The cutoff for the initial thresholding. Typically in range 0.5 to 4
 
 **Min Eccentricity** - *Minimum Eccentricity of ROIs* : Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="org.micromanager.plugins.Poor_Mans_JIM.PMJ_Window">
-  <grid id="27dc6" binding="MainPanel" layout-manager="GridLayoutManager" row-count="20" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+  <grid id="27dc6" binding="MainPanel" layout-manager="GridLayoutManager" row-count="21" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
       <xy x="20" y="20" width="521" height="951"/>
@@ -17,6 +17,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="256"/>
+          <toolTipText value="Size of Region of Interest for Alignment : The region at the centre of the image that will be used for alignment. Has to be a power of 2 (ie 256,512,1024). Larger areas will be more robust but also slower to calculate. "/>
         </properties>
       </component>
       <component id="cdfe1" class="javax.swing.JButton" binding="detectParticlesButton">
@@ -46,6 +47,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="1"/>
+          <toolTipText value="Detection Start Frames  : The first frame of the reference region which is averaged to create the image for detection. Set to 1 to got from the first frame in the stack. "/>
         </properties>
       </component>
       <component id="f5766" class="javax.swing.JLabel">
@@ -89,6 +91,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="1"/>
+          <toolTipText value="Threshold Cutoff  :  The cutoff for the initial thresholding. Typically in range 0.5 to 4 "/>
         </properties>
       </component>
       <component id="32e2f" class="javax.swing.JTextField" binding="ROIPaddingBox">
@@ -100,6 +103,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="2"/>
+          <toolTipText value="Bounding Box Padding for ROI  : Distance to expand the bounding box of the ROIs by to make sure all flourescence from the ROI is measured. "/>
         </properties>
       </component>
       <component id="15fba" class="javax.swing.JTextField" binding="minEccentricityBox">
@@ -111,6 +115,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="0"/>
+          <toolTipText value="Minimum Eccentricity of ROIs  : Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects "/>
         </properties>
       </component>
       <component id="1944" class="javax.swing.JTextField" binding="minCountBox">
@@ -122,6 +127,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="3"/>
+          <toolTipText value="Minimum Pixel Count  : Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background "/>
         </properties>
       </component>
       <component id="e8f4" class="javax.swing.JTextField" binding="minDFEBox">
@@ -133,6 +139,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="20"/>
+          <toolTipText value="Minimum Distance from Edge of Image  : Exclude particles that are closer than this to the edge of the image (in pixels). Make sure this value is larger than the maximum drift. 25 works well in most cases "/>
         </properties>
       </component>
       <component id="7dcbe" class="javax.swing.JLabel">
@@ -145,7 +152,7 @@
       </component>
       <component id="e831c" class="javax.swing.JButton" binding="GenerateTracesButton">
         <constraints>
-          <grid row="16" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
+          <grid row="17" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="112" height="36"/>
           </grid>
         </constraints>
@@ -155,7 +162,7 @@
       </component>
       <component id="8e39b" class="javax.swing.JLabel">
         <constraints>
-          <grid row="12" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="13" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <text value="Page Number /Normalize"/>
@@ -163,18 +170,19 @@
       </component>
       <component id="be188" class="javax.swing.JTextField" binding="pageNumberBox">
         <constraints>
-          <grid row="12" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+          <grid row="13" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="38"/>
           </grid>
         </constraints>
         <properties>
           <horizontalAlignment value="0"/>
           <text value="2"/>
+          <toolTipText value="Page Number of Montage to Display  : Which page of example traces to display."/>
         </properties>
       </component>
       <component id="40dfe" class="javax.swing.JButton" binding="stepFitButton">
         <constraints>
-          <grid row="18" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
+          <grid row="19" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="112" height="36"/>
           </grid>
         </constraints>
@@ -184,7 +192,7 @@
       </component>
       <component id="11932" class="javax.swing.JLabel">
         <constraints>
-          <grid row="17" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="18" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <text value="Channel to Step Fit/Step Fit in Batch"/>
@@ -192,18 +200,19 @@
       </component>
       <component id="e82d5" class="javax.swing.JTextField" binding="channelToFitBox">
         <constraints>
-          <grid row="17" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+          <grid row="18" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="38"/>
           </grid>
         </constraints>
         <properties>
           <horizontalAlignment value="0"/>
           <text value="1"/>
+          <toolTipText value="The channel in the image stack that should be step fit to analyse step times and step heights "/>
         </properties>
       </component>
       <component id="fc944" class="javax.swing.JButton" binding="batchButton">
         <constraints>
-          <grid row="19" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
+          <grid row="20" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="112" height="36"/>
           </grid>
         </constraints>
@@ -223,13 +232,14 @@
       </component>
       <component id="b84fe" class="javax.swing.JTextField" binding="batchDirectoryBox">
         <constraints>
-          <grid row="15" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+          <grid row="16" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="38"/>
           </grid>
         </constraints>
         <properties>
           <horizontalAlignment value="0"/>
           <text value="1"/>
+          <toolTipText value="The currently selected save folder path"/>
         </properties>
       </component>
       <component id="f45d8" class="javax.swing.JComboBox" binding="filesDropDownMenu">
@@ -238,6 +248,7 @@
         </constraints>
         <properties>
           <model/>
+          <toolTipText value="All image stacks currently open in micromanager. The current position in the stack the when the stack is selected here is the position used for the other sections."/>
         </properties>
       </component>
       <component id="53b97" class="javax.swing.JTextField" binding="detectEndFrameBox">
@@ -249,6 +260,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="-1"/>
+          <toolTipText value="Detection End Frames  : The last frame in reference region which is averaged to create the image for detection. Negative numbers go from end of stack. i.e. -1 is last image in stack "/>
         </properties>
       </component>
       <component id="b8" class="javax.swing.JTextField" binding="maxEccentricityBox">
@@ -260,6 +272,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="0.5"/>
+          <toolTipText value="Maximum Eccentricity of ROIs  : Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects   "/>
         </properties>
       </component>
       <component id="605f4" class="javax.swing.JTextField" binding="maxCountBox">
@@ -271,6 +284,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="30"/>
+          <toolTipText value="Maximum Pixel Count  : Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates "/>
         </properties>
       </component>
       <component id="c177a" class="javax.swing.JTextField" binding="sBackgroundWidth">
@@ -282,14 +296,16 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="5"/>
+          <toolTipText value="Distance to expand for Background  : Distance to expand beyond the bounding box of and ROI to measure the surrounding background. Note that any parciles in this region will cause this particle to be excluded.  "/>
         </properties>
       </component>
       <component id="4cd0f" class="javax.swing.JCheckBox" binding="bNormalizeTracesBox">
         <constraints>
-          <grid row="12" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="13" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <text value=""/>
+          <toolTipText value="Normalize Multi-Channel Data Traces  : Multi-Channel data can have very different intensities making it hard to read on a single plot. Selecting this will normalize the traces of all traces to the same height to make it easier to view. This does not affect the saved traces. "/>
         </properties>
       </component>
       <component id="4e6c1" class="javax.swing.JLabel" binding="statusText">
@@ -298,32 +314,7 @@
         </constraints>
         <properties>
           <text value="Select File"/>
-        </properties>
-      </component>
-      <component id="5bb63" class="javax.swing.JLabel">
-        <constraints>
-          <grid row="13" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <text value="Drift Correct/Display Stack"/>
-        </properties>
-      </component>
-      <component id="bc245" class="javax.swing.JCheckBox" binding="driftCorrectTraceBox">
-        <constraints>
-          <grid row="13" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <selected value="true"/>
-          <text value=""/>
-        </properties>
-      </component>
-      <component id="5431" class="javax.swing.JCheckBox" binding="displayAlignedStackBox">
-        <constraints>
-          <grid row="13" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <selected value="true"/>
-          <text value=""/>
+          <toolTipText value="Jimbob Status"/>
         </properties>
       </component>
       <component id="c3183" class="javax.swing.JLabel">
@@ -336,10 +327,11 @@
       </component>
       <component id="da77e" class="javax.swing.JCheckBox" binding="batchStepFitBox">
         <constraints>
-          <grid row="17" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="18" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <text value=""/>
+          <toolTipText value="Whether to step fit traces when batch processing all positions "/>
         </properties>
       </component>
       <component id="74c7d" class="javax.swing.JLabel">
@@ -359,6 +351,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="100"/>
+          <toolTipText value="Maximum Shift allowed for Drift Correction  : Limit drift correction to correct by less than this value. This can halp avoid abborent alignment with weak signals. "/>
         </properties>
       </component>
       <component id="4dc0c" class="javax.swing.JCheckBox" binding="driftCorrectDetectBox">
@@ -367,11 +360,12 @@
         </constraints>
         <properties>
           <text value=""/>
+          <toolTipText value="Drift Correct Image Used for Detection  : Whether or not to drift correct the stack before creating the image used for detection"/>
         </properties>
       </component>
       <component id="aa364" class="javax.swing.JLabel">
         <constraints>
-          <grid row="14" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="15" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <text value="Save Traces"/>
@@ -379,21 +373,23 @@
       </component>
       <component id="98861" class="javax.swing.JCheckBox" binding="saveTracesBox">
         <constraints>
-          <grid row="14" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="15" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <selected value="true"/>
           <text value=""/>
+          <toolTipText value="Whether fluorescent and background intensity traces should be saved as a csv. Example trace montage, and mean traces will also be saved. "/>
         </properties>
       </component>
       <component id="87b91" class="javax.swing.JButton" binding="browseButton">
         <constraints>
-          <grid row="14" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
+          <grid row="15" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="7" anchor="0" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="112" height="36"/>
           </grid>
         </constraints>
         <properties>
           <text value="Browse"/>
+          <toolTipText value="Opens a file Dialog to select the folder that traces should be saved to. "/>
         </properties>
       </component>
       <component id="70617" class="javax.swing.JTextField" binding="Align_Channel_Select">
@@ -405,6 +401,7 @@
         <properties>
           <horizontalAlignment value="0"/>
           <text value="0"/>
+          <toolTipText value="Channel to Use for Detection and Alignment  : Set to 0 to detect using the sum of all channels, otherwise 1 for channel 1 etc."/>
         </properties>
       </component>
       <component id="60b2b" class="javax.swing.JButton" binding="helpButton" default-binding="true">
@@ -413,6 +410,67 @@
         </constraints>
         <properties>
           <text value="Help"/>
+          <toolTipText value="https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/Jimbob.html"/>
+        </properties>
+      </component>
+      <component id="5bb63" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="12" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="Drift Correct/Display Stack"/>
+        </properties>
+      </component>
+      <component id="bc245" class="javax.swing.JCheckBox" binding="driftCorrectTraceBox">
+        <constraints>
+          <grid row="12" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <selected value="true"/>
+          <text value=""/>
+          <toolTipText value="Whether or not to drift correct the stack before measuring traces. "/>
+        </properties>
+      </component>
+      <component id="5431" class="javax.swing.JCheckBox" binding="displayAlignedStackBox">
+        <constraints>
+          <grid row="12" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <selected value="true"/>
+          <text value=""/>
+          <toolTipText value="Whether to display the image stack after alignment. Warning: Do not select this if there is not enough ram to store the image stack! "/>
+        </properties>
+      </component>
+      <component id="5ce8c" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="14" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="Time per frame / Units"/>
+        </properties>
+      </component>
+      <component id="2b792" class="javax.swing.JTextField" binding="timePerFrameBox">
+        <constraints>
+          <grid row="14" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+            <preferred-size width="150" height="38"/>
+          </grid>
+        </constraints>
+        <properties>
+          <horizontalAlignment value="0"/>
+          <text value="1"/>
+          <toolTipText value="Time between frames  : The time between each frame in the image stack. This value is just used to scale the x-axis of trace plots. "/>
+        </properties>
+      </component>
+      <component id="ef817" class="javax.swing.JTextField" binding="timePerFrameUnitsBox">
+        <constraints>
+          <grid row="14" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+            <preferred-size width="150" height="38"/>
+          </grid>
+        </constraints>
+        <properties>
+          <horizontalAlignment value="0"/>
+          <text value="s"/>
+          <toolTipText value="Units of time between frames  : The units used for the time between each frame in the image stack. This value is just used to label on the x-axis of traces. "/>
         </properties>
       </component>
     </children>

@@ -75,6 +75,8 @@ public class PMJ_Window {
     private JCheckBox batchStepFitBox;
     private JTextField Align_Channel_Select;
     private JButton helpButton;
+    private JTextField timePerFrameBox;
+    private JTextField timePerFrameUnitsBox;
 
 
     DisplayManager myDisplayManager;
@@ -116,7 +118,8 @@ public class PMJ_Window {
     //parameters
     boolean driftCorrectDetect, driftCorrectTrace,displayAlignedStack,saveTraces,batchStepFit;
     int alignMaxShift,alignROILength,detectStart,detectEnd,alignChannel,minCount,maxCount,minDFE,padROI,backgroundWidth,channelToStepFit;
-    double cutoff,minEccentricity,maxEccentricity;
+    double cutoff,minEccentricity,maxEccentricity,timePerFrame;
+    String timePerFrameUnits;
     void parseParameters(){
         //detection Image
         alignROILength = Integer.parseInt(AlignROISizeTextBox.getText());
@@ -148,6 +151,8 @@ public class PMJ_Window {
         driftCorrectTrace = driftCorrectTraceBox.isSelected();
         displayAlignedStack = displayAlignedStackBox.isSelected();
         saveTraces = saveTracesBox.isSelected();
+        timePerFrame = Double.parseDouble(timePerFrameBox.getText());
+        timePerFrameUnits = timePerFrameUnitsBox.getText();
 
         batchStepFit = batchStepFitBox.isSelected();
         channelToStepFit = Integer.parseInt(channelToFitBox.getText())-1;
@@ -637,7 +642,7 @@ public class PMJ_Window {
                 }
 
                 //plot mean trace
-                Plot plot = new Plot("Mean Trace "+traces[0][0].length+" Particles", "Frames", "Intensity");
+                Plot plot = new Plot("Mean Trace "+traces[0][0].length+" Particles", "Time ("+timePerFrameUnits+")", "Intensity (a.u.)");
                 plot.setFrameSize(400, 250);
                 PlotWindow.noGridLines = true;
                 plot.setAxisLabelFont(Font.BOLD, 40);
@@ -645,7 +650,7 @@ public class PMJ_Window {
                 plot.setLineWidth(6);
                 //plot.addLabel(0.25,0,"Mean Trace");
                 double[] frames = new double[totFrameNum];
-                for (int frameNum = 0; frameNum < totFrameNum; frameNum++)frames[frameNum] = frameNum+1;
+                for (int frameNum = 0; frameNum < totFrameNum; frameNum++)frames[frameNum] = frameNum*timePerFrame;
                 for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
                     plot.setColor(mycolour.get(chanNum));
                     plot.add("line",frames, meanTrace[chanNum]);
@@ -665,7 +670,7 @@ public class PMJ_Window {
                 ImageStack imstackin = new ImageStack(plotWidth, plotHeight);
                 double[] toplot = new double[totFrameNum];
                 for (int partNum = startTrace; partNum < Math.min(totPartNum, startTrace + 36); partNum++) {
-                    plot2 = new Plot("Particle " + String.valueOf(partNum + 1), "Frames", "Intensity");
+                    plot2 = new Plot("Particle " + String.valueOf(partNum + 1), "Time ("+timePerFrameUnits+")", "Intensity");
                     plot2.setFrameSize(400, 250);
                     PlotWindow.noGridLines = true;
                     plot2.setAxisLabelFont(Font.BOLD, 40);
@@ -754,7 +759,7 @@ public class PMJ_Window {
                         if (stepfits[4][partNum] == classToPlot) {
                             plotcount++;
                             if(plotcount<startTrace+1)continue;
-                            plot2 = new Plot("Particle " + String.valueOf(partNum + 1), "Frames", "Intensity");
+                            plot2 = new Plot("Particle " + String.valueOf(partNum + 1), "Time ("+timePerFrameUnits+")", "Intensity");
                             plot2.setFrameSize(400, 250);
                             PlotWindow.noGridLines = true;
                             plot2.setAxisLabelFont(Font.BOLD, 40);
@@ -819,7 +824,7 @@ public class PMJ_Window {
                 }
 
                 plot2 = new Plot("Survival Curve Mean = "+IJ.d2s(1/expFit[2],2)+" Observed = "+IJ.d2s(100-100*Math.exp(-1.0*expFit[2]*(totFrameNum-1)),0)+"%"
-                        +" Count = "+IJ.d2s(expFit[1],0)+" Offset = "+IJ.d2s(expFit[0],0), "Frames", "Remaining Particles");
+                        +" Count = "+IJ.d2s(expFit[1],0)+" Offset = "+IJ.d2s(expFit[0],0), "Time ("+timePerFrameUnits+")", "Remaining Particles");
                 plot2.setFrameSize(400, 250);
                 PlotWindow.noGridLines = true;
                 plot2.setAxisLabelFont(Font.BOLD, 40);
