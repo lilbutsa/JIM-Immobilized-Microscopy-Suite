@@ -108,7 +108,7 @@ Filters
 
 **Max. Pixel Count** - *detectMaxCount* :  Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-**Min. Eccentricty** - *detectMinEccentricity* :  Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
+**Min. Eccentricity** - *detectMinEccentricity* :  Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
 
 **Max. Eccentricity** - *detectMaxEccentricity* : Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
