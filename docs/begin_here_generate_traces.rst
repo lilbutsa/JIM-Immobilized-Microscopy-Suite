@@ -72,24 +72,28 @@ Manual Channel Alignment
 
 If the alignment between channels is already known, it can just be directly input here. The most common case is if multiple channels were images sequntially on a single camera so they already overlay perfectly in which case X offset, Y offset and Rotation Angle should be set to 0 and Scaling Factor should be set to 1.
 
+Note that image transformation is first rotated and scaled before it is translated.
+
 **Align Manually** - *alignManually* : Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 
-**X offset** - *alignXOffset* : 
+**X offset** - *alignXOffset* : The X shift between channels in pixels
 
-**Y offset** - *alignYOffset* : 
+**Y offset** - *alignYOffset* : The Y shift between channels in pixels
 
-**Rotation Angle** - *alignRotationAngle* : 
+**Rotation Angle** - *alignRotationAngle* : Angle of rotation in degrees around the centre of the image.
 
-**Scaling Factor** - *alignScalingFactor* :  
+**Scaling Factor** - *alignScalingFactor* : The factor to expand the size of the image around the centre of the image. 
 
 Make Sub-Average
 ================
 
-**Use Max Projection** - *detectUsingMaxProjection* : Use a max projection rather than mean. This is better for short lived blinking particles
+This section generates the image that will be used to detect particles. It does this by taking the mean (or max) of a range of frames from the drift corrected stack of each channel where the particles of interest are present. This mean image is then used to detect particles for analysis. Increasing the number of frame to average allows the detection of long-lived dim particles (top row) but reduces sensitivity for short lived particles (left column) because the short lived signal is averaged out across more frames.
 
-**Detection Start Frames** - *detectionStartFrame* : first frame of the reference region for detection for each channel
+**Use Max Projection** - *detectUsingMaxProjection* : Use a max projection rather than mean. Using the max is better for short lived blinking particles, the mean is significantly better for long lived dim particles.
 
-**Detection End Frames** - *detectionEndFrame* : last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+**Detection Start Frames** - *detectionStartFrame* : The first frame of the reference region for detection for each channel. There should be one value for each channel separated by space. eg.For two channel data '4 10' will set the refence stack for Channel 1 to start from Frame 4 and Channel 2 to start from Frame 10.
+
+**Detection End Frames** - *detectionEndFrame* : The last frame of reference regions for detection for each channel. There should be one value for each channel separated by space. Negative numbers go from end of stack. i.e. -1 is last image in stack. 
 
 **Channel Weights** - *detectWeights* : Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
 
@@ -113,7 +117,7 @@ Filters
 
 **Max. Pixel Count** - *detectMaxCount* :  Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-**Min. Eccentricity** - *detectMinEccentricity* :  Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
+**Min. Eccentricty** - *detectMinEccentricity* :  Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
 
 **Max. Eccentricity** - *detectMaxEccentricity* : Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
