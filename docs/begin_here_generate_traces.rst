@@ -43,15 +43,18 @@ If images were captured using a multi-camera microscope, one of the cameras will
 
 Align Channels and Calculate Drifts
 ===================================
+Drift correction of microscopy imaging is required to counter stage movement during image acquisition. During image acquisition, the microscope stage will inevitably move due to a number of factors including thermal fluctuations, airflow over the microscope and vibrations. By correcting for these shifts, we ensure that the fluorescent intensity of the same area is being measured throughout the experiment.
 
-This module consists of two parts: The first part calculates the drift correction for the image stack, while the second half calculates the alignment between channels.
+Similarly, if multi-channel data has been collected on a microscope with multiple cameras or using an optosplit, the different channels may not overlay with each other perfectly. By measuring the shift between channels we can measure the same relative area in every channel.  
+
+This section consists of two parts: The first part calculates the drift correction for the image stack, while the second half calculates the alignment between channels.
 
 
-**Iterations** - *alignIterations* : Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames, or there is strong signal in the reference frames
+**Iterations** - *alignIterations* : Number of times to iterate drift correction calculations, 1 is fine if there minimal drift in the reference frames, or there is strong signal in the reference frames
 
-**Alignment Start Frame** - *alignStartFrame* :  Select reference frames where there is signal in all channels at the same time start frame from 1
+**Alignment Start Frame** - *alignStartFrame* :  Select reference frames where there is signal in all channels at the same time. Frames start from 1
 
-**Alignment End Frame** - *alignEndFrame* : 
+**Alignment End Frame** - *alignEndFrame* : Last frame reference frames where there is signal in all channels. Negative numbers go from the end of the stack, so set to -1 to take the entire stack
 
 **Max Shift** - *alignMaxShift* : Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -66,6 +69,8 @@ Automatic Channel Alignment
 
 Manual Channel Alignment
 ---------------------------
+
+If the alignment between channels is already known, it can just be directly input here. The most common case is if multiple channels were images sequntially on a single camera so they already overlay perfectly in which case X offset, Y offset and Rotation Angle should be set to 0 and Scaling Factor should be set to 1.
 
 **Align Manually** - *alignManually* : Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 
