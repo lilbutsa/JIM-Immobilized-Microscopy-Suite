@@ -95,10 +95,12 @@ This section generates the image that will be used to detect particles. It does 
 
 **Detection End Frames** - *detectionEndFrame* : The last frame of reference regions for detection for each channel. There should be one value for each channel separated by space. Negative numbers go from end of stack. i.e. -1 is last image in stack. 
 
-**Channel Weights** - *detectWeights* : Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
+**Channel Weights** - *detectWeights* : Each channel is multiplied by this value before they're combined (summed). This is handy if one channel is much brigthter than another. There should be one value for each channel separated by space. 
 
 Detect Particles
 ================
+
+This section detects the particles in the detectiong image. The program essentially consists of two parts. The first part is effectively a threshold which detects local increases in intensity above the surrounding background to find ‘detected regions’ (region of interest or ROI). The second part filters these detected regions based on size and shape to isolate the desired particles that you are interested for downstream analysis.
 
 **Threshold Cutoff** - *detectionCutoff* :  The cutoff for the initial thresholding. Typically in range 0.25-2
 
