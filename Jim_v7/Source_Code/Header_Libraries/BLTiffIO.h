@@ -7,6 +7,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <stdexcept>
+
 
 namespace BLTiffIO {
 
@@ -18,6 +20,7 @@ namespace BLTiffIO {
 		uint16_t input16bit;
 		uint32_t input32bit;
 		uint64_t input64bit;
+		char inputbit[8];
 
 		std::vector<uint8_t> vinput8bit;
 		std::vector<uint16_t> vinput16bit;
@@ -46,6 +49,7 @@ namespace BLTiffIO {
 		uint16_t read16bit();
 		uint32_t read32bit();
 		uint64_t read64bit();
+		uint64_t readbit(int bitDepth);
 
 		void ReadIFDTag();
 		void ReadBigIFDTag();
@@ -66,11 +70,12 @@ namespace BLTiffIO {
 
 		std::string OMEmetadata;
 		bool OMEmetadataDetected;
-		std::vector<std::vector<uint32_t>> imageOrder; //ordered T,C,Z,N
+		std::vector<std::vector<uint32_t> > imageOrder; //ordered T,C,Z,N
+		std::string inputfile;
 
 		bool bigtiff;
 
-		TiffInput(std::string filenamein);
+		TiffInput(std::string filenamein, bool detectMetadata = true);
 		~TiffInput();
 
 		template <typename vectortype>
@@ -121,6 +126,25 @@ namespace BLTiffIO {
 		return input64bit;
 	}
 
+	inline uint64_t TiffInput::readbit(int dataType)
+	{
+
+		int bitDepth;
+		if (dataType == 1) bitDepth = 1;
+		else if (dataType == 3) bitDepth = 2;
+		else if (dataType == 4) bitDepth = 4;
+		else bitDepth = 64;
+
+		ifs.read(inputbit, bitDepth);
+
+		input64bit = 0;
+		if (bigendian) for (int i = 0; i < bitDepth; i++)input64bit = 256 * input64bit + ((uint8_t)inputbit[i]);
+		else for (int i = bitDepth-1; i >-1; i--)input64bit = 256 * input64bit + ((uint8_t)inputbit[i]);
+
+		return input64bit;
+	}
+
+
 	inline void TiffInput::read8bitimage() {
 		ifs.read((char*) vinput8bit.data(), imagePoints);
 	}
@@ -146,10 +170,11 @@ namespace BLTiffIO {
 
 	}
 
+
 	inline void TiffInput::parseOMEMetadata() {
 		imageOrder.clear();
 
-		std::string inputfile = filename;
+		inputfile = filename;
 
 		const size_t last_slash_idx = inputfile.find_last_of("\\/");
 		if (std::string::npos != last_slash_idx)
@@ -159,11 +184,12 @@ namespace BLTiffIO {
 
 		std::cout << "Attempting to read OME data for " << inputfile << "\n";
 		//std::cout << OMEmetadata<<"\n";
+		//std::cout << OMEmetadata.substr(0,5000) << "\n";
 		std::vector<uint32_t> singleLine(4);
-
 		std::string inputStr = OMEmetadata;
 		uint64_t strPos = inputStr.find("<TiffData");
 		uint64_t endPos = inputStr.find("</TiffData");
+		uint64_t tiffdataLength = endPos - strPos;
 		while (strPos != std::string::npos && endPos != std::string::npos) {
 			std::string subStr = inputStr.substr(strPos, endPos - strPos);
 
@@ -171,49 +197,57 @@ namespace BLTiffIO {
 			std::string subsubstr = subStr.substr(subStr.find("FileName=\"") + 10);
 			std::string filenamein = (subsubstr.substr(0, subsubstr.find("\"")));
 
-			if (filename.find(filenamein) == std::string::npos) {
+			if (filename.find(filenamein) != std::string::npos) {
 
-				uint64_t nextPos = inputStr.find(inputfile);
-				if (nextPos == std::string::npos) break;
-				else {
-					inputStr = inputStr.substr(nextPos-(endPos-strPos));
-					strPos = inputStr.find("<TiffData");
-					endPos = inputStr.find("</TiffData");
-					continue;
-				}
+
+				std::cout << filename << " vs " << filenamein << "\n";
+
+				subsubstr = subStr.substr(subStr.find("FirstT=\"") + 8);
+				singleLine[0] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
+
+				subsubstr = subStr.substr(subStr.find("FirstC=\"") + 8);
+				singleLine[1] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
+
+				subsubstr = subStr.substr(subStr.find("FirstZ=\"") + 8);
+				singleLine[2] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
+
+				subsubstr = subStr.substr(subStr.find("IFD=\"") + 5);
+				singleLine[3] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
+
+				imageOrder.push_back(singleLine);
+			}
+			else {
+				//std::cout << "other file = " << filename<<"\n";
+				//std::cout << "looking for = " << inputfile << "\n";
+				endPos = inputStr.find(inputfile);
+				if (endPos == std::string::npos) {
+					//std::cout << "not found\n";
+					break;
+				}// else std::cout << "found at = " << endPos << "\n";
+				endPos = endPos - tiffdataLength;
+				inputStr = inputStr.substr(endPos);
+				endPos = inputStr.find("</TiffData");
 			}
 
-			subsubstr = subStr.substr(subStr.find("FirstT=\"")+8);
-			singleLine[0] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
 
-			subsubstr = subStr.substr(subStr.find("FirstC=\"")+8);
-			singleLine[1] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
-
-			subsubstr = subStr.substr(subStr.find("FirstZ=\"")+8);
-			singleLine[2] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
-
-			subsubstr = subStr.substr(subStr.find("IFD=\"") + 5);
-			singleLine[3] = std::stoi(subsubstr.substr(0, subsubstr.find("\"")));
-
-			imageOrder.push_back(singleLine);
-
-			//std::cout << singleLine[0] << " " << singleLine[1] << " " << singleLine[2] << " " << singleLine[3] << "\n";
+			//std::cout << singleLine[0] << " " << singleLine[1] << " " << singleLine[2] << " " << singleLine[3] << " "<<inputStr.size()<<"\n";
 
 			inputStr = inputStr.substr(endPos + 10);
+
 			strPos = inputStr.find("<TiffData");
 			endPos = inputStr.find("</TiffData");
 		}
 
 	}
 
-	inline TiffInput::TiffInput(std::string filenamein) {
+	inline TiffInput::TiffInput(std::string filenamein,bool detectMetadata) {
 		filename = filenamein;
 
 		OMEmetadataDetected = false;
 
 		ifs.open(filename, std::ifstream::ate | std::ifstream::binary);
 		if (ifs.is_open() == false) {
-			std::cout << "Error:could not open file!\n";
+			throw std::invalid_argument("Error:could not open file:\n" + filenamein + "\n");
 			return;
 		}
 
@@ -225,19 +259,19 @@ namespace BLTiffIO {
 		ifs.read((char*)&input16bit, 2);
 		if (input16bit == 19789)bigendian = true;
 		else if (input16bit == 18761)bigendian = false;
-		else std::cout << "error reading which endian the file is!\n";
+		else std::invalid_argument("Error reading which endian the Image Stack is!\n" + filename + "\n");
 
 		uint16_t bigtiffval = read16bit();
 		if (bigtiffval == 42)bigtiff = false;
 		else if (bigtiffval == 43)bigtiff = true;
 		else {
-			std::cout << "Error:could not determine if Tiff or Big Tiff!\n";
+			std::invalid_argument("Could not determine if Image format is Tiff or Big Tiff!\n" + filename + "\n");
 			return;
 		}
 
 
 		if (bigtiff) {
-			std::cout << "Reading big tiff\n";
+			//std::cout << "Reading big tiff\n";
 			read16bit();
 			read16bit();
 			currentoffset64 = read64bit();
@@ -298,12 +332,13 @@ namespace BLTiffIO {
 					std::vector<char>descriptionin(datanum);
 					ifs.read(descriptionin.data(), datanum);
 					std::string metadata = std::string(descriptionin.data());
-
 					if (metadata.compare(0, 14, "<?xml version=") == 0) {
 						
 						OMEmetadata = metadata;
-						if (OMEmetadataDetected == false)parseOMEMetadata();
-						OMEmetadataDetected = true;
+						if (OMEmetadataDetected == false && detectMetadata) {
+							parseOMEMetadata();
+							OMEmetadataDetected = true;
+						}
 					}
 
 					ifs.seekg(currentpos);
@@ -313,11 +348,11 @@ namespace BLTiffIO {
 
 		}
 		else {
+			//std::cout << "Analysing small tiff\n";
 			currentoffset = read32bit();
 			uint32_t lastoffset = 1;
 
 			while (currentoffset > 0 && lastoffset!=currentoffset) {
-
 				allfilepositions.push_back(currentoffset);
 
 				ifs.seekg(currentoffset);
@@ -328,14 +363,23 @@ namespace BLTiffIO {
 
 				currentoffset += 2 + 12 * countofifd;
 
-
 				ifs.seekg(currentoffset);
 				currentoffset = read32bit();
 
 			}
+
+			if (ifs.tellg()==-1) {
+				allfilepositions.pop_back();
+				ifs.close();
+				ifs.open(filename, std::ifstream::binary);
+			}
+
+
+
 			numOfFrames = allfilepositions.size();
 
 			ifs.seekg(allfilepositions[0]);
+			
 			countofifd = read16bit();
 			uint16_t ifdtag, datatype;
 			uint32_t outputnum, datanum;
@@ -356,20 +400,26 @@ namespace BLTiffIO {
 				}
 				else outputnum = read32bit();
 
-				if (ifdtag == 256)imageWidth = outputnum;
+				if (ifdtag == 256) imageWidth = outputnum;
 				else if (ifdtag == 257)imageHeight = outputnum;
 				else if (ifdtag == 258)imageDepth = outputnum;
 				else if (ifdtag == 270) {
 					uint64_t currentpos = ifs.tellg();
 					ifs.seekg(outputnum);
-					std::vector<char>descriptionin(datanum);
-					ifs.read(descriptionin.data(), datanum);
-					std::string metadata = std::string(descriptionin.data());
-
+					std::string metadata;
+					if (datanum > 0) {
+						std::vector<char>descriptionin(datanum);
+						ifs.read(descriptionin.data(), datanum);
+						metadata = std::string(descriptionin.data());
+					}
+					//std::cout << "all270 tages = " << metadata << "\n";
+					//std::cout << "the OME Metadata is " << datanum << " bytes?\n";
 					if (metadata.compare(0, 14, "<?xml version=")==0) {
 						OMEmetadata = metadata;
-						if(OMEmetadataDetected==false)parseOMEMetadata();
-						OMEmetadataDetected = true;
+						if (OMEmetadataDetected == false && detectMetadata) {
+							parseOMEMetadata();
+							OMEmetadataDetected = true;
+						}
 					}
 
 					ifs.seekg(currentpos);
@@ -502,19 +552,19 @@ namespace BLTiffIO {
 				read32bitimage();
 				for (uint32_t i = 0; i < imagePoints; i++)imageout[i] = vinput32bit[i];
 			}
-			else std::cout << "Error : This library only works on 8, 16 and 32 bit images. Image depth detected : " << imageDepth << "\n";
+			else std::invalid_argument("Error : This library only works on 8, 16 and 32 bit images. Image depth detected : " + std::to_string(imageDepth) + "\n");
 		}
 		else {
 
 			std::vector<uint64_t> alloffsets(numofstrips, 0), numofpixelsinstrips(numofstrips, 0);
 			ifs.seekg(stripoffset);
-			if(stripNumBytes==16)for (uint32_t i = 0; i < numofstrips; i++)alloffsets[i] = read64bit();
-			else for (uint32_t i = 0; i < numofstrips; i++)alloffsets[i] = read32bit();
+			for (uint32_t i = 0; i < numofstrips; i++)alloffsets[i] = readbit(stripNumBytes);
+			//std::cout << "alloffsets[i] = " << alloffsets[0] << "\n";
 			ifs.seekg(bytecountoffset);
-
-			if(byteNumBytes==16) for (uint32_t i = 0; i < numofstrips; i++)numofpixelsinstrips[i] = read64bit() * 8 / imageDepth;//number of pixels per strip
-			else for (uint32_t i = 0; i < numofstrips; i++)numofpixelsinstrips[i] = read32bit() * 8 / imageDepth;//number of pixels per strip
+			for (uint32_t i = 0; i < numofstrips; i++)numofpixelsinstrips[i] = readbit(byteNumBytes) * 8 / imageDepth;//number of pixels per strip
 			uint32_t totpixelcount = 0;
+			//std::cout << "numofpixelsinstrips[i] = " << numofpixelsinstrips[0] << "\n";
+
 
 			for (uint32_t i = 0; i < numofstrips; i++) {
 				ifs.seekg(alloffsets[i]);
@@ -527,6 +577,7 @@ namespace BLTiffIO {
 				}
 				else if (imageDepth == 16) {
 					ifs.read((char*)vinput16bit.data(), 2*numofpixelsinstrips[i]);
+					//std::cout << "pixinstrip = " << numofpixelsinstrips[i] << "\n";
 					for (uint32_t j = 0; j < numofpixelsinstrips[i]; j++) {
 						if (bigendian) {
 							imageout[totpixelcount] = (((vinput16bit[j] >> 8)) | (vinput16bit[j] << 8));
@@ -580,16 +631,20 @@ namespace BLTiffIO {
 				read32bitimage();
 				for (uint32_t i = 0; i < imagePoints; i++)imageout[i%imageWidth][i / imageWidth] = vinput32bit[i];
 			}
-			else std::cout << "Error : This library only works on 8, 16 and 32 bit images. Image depth detected : " << imageDepth << "\n";
+			else std::invalid_argument("Error : This library only works on 8, 16 and 32 bit images. Image depth detected : "+ std::to_string(imageDepth) + "\n");
 
 		}
 		else {
 			std::vector<uint32_t> alloffsets(numofstrips, 0), numofpixelsinstrips(numofstrips, 0);
 			ifs.seekg(stripoffset);
-			for (uint32_t i = 0; i < numofstrips; i++)alloffsets[i] = read32bit();
+			for (uint32_t i = 0; i < numofstrips; i++)alloffsets[i] = readbit(stripNumBytes);
+			//std::cout << "alloffsets[i] = " << alloffsets[0] << "\n";
 			ifs.seekg(bytecountoffset);
-			for (uint32_t i = 0; i < numofstrips; i++)numofpixelsinstrips[i] = read32bit() * 8 / imageDepth;//number of pixels per strip
+			for (uint32_t i = 0; i < numofstrips; i++)numofpixelsinstrips[i] = readbit(byteNumBytes) * 8 / imageDepth;//number of pixels per strip
 			uint32_t totpixelcount = 0;
+			//std::cout << "numofpixelsinstrips[i] = " << numofpixelsinstrips[0] << "\n";
+
+			totpixelcount = 0;
 			for (uint32_t i = 0; i < numofstrips; i++) {
 				ifs.seekg(alloffsets[i]);
 				if (imageDepth == 8) {
@@ -863,7 +918,7 @@ namespace BLTiffIO {
 			for (uint32_t i = 0; i < imagePoints; i++) voutput32bit[i] = imageout[i];
 			ofs.write((char*)voutput32bit.data(), 4 * imagePoints);
 		}
-		else std::cout << "Trying to write out in an unsupported bit depth. Only 8, 16 and 32 are supported with this library\n";
+		else std::invalid_argument("Trying to write out in an unsupported bit depth. Only 8, 16 and 32 are supported with this library\n");
 
 	}
 
@@ -885,7 +940,7 @@ namespace BLTiffIO {
 			for (uint32_t i = 0; i < imagePoints; i++) voutput32bit[i] = imageout[i%imageWidth][i / imageWidth];
 			ofs.write((char*)voutput32bit.data(), 4 * imagePoints);
 		}
-		else std::cout << "Trying to write out in an unsupported bit depth. Only 8, 16 and 32 are supported with this library\n";
+		else std::invalid_argument("Trying to write out in an unsupported bit depth. Only 8, 16 and 32 are supported with this library\n");
 
 	}
 }

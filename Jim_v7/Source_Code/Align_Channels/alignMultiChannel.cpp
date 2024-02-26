@@ -16,11 +16,11 @@ float findMedian(vector<float> datain) {
 void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t end, uint32_t iterations, uint32_t maxShift, string fileBase, bool bOutputStack, vector<float>& maxIntensities, double SNRCutoff,bool bSkipIndependentDrifts) {
 	
 
-	uint32_t imageWidth = is[0]->imageWidth;
-	uint32_t imageHeight = is[0]->imageHeight;
-	uint32_t imagePoints = imageWidth * imageHeight;
-	uint32_t numOfFrames = is[0]->numOfFrames;
-	uint32_t numOfChan = is.size();
+	const uint32_t imageWidth = is[0]->imageWidth;
+	const uint32_t imageHeight = is[0]->imageHeight;
+	const uint32_t imagePoints = imageWidth * imageHeight;
+	const uint32_t numOfFrames = is[0]->numOfFrames;
+	const uint32_t numOfChan = is.size();
 	string adjustedOutputFilename;
 
 
@@ -30,8 +30,8 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 	if (bSkipIndependentDrifts==false) {
 		for (int i = 0; i < numOfChan; i++) {
 			std::cout << "Calculating initial drift for Channel " << i + 1 << "\n";
-			adjustedOutputFilename = fileBase + "_Channel_" + to_string(i + 1) + "_Drift.csv";
-			driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, "", false, meanimage[i], adjustedOutputFilename);
+			//adjustedOutputFilename = fileBase + "_Channel_" + to_string(i + 1) + "_Drift.csv";
+			driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, "", false, meanimage[i], "");
 			//driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, fileBase + "Troubleshooting" + to_string(i + 1), true, meanimage[i], adjustedOutputFilename);
 
 		}
@@ -48,7 +48,7 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 
 	notnormalised = meanimage;
 
-	IppiSize roiSize = { imageWidth, imageHeight };
+	IppiSize roiSize = { (int)imageWidth, (int)imageHeight };
 	int sizeDFTSpec, sizeDFTInitBuf, sizeDFTWorkBuf;
 	ippiDFTGetSize_R_32f(roiSize, IPP_FFT_DIV_INV_BY_N, ippAlgHintAccurate, &sizeDFTSpec, &sizeDFTInitBuf, &sizeDFTWorkBuf);
 	// Alloc DFT buffers
@@ -63,7 +63,7 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 
 
 
-	adjustedOutputFilename = fileBase + "_Images_To_Align.tiff";
+	//adjustedOutputFilename = fileBase + "_Images_To_Align.tiff";
 	//BLTiffIO::TiffOutput thresholdStack(adjustedOutputFilename, imageWidth, imageHeight, 16);
 	Ipp32f mean, stddev;
 	for (int i = 0; i < numOfChan; i++) {
@@ -199,8 +199,8 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 	}
 
 
-	adjustedOutputFilename = fileBase + "_Combined_Drift.csv";
-	driftCorrect(is, channelalignment, start, end, iterations, maxShift, fileBase, bOutputStack, meanimage[0], adjustedOutputFilename);
+	//adjustedOutputFilename = fileBase + "_Combined_Drift.csv";
+	driftCorrect(is, channelalignment, start, end, iterations, maxShift, fileBase, bOutputStack, meanimage[0], fileBase);
 
 	writeChannelAlignment(fileBase, channelalignment, is[0]->imageWidth, is[0]->imageHeight);
 

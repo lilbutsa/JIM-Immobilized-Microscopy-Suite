@@ -6,16 +6,23 @@
 #include "BLCSVIO.h"
 #include "ipp.h"
 
+using namespace std;
+
+vector<vector<int>> transformPosition(vector<double> alignIn, vector<vector<int>> positions, int imageWidth, int imageHeight);
+
 
 #define SQUARE(x) ((x)*(x))
 
-using namespace std;
+
 
 
 int main(int argc, char *argv[])
 {
 
 	double boundaryDist = 4.1, backgroundDist = 20, backinnerradius = 0;
+
+	bool bExtraBackground = false, bChannelAlignment = false;
+	std::string extraBackgroundFileName,channelAlignmentFileName;
 
 
 	if (argc < 3) { std::cout << "could not read file name" << endl; return 1; }
@@ -44,6 +51,22 @@ int main(int argc, char *argv[])
 				cout << "Distance From Edge of Measured Boundary to Background Boundary set to " << backgroundDist << endl;
 			}
 			else { std::cout << "error inputting Distance From Edge of Measured Boundary to Background Boundary" << std::endl; return 1; }
+		}
+		if (std::string(argv[i]) == "-extraBackgroundFile") {
+			if (i + 1 < argc) {
+				bExtraBackground = true;
+				extraBackgroundFileName = argv[i + 1];
+				cout << "Extra background file set to: " << extraBackgroundFileName << endl;
+			}
+			else { std::cout << "error inputting extra background file" << std::endl; return 1; }
+		}
+		if (std::string(argv[i]) == "-channelAlignment") {
+			if (i + 1 < argc) {
+				bChannelAlignment = true;
+				channelAlignmentFileName = argv[i + 1];
+				cout << "Extra background file set to: " << extraBackgroundFileName << endl;
+			}
+			else { std::cout << "error inputting extra background file" << std::endl; return 1; }
 		}
 	}
 	if (backinnerradius < boundaryDist)backinnerradius = boundaryDist;
@@ -115,6 +138,12 @@ int main(int argc, char *argv[])
 	backgroundinit.erase(backgroundinit.begin());
 	for (int i = 0; i < backgroundinit.size(); i++)for (int j = 0; j < backgroundinit[i].size(); j++) alledgeboundaries[backgroundinit[i][j]] = 255;
 
+	if (bExtraBackground) {
+		BLCSVIO::readVariableWidthCSV(extraBackgroundFileName, backgroundinit, headerLine);
+		backgroundinit.erase(backgroundinit.begin());
+		for (int i = 0; i < backgroundinit.size(); i++)for (int j = 0; j < backgroundinit[i].size(); j++) alledgeboundaries[backgroundinit[i][j]] = 255;
+	}
+
 	BLCSVIO::readVariableWidthCSV(backgroundposfile, backgroundinit, headerLine);
 	backgroundinit.erase(backgroundinit.begin());
 
@@ -176,9 +205,64 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < backgroundpos.size(); i++)for (int j = 0; j < backgroundpos[i].size(); j++) backgroundregion[backgroundpos[i][j]] = 255;
 	BLTiffIO::TiffOutput(output + "_Background_Regions.tif", imageWidth, imageHeight,8).write1dImage(backgroundregion);
 
-	expandedpos.insert(expandedpos.begin(), { imageWidth,imageHeight,imagePoints });
-	BLCSVIO::writeCSV(output + "_ROI_Positions.csv", expandedpos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
-	backgroundpos.insert(backgroundpos.begin(), { imageWidth,imageHeight,imagePoints });
-	BLCSVIO::writeCSV(output + "_Background_Positions.csv", backgroundpos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
+	std::vector<std::vector<int>> transformPos = expandedpos;
+	transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
+	BLCSVIO::writeCSV(output + "_ROI_Positions_Channel_1.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
+	transformPos = backgroundpos;
+	transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
+	BLCSVIO::writeCSV(output + "_Background_Positions_Channel_1.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
+	
+	if (bChannelAlignment) {
+		vector<vector<double>> channelAlign(50, vector<double>(11, 0.0));
+		BLCSVIO::readCSV(channelAlignmentFileName, channelAlign, headerLine);
+		for (int chancount = 0; chancount < channelAlign.size(); chancount++) {
+			transformPos = transformPosition(channelAlign[chancount], expandedpos, imageWidth, imageHeight);
+			transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
+			BLCSVIO::writeCSV(output + "_ROI_Positions_Channel_"+ to_string(chancount + 2) +".csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
+
+			transformPos = transformPosition(channelAlign[chancount], backgroundpos, imageWidth, imageHeight);
+			transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
+			BLCSVIO::writeCSV(output + "_Background_Positions_Channel_" + to_string(chancount + 2) + ".csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
+		}
+	}
+
 	return 0;
+};
+
+vector<vector<int>> transformPosition(vector<double> alignIn , vector<vector<int>> positions, int imageWidth, int imageHeight) {
+
+	vector<vector<int>> positionslistout;
+	vector<int> singleLine;
+	double xcentre = alignIn[9];
+	double ycentre = alignIn[10];
+
+	for (int pos = 1; pos < positions.size(); pos++) {
+		for (int i = 0; i < positions[pos].size(); i++) {
+			singleLine.clear();
+			double xin = (int)positions[pos][i] % imageWidth;
+			double yin = (int)positions[pos][i] / imageWidth;
+			xin += -xcentre;
+			yin += -ycentre;
+			double xout = xin * alignIn[5] + yin * alignIn[6];
+			double yout = xin * alignIn[7] + yin * alignIn[8];
+			xout += xcentre;
+			yout += ycentre;
+			xout += -alignIn[3];
+			yout += -alignIn[4];
+			if (xout < 0)xout = 0;
+			if (yout < 0)yout = 0;
+			if (xout > imageWidth - 1) xout = imageWidth - 1;
+			if (yout > imageHeight - 1)yout = imageHeight - 1;
+			singleLine.push_back(floor(xout) + floor(yout) * imageWidth);
+			singleLine.push_back(ceil(xout) + floor(yout) * imageWidth);
+			singleLine.push_back(floor(xout) + ceil(yout) * imageWidth);
+			singleLine.push_back(ceil(xout) + ceil(yout) * imageWidth);
+
+		}
+		sort(singleLine.begin(), singleLine.end());
+		singleLine.erase(unique(singleLine.begin(), singleLine.end()), singleLine.end());
+		positionslistout.push_back(singleLine);
+	}
+		
+	return positionslistout;
 }

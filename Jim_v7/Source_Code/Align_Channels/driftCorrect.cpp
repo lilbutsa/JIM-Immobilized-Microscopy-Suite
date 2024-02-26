@@ -3,11 +3,11 @@
 
 void driftCorrect(vector<BLTiffIO::TiffInput*> is, vector< vector<float>> alignment, uint32_t start, uint32_t end, uint32_t iterations, uint32_t maxShift, string fileBase, bool bOutputStack, vector<float>& outputImage,std::string driftFileName){
 
-	uint32_t imageWidth = is[0]->imageWidth;
-	uint32_t imageHeight = is[0]->imageHeight;
-	uint32_t imagePoints = imageWidth*imageHeight;
-	uint32_t numOfFrames = is[0]->numOfFrames;
-	uint32_t numOfChan = is.size();
+	const uint32_t imageWidth = is[0]->imageWidth;
+	const uint32_t imageHeight = is[0]->imageHeight;
+	const uint32_t imagePoints = imageWidth*imageHeight;
+	const uint32_t numOfFrames = is[0]->numOfFrames;
+	const uint32_t numOfChan = is.size();
 
 	vector<float> imagein(imagePoints, 0), imaget(imagePoints, 0), imagetoalign(imagePoints, 0);
 	vector< vector<float> > alignedImages(numOfChan, vector<float>(imagePoints, 0));
@@ -40,7 +40,7 @@ void driftCorrect(vector<BLTiffIO::TiffInput*> is, vector< vector<float>> alignm
 
 	vector<float> gaussblurred(imagePoints, 0);
 
-	IppiSize roiSize = { imageWidth, imageHeight };
+	IppiSize roiSize = { (int)imageWidth, (int)imageHeight };
 	Ipp32u kernelSize = 5;
 	int iTmpBufSize = 0, iSpecSize = 0;
 	ippiFilterGaussianGetBufferSize(roiSize, kernelSize, ipp32f, 1, &iSpecSize, &iTmpBufSize);
@@ -166,6 +166,22 @@ void driftCorrect(vector<BLTiffIO::TiffInput*> is, vector< vector<float>> alignm
 
 	}
 	
-	if(driftFileName.empty()==false)BLCSVIO::writeCSV(driftFileName, driftsout, "X Drift, Y Drift\n");
+	if (driftFileName.empty() == false) {
+		std::string myFileName = driftFileName + "_Channel_1.csv";
+		BLCSVIO::writeCSV(myFileName, driftsout, "X Drift, Y Drift\n");
+
+		for (int chancount = 0; chancount < alignment.size(); chancount++) {
+			vector<vector<float>> transformedDrifts = driftsout;
+			for (int pos = 0; pos < transformedDrifts.size(); pos++) {
+				float xin = transformedDrifts[pos][0];
+				float yin = transformedDrifts[pos][1];
+				driftsout[pos][0] = xin * alignment[chancount][5] + yin * alignment[chancount][6];
+				driftsout[pos][1] = xin * alignment[chancount][7] + yin * alignment[chancount][8];
+			}
+
+			myFileName = driftFileName + "_Channel_" + to_string(chancount+2)+".csv";
+			BLCSVIO::writeCSV(myFileName, transformedDrifts, "X Drift, Y Drift\n");
+		}
+	}
 
 }

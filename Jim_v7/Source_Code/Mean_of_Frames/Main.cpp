@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	bool maxproject = false;
 	bool normalize = true;
 
-	for (int i = 4; i < argc && std::string(argv[i]) != "-Start"&& std::string(argv[i]) != "-End"&& std::string(argv[i]) != "-MaxProjection"; i++) numInputFiles++;
+	for (int i = 4; i < argc && std::string(argv[i]) != "-Start"&& std::string(argv[i]) != "-End"&& std::string(argv[i]) != "-MaxProjection" && std::string(argv[i]) != "-Weights"; i++) numInputFiles++;
 
 
 	if (argc < 3) { std::cout << "could not read file name" << endl; return 1; }
@@ -45,30 +45,87 @@ int main(int argc, char *argv[])
 	vector<int> start(numInputFiles, 0);
 	vector<int> end(numInputFiles, totnumofframes);
 
+	vector<float> weights(numInputFiles, 1);
 
+	std::cout << numInputFiles << " channels detected\n";
+	std::string delimiter = " ";
 
 	for (int i = 1; i < argc; i++) {
 		if (std::string(argv[i]) == "-Start") {
-			for (int j = 0; j < numInputFiles; j++) {
-				if (i + j + 1 < argc) {
-					start[j] = stoi(argv[i + j + 1]) - 1;
-					if (start[j] < -1)start[j] = totnumofframes + start[j]+1;
-					start[j] = max(start[j], 0);
-					cout << "Calculating mean of channel " << j + 1 << " starting from frame " << start[j] + 1 << endl;
+			int chanCount = 0;
+			int argCount = 0;
+			while (chanCount < numInputFiles) {
+				if (i + argCount + 1 < argc) {
+					size_t pos = 0;
+					std::string inputStr = argv[i + argCount + 1];
+					
+					while ((pos = inputStr.find(delimiter)) != std::string::npos) {
+						start[chanCount] = stoi(inputStr.substr(0, pos)) - 1;
+						inputStr.erase(0, pos + delimiter.length());
+						chanCount++;
+					}
+					start[chanCount] = stoi(inputStr) - 1;
+					chanCount++;
 				}
 				else { std::cout << "error inputting starts" << std::endl; return 1; }
+				argCount++;
+			};
+
+			for (int j = 0; j < numInputFiles; j++) {
+				if (start[j] < -1)start[j] = totnumofframes + start[j] + 1;
+				start[j] = max(start[j], 0);
+				cout << "Calculating mean of channel " << j + 1 << " starting from frame " << start[j] + 1 << endl;
 			}
 		}
 		if (std::string(argv[i]) == "-End") {
+
+			int chanCount = 0;
+			int argCount = 0;
+			while (chanCount < numInputFiles) {
+				if (i + argCount + 1 < argc) {
+					size_t pos = 0;
+					std::string inputStr = argv[i + argCount + 1];
+					while ((pos = inputStr.find(delimiter)) != std::string::npos) {
+						end[chanCount] = stoi(inputStr.substr(0, pos));
+						inputStr.erase(0, pos + delimiter.length());
+						chanCount++;
+					}
+					end[chanCount] = stoi(inputStr);
+					chanCount++;
+				}
+				else { std::cout << "error inputting starts" << std::endl; return 1; }
+				argCount++;
+			};
+
+
 			for (int j = 0; j < numInputFiles; j++) {
-				if (i + j + 1 < argc) {
-					end[j] = stoi(argv[i + j + 1]);
 					if (end[j] < 0)end[j] = totnumofframes + end[j]+1;
 					end[j] = min(end[j], totnumofframes);
 					cout << "Calculating mean of channel " << j + 1 << " ending at frame " << end[j] << endl;
-				}
-				else { std::cout << "error inputting ends" << std::endl; return 1; }
 			}
+		}
+		if (std::string(argv[i]) == "-Weights") {
+			int chanCount = 0;
+			int argCount = 0;
+			while (chanCount < numInputFiles) {
+				if (i + argCount + 1 < argc) {
+					size_t pos = 0;
+					std::string inputStr = argv[i + argCount + 1];
+					while ((pos = inputStr.find(delimiter)) != std::string::npos) {
+						weights[chanCount] = stoi(inputStr.substr(0, pos));
+						inputStr.erase(0, pos + delimiter.length());
+						chanCount++;
+					}
+					weights[chanCount] = stoi(inputStr);
+					chanCount++;
+				}
+				else { std::cout << "error inputting starts" << std::endl; return 1; }
+				argCount++;
+			};
+
+			cout << "Channel weights :";
+			for (int k = 0; k < numInputFiles; k++) cout << " " << weights[k];
+			cout << "\n";
 		}
 		if (std::string(argv[i]) == "-MaxProjection") {
 			maxproject = true;
@@ -126,6 +183,7 @@ int main(int argc, char *argv[])
 				count++;
 			}
 		}
+		ippiMulC_32f_C1IR(weights[channelcount], meanimage[channelcount].data(), srcStep, roiSize);
 		if (count>0 && maxproject==false && normalize)ippiMulC_32f_C1IR(1.0 / count, meanimage[channelcount].data(), srcStep, roiSize);
 
 		if (channelcount > 0) {

@@ -49,8 +49,11 @@ public:
 	alignImages_32f(int upscalefactorin, int widthin, int heightin);
 	~alignImages_32f();
 
-	void imageAlign(std::vector<float>& gaus1, std::vector<float>& gaus2, float maxShiftin = 10000000);
-	void imageAligntopixel(std::vector<float>& gaus1, std::vector<float>& gaus2, float maxShiftin = 10000000);
+	void imageAlign(std::vector<float>& gaus1, std::vector<float>& gaus2, int maxShiftin = 10000000);
+	void imageAligntopixel(std::vector<float>& gaus1, std::vector<float>& gaus2, int maxShiftin = 10000000);
+
+	void preloadImage(std::vector<float>& gaus1);
+	void imageAligntopixelpreloaded(std::vector<float>& gaus2, int maxShiftin = 10000000);
 
 	float max1dval;
 	double offsetx, offsety;
@@ -130,7 +133,51 @@ inline alignImages_32f::alignImages_32f(int upscalefactorin, int widthin, int he
 
 }
 
-inline void alignImages_32f::imageAligntopixel(std::vector<float>& gaus1, std::vector<float>& gaus2, float maxShiftin) {
+inline void alignImages_32f::preloadImage(std::vector<float>& gaus1) {
+	ippiDFTFwd_RToPack_32f_C1R(&gaus1[0], width * sizeof(float), &fgaus1[0], width * sizeof(float), pDFTSpec, pDFTWorkBuf);
+}
+
+inline void alignImages_32f::imageAligntopixelpreloaded(std::vector<float>& gaus2, int maxShiftin) {
+	ippiDFTFwd_RToPack_32f_C1R(&gaus2[0], width * sizeof(float), &fgaus2[0], width * sizeof(float), pDFTSpec, pDFTWorkBuf);
+
+	//find cross correlation
+	ippiMulPackConj_32f_C1R(&fgaus1[0], width * sizeof(float), &fgaus2[0], width * sizeof(float), &fcc[0], width * sizeof(float), roiSize);
+
+	ippiDFTInv_PackToR_32f_C1R(&fcc[0], width * sizeof(float), &singlepixelrcc[0], width * sizeof(float), pDFTSpec, pDFTWorkBuf);
+
+	int maxShift = std::min(width / 2, maxShiftin);
+	int intMaxShift = (int)maxShift;
+
+	IppiSize quarterROI{ intMaxShift ,intMaxShift };
+	int max1x, max2x, max3x, max4x, max1y, max2y, max3y, max4y;
+	float max1, max2, max3, max4;
+	ippiMaxIndx_32f_C1R(&singlepixelrcc[0], width * sizeof(float), quarterROI, &max1, &max1x, &max1y);
+	ippiMaxIndx_32f_C1R(&singlepixelrcc[width - maxShift], width * sizeof(float), quarterROI, &max2, &max2x, &max2y);
+	ippiMaxIndx_32f_C1R(&singlepixelrcc[(height - maxShift)*width], width * sizeof(float), quarterROI, &max3, &max3x, &max3y);
+	ippiMaxIndx_32f_C1R(&singlepixelrcc[(height - maxShift) * width + width - maxShift], width * sizeof(float), quarterROI, &max4, &max4x, &max4y);
+	if (max2 > max1) {
+		max1 = max2;
+		max1x = max2x - maxShift;//max1x = max2x - maxShift - 1;
+		max1y = max2y;
+	}
+	if (max3 > max1) {
+		max1 = max3;
+		max1x = max3x;
+		max1y = max3y - maxShift;//max1y = max3y - maxShift - 1;
+	}
+	if (max4 > max1) {
+		max1 = max4;
+		max1x = max4x - maxShift;//max1x = max4x - maxShift - 1;
+		max1y = max4y - maxShift;//max1y = max4y - maxShift - 1;
+	}
+
+	max1dval = max1;
+	offsetx = max1x;
+	offsety = max1y;
+
+}
+
+inline void alignImages_32f::imageAligntopixel(std::vector<float>& gaus1, std::vector<float>& gaus2, int maxShiftin) {
 	ippiDFTFwd_RToPack_32f_C1R(&gaus1[0], width * sizeof(float), &fgaus1[0], width * sizeof(float), pDFTSpec, pDFTWorkBuf);
 	ippiDFTFwd_RToPack_32f_C1R(&gaus2[0], width * sizeof(float), &fgaus2[0], width * sizeof(float), pDFTSpec, pDFTWorkBuf);
 
@@ -153,9 +200,10 @@ inline void alignImages_32f::imageAligntopixel(std::vector<float>& gaus1, std::v
 		if (offsety > (height) / 2)offsety += -height;
 	*/
 
-	float maxShift = std::min((float)width / 2, maxShiftin);
+	int maxShift = std::min(std::min(width / 2, maxShiftin),height / 2);
+	int intMaxShift = (int)maxShift;
 
-		IppiSize quarterROI{ maxShift ,maxShift };
+		IppiSize quarterROI{ intMaxShift ,intMaxShift };
 		int max1x, max2x, max3x, max4x, max1y, max2y, max3y, max4y;
 		float max1, max2, max3, max4;
 		ippiMaxIndx_32f_C1R(&singlepixelrcc[0], width*sizeof(float), quarterROI, &max1, &max1x, &max1y);
@@ -164,32 +212,27 @@ inline void alignImages_32f::imageAligntopixel(std::vector<float>& gaus1, std::v
 		ippiMaxIndx_32f_C1R(&singlepixelrcc[(height - maxShift) * width+ width - maxShift], width * sizeof(float), quarterROI, &max4, &max4x, &max4y);
 		if (max2 > max1) {
 			max1 = max2;
-			max1x = max2x - maxShift - 1;
+			max1x = max2x - maxShift;//max1x = max2x - maxShift - 1;
 			max1y = max2y;
 		}
 		if (max3 > max1) {
 			max1 = max3;
 			max1x = max3x;
-			max1y = max3y - maxShift - 1;
+			max1y = max3y - maxShift;//max1y = max3y - maxShift - 1;
 		}
 		if (max4 > max1) {
 			max1 = max4;
-			max1x = max4x - maxShift - 1;
-			max1y = max4y - maxShift - 1;
+			max1x = max4x - maxShift;//max1x = max4x - maxShift - 1;
+			max1y = max4y - maxShift;//max1y = max4y - maxShift - 1;
 		}
 
-		//if (max1x != offsetx || max1y != offsety)std::cout << "error " << max1dval-max1<<" "<< max1dval << " " << max1 << " " << offsetx << " " << max1x << " " << offsety << " " << max1y << "\n";
-		
-
-
-	//}
-
-
-
+		max1dval = max1;
+		offsetx = max1x;
+		offsety = max1y;
 
 }
 
-inline void alignImages_32f::imageAlign(std::vector<float>& gaus1, std::vector<float>& gaus2, float maxShiftin) {
+inline void alignImages_32f::imageAlign(std::vector<float>& gaus1, std::vector<float>& gaus2, int maxShiftin) {
 
 
 	// Do the DFT
@@ -238,8 +281,9 @@ inline void alignImages_32f::imageAlign(std::vector<float>& gaus1, std::vector<f
 		estoffsety *= 0.5;
 	*/
 
-	float maxShift = std::min((float)width / 2, maxShiftin);
-		IppiSize quarterROI{ 2*maxShift ,2*maxShift };
+	int maxShift = std::min(width / 2, maxShiftin);
+	int intMaxShift = (int)maxShift;
+		IppiSize quarterROI{ 2* intMaxShift ,2* intMaxShift };
 		int max1x, max2x, max3x, max4x, max1y, max2y, max3y, max4y;
 		float max1, max2, max3, max4;
 		ippiMaxIndx_32f_C1R(&rcc[0], 2*width * sizeof(float), quarterROI, &max1, &max1x, &max1y);
@@ -252,20 +296,24 @@ inline void alignImages_32f::imageAlign(std::vector<float>& gaus1, std::vector<f
 		if (max2 > max1) {
 			//quad = 2;
 			max1 = max2;
-			max1x = max2x-2 * maxShift -1;
+			//max1x = max2x-2 * maxShift -1;
+			max1x = max2x - 2 * maxShift;
 			max1y = max2y;
 		}
 		if (max3 > max1) {
 			//quad = 3;
 			max1 = max3;
 			max1x = max3x;
-			max1y = max3y - 2 * maxShift -1;
+			//max1y = max3y - 2 * maxShift -1;
+			max1y = max3y - 2 * maxShift;
 		}
 		if (max4 > max1) {
 			//quad = 4;
 			max1 = max4;
-			max1x = max4x - 2 * maxShift -1;
-			max1y = max4y - 2 * maxShift -1;
+			//max1x = max4x - 2 * maxShift -1;
+			//max1y = max4y - 2 * maxShift -1;
+			max1x = max4x - 2 * maxShift;
+			max1y = max4y - 2 * maxShift;
 		}
 
 		//if (max1x != 2*round(estoffsetx)+10 || max1y != 2 * round(estoffsety))std::cout << "error2 " << max1dval- max1 << " " << max1dval << " " << max1 << " " << 2 * round(estoffsetx) << " " << max1x << " " << 2 * round(estoffsety) << " " << max1y << " "<<quad<<"\n";
@@ -424,9 +472,12 @@ inline void imageTransform_32f::imageTranslate(std::vector<float>& inputImage, s
 	while (yint > imageHeight / 2.0)yint = yint - imageHeight;
 	while (yint < -1.0*imageHeight / 2)yint = yint + imageHeight;
 
-	ippiCopyWrapBorder_32f_C1R(inputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi, wrapped.data(), 3 * imageWidth * sizeof(Ipp32f), wrappedRoi, topborderHeight, leftborderWidth);
 
-	ippiCopySubpix_32f_C1R(&wrapped[(topborderHeight + yint)*(3 * imageWidth) + (leftborderWidth + xint)], 3 * imageWidth * sizeof(Ipp32f), outputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi, dx, dx);
+	//std::cout << "Image Tran x = " << deltaX << " y = " << deltaY << " xint = " << xint << " yint = " << yint << " dx = " << dx << " dy = " << dy << "\n";
+
+	ippiCopyWrapBorder_32f_C1R(inputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi, wrapped.data(), 3 * imageWidth * sizeof(Ipp32f), wrappedRoi, topborderHeight, leftborderWidth);	
+	ippiCopySubpix_32f_C1R(&wrapped[(topborderHeight + yint)*(3 * imageWidth) + (leftborderWidth + xint)], 3 * imageWidth * sizeof(Ipp32f), outputImage.data(), imageWidth * sizeof(Ipp32f), srcRoi, dx, dy);
+
 
 }
 

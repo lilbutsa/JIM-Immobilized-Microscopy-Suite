@@ -7,12 +7,15 @@
 using namespace std;
 
 void getStackOrder(vector<BLTiffIO::TiffInput*>& vis, vector<vector<vector<int>>>& stackorderout);
-void vertFlipImage(std::vector< std::vector<float>>& imageio);
-void horzFlipImage(std::vector< std::vector<float>>& imageio);
-void rotateImage(std::vector< std::vector<float>>& imageio, int angle);
+void vertFlipImage(std::vector< std::vector<uint16_t>>& imageio);
+void horzFlipImage(std::vector< std::vector<uint16_t>>& imageio);
+void rotateImage(std::vector< std::vector<uint16_t>>& imageio, int angle);
 
 int main(int argc, char* argv[])
 {
+	std::cout << "TIFF CHANNEL SPLITTER\n";
+	for (int i = 1; i < argc; i++)std::cout << argv[i] << "\n";
+
 
 	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
 		std::cout << "Standard input: [Output File Base] [Input Image Stack file 1]... Options\n";
@@ -34,6 +37,7 @@ int main(int argc, char* argv[])
 	vector< vector<int>> tranformations;
 	int startFrame = 1, endFrame = -1, startFramein, endFramein;
 
+
 	try {
 		if (argc < 3)throw std::invalid_argument("Insufficient Arguments");
 		fileBase = std::string(argv[1]);
@@ -41,16 +45,25 @@ int main(int argc, char* argv[])
 		for (int i = 2; i < argc && std::string(argv[i]).substr(0, 1) != "-"; i++) numInputFiles++;
 		if (numInputFiles == 0)throw std::invalid_argument("No Input Image Stacks Detected");
 
+		
+		for (int i = 1; i < argc; i++)if (std::string(argv[i]) == "-DisableMetadata") {
+			std::cout << "Metadata Disabled\n";
+			bmetadata = false;
+		}
+
+
 		vector<string> inputfiles(numInputFiles);
-		for (int i = 0; i < numInputFiles; i++)inputfiles[i] = argv[i + 2];
-		vis.resize(numInputFiles);
 		for (int i = 0; i < numInputFiles; i++) {
-			vis[i] = new BLTiffIO::TiffInput(inputfiles[i]);
+			inputfiles[i] = argv[i + 2];
+		}
+		vis.resize(numInputFiles);
+		
+		for (int i = 0; i < numInputFiles; i++) {
+			vis[i] = new BLTiffIO::TiffInput(inputfiles[i], bmetadata);
 			if (vis[i]->bigtiff)bBigTiff = true;
 		}
 		if (numInputFiles > 1)bBigTiff = true;
 
-		
 
 		for (int i = 1; i < argc; i++) {
 			if (std::string(argv[i]) == "-NumberOfChannels") {
@@ -73,7 +86,6 @@ int main(int argc, char* argv[])
 			}
 			if (std::string(argv[i]) == "-BigTiff") bBigTiff = true;
 			if (std::string(argv[i]) == "-DisableBigTiff") bBigTiff = false;
-			if (std::string(argv[i]) == "-DisableMetadata") bmetadata = false;
 			if (std::string(argv[i]) == "-Transform") {
 				int channelsToTransform = 0;
 				for (int j = i + 1; j < argc && std::string(argv[j]).substr(0, 1) != "-"; j++) channelsToTransform++;
@@ -110,7 +122,7 @@ int main(int argc, char* argv[])
 
 	if (bBigTiff) std::cout << "Outputting Big Tiff" << endl;
 
-	vector<vector<float>> image;
+	vector<vector<uint16_t>> image;
 	bool horFlip = false, vertFlip = false;
 	int rotate = 0;
 
@@ -159,7 +171,8 @@ int main(int argc, char* argv[])
 
 	}
 	else {
-		std::cout << "OME metadata was NOT Detected\n";
+
+		if(bmetadata==true) std::cout << "OME metadata was NOT Detected\n";
 		int totnumofframes = 0;
 		for (int i = 0; i < numInputFiles; i++) {
 			totnumofframes += vis[i]->numOfFrames;
@@ -206,9 +219,11 @@ int main(int argc, char* argv[])
 					imageNumber = imageNumber - (vis[fileNumber]->numOfFrames);
 					fileNumber++;
 				}
-
+				//std::cout << fileNumber<<" " << vis[fileNumber]->numOfFrames << "\n";
 
 				vis[fileNumber]->read2dImage(imageNumber, image);
+
+				//std::cout << imageNumber<<" "<<image.size()<< "\n";
 
 				if (vertFlip)vertFlipImage(image);
 				if (horFlip)horzFlipImage(image);

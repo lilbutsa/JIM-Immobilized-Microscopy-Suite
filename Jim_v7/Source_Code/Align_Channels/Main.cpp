@@ -117,21 +117,21 @@ int main(int argc, char *argv[])
 	try {
 		if (numInputFiles == 1) {
 			vector<float> outputImage, finalmeanimage;
-			std::string outputFilename = fileBase + "_Combined_Drift.csv";
-			driftCorrect(vcinput, alignments, start, end, iterations, maxShift, fileBase, outputAligned, outputImage, outputFilename);
+			//std::string outputFilename = fileBase + "_Combined_Drift.csv";
+			driftCorrect(vcinput, alignments, start, end, iterations, maxShift, fileBase, outputAligned, outputImage, fileBase);
 
 		}
 		else if (inputalignment) {
 			vector<float> outputImage, finalmeanimage;
 			std::string outputFilename;
-			if (skipIndependentDrifts == false) {
+			/*if (skipIndependentDrifts == false) {
 				for (int i = 1; i < vcinput.size(); i++) {
 					outputFilename = fileBase + "_Channel_" + to_string(i + 1) + "_Drift.csv";
 					driftCorrect({ vcinput[i] }, { {} }, start, end, iterations, maxShift, "", false, finalmeanimage, outputFilename);
 				}
-			}
-			outputFilename = fileBase + "_Combined_Drift.csv";
-			driftCorrect(vcinput, alignments, start, end, iterations, maxShift, fileBase, outputAligned, outputImage, outputFilename);
+			}*/
+			//outputFilename = fileBase + "_Combined_Drift.csv";
+			driftCorrect(vcinput, alignments, start, end, iterations, maxShift, fileBase, outputAligned, outputImage, fileBase);
 
 			writeChannelAlignment(fileBase, alignments, vcinput[0]->imageWidth, vcinput[0]->imageHeight);
 		}

@@ -217,6 +217,9 @@ int main(int argc, char* argv[])
 	bool bmultistepfit = true;
 	bool bIndStepDist = false;
 
+	int start = 0, end = -1;
+
+
 	if (argc < 3) { std::cout << "could not read file name" << endl; return 1; }
 	std::string inputfile = argv[1];
 	std::string output = argv[2];
@@ -250,6 +253,19 @@ int main(int argc, char* argv[])
 			minStepHeight = stod(argv[i + 1]);
 			cout << "Minimum step height set to " << minStepHeight << endl;
 		}
+		if (std::string(argv[i]) == "-Start") {
+			if (i + 1 >= argc)throw std::invalid_argument("No Start Input Value");
+			try { start = stoi(argv[i + 1]) - 1; }
+			catch (const std::invalid_argument& e) { throw std::invalid_argument("Invalid Start Value\nInput :" + std::string(argv[i + 1]) + "\n"); }
+			start = std::max(start, 0);
+			cout << "Isolating the particle starting from frame " << start + 1 << endl;
+		}
+		if (std::string(argv[i]) == "-End") {
+			if (i + 1 >= argc)throw std::invalid_argument("No End Input Value");
+			try { end = stoi(argv[i + 1]); }
+			catch (const std::invalid_argument& e) { throw std::invalid_argument("Invalid End Value\nInput :" + std::string(argv[i + 1]) + "\n"); }
+			cout << "Isolating the particle up to frame " << end << endl;
+		}
 	}
 
 	std::vector<std::vector<float>> alltofit(3000, vector<float>(1000, 0));
@@ -280,19 +296,29 @@ int main(int argc, char* argv[])
 	else {
 		float stddev;
 		vector<vector<float>> onestepresults(alltofit.size(), vector<float>(8, 0.0));
+		vector<float> tofitin;
+		vector<float>::const_iterator startin,endin;
 		for (int i = 0; i < alltofit.size(); i++) {
+			startin = alltofit[i].begin() + start;
+			endin = alltofit[i].begin() + end;
+			if (end < 0)endin += alltofit[i].size();
+			if (endin < startin)continue;
+
+			tofitin = vector<float>(startin, endin);
+
+
 			onestepresults[i][0] = i + 1;
 			int steppos;
-			ippsMean_32f(alltofit[i].data(), alltofit[i].size(), &onestepresults[i][1], ippAlgHintFast);
-			onestepresults[i][2] = stepprob(alltofit[i], iterations);
-			steppos = findstep(alltofit[i].data(), alltofit[i].size());
-			onestepresults[i][3] = (float)steppos;
-			ippsMean_32f(alltofit[i].data(), steppos, &onestepresults[i][4], ippAlgHintFast);
-			ippsMean_32f(&alltofit[i][steppos], alltofit[i].size() - steppos, &onestepresults[i][5], ippAlgHintFast);
-			ippsSubC_32f_I(onestepresults[i][4], alltofit[i].data(), steppos);
-			ippsSubC_32f_I(onestepresults[i][5], &alltofit[i][steppos], alltofit[i].size() - steppos);
-			onestepresults[i][6] = stepprob(alltofit[i], iterations);
-			ippsStdDev_32f(alltofit[i].data(), alltofit[i].size(), &stddev, ippAlgHintFast);
+			ippsMean_32f(tofitin.data(), tofitin.size(), &onestepresults[i][1], ippAlgHintFast);
+			onestepresults[i][2] = stepprob(tofitin, iterations);
+			steppos = findstep(tofitin.data(), tofitin.size());
+			onestepresults[i][3] = (float)steppos+start;
+			ippsMean_32f(tofitin.data(), steppos, &onestepresults[i][4], ippAlgHintFast);
+			ippsMean_32f(&tofitin[steppos], tofitin.size() - steppos, &onestepresults[i][5], ippAlgHintFast);
+			ippsSubC_32f_I(onestepresults[i][4], tofitin.data(), steppos);
+			ippsSubC_32f_I(onestepresults[i][5], &tofitin[steppos], tofitin.size() - steppos);
+			onestepresults[i][6] = stepprob(tofitin, iterations);
+			ippsStdDev_32f(tofitin.data(), tofitin.size(), &stddev, ippAlgHintFast);
 			onestepresults[i][7] = stddev;
 		}
 		BLCSVIO::writeCSV(output + "_Single_Step_Fits.csv", onestepresults, "Trace Number, No step mean,One or more Step Probability,Step Position, Initial Mean, Final Mean, Probability of more steps,Residual Standard Deviation \n");

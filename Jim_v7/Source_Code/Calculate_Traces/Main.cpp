@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 	//cout << "num of fits = " << numoffits << "\n";
 
 	for (int imagecount = 0; imagecount < totnumofframes; imagecount++) {
-		cout << "Fitting Frame Number " << imagecount << endl;
+		//cout << "Fitting Frame Number " << imagecount << endl;
 		imclass.read2dImage(imagecount,image);
 		if (bdrifts) {
 			xdrift = round(tableofdrifts[imagecount][0]);

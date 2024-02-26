@@ -656,11 +656,8 @@ public class PMJ_Window {
                     plot.add("line",frames, meanTrace[chanNum]);
                 }
                 plot.setLimitsToFit(true);
-                plot.show();
-
                 if(saveTraces) new FileSaver(plot.getImagePlus()).saveAsPng(getFolderName()+"Mean_Trace_"+traces[0][0].length+"_Particles.png");
-
-
+                plot.show();
                 //make trace page
 
                 Plot plot2;
@@ -702,8 +699,9 @@ public class PMJ_Window {
                     ImagePlus outputImStack = new ImagePlus("Detection", imstackin);
                     MontageMaker myMaker = new MontageMaker();
                     ImagePlus outputMontage = myMaker.makeMontage2(outputImStack, 6, 6, 1, 1, imstackin.size(), 1, 0, false);
-                    outputMontage.show();
+                    //if(saveTraces) new FileSaver(outputMontage).saveAsPng(getFolderName()+"Example_Traces_Page_"+Integer.parseInt(pageNumberBox.getText())+".png");
                     if(saveTraces) new FileSaver(outputMontage).saveAsPng(getFolderName()+"Example_Traces_Page_"+Integer.parseInt(pageNumberBox.getText())+".png");
+                    outputMontage.show();
                 }
 
                 System.out.println(totPartNum);
@@ -749,9 +747,9 @@ public class PMJ_Window {
 
 
                 double[] frames = new double[totFrameNum];
-                double[] stepframes = {1.0, 1.0, 1.0, totFrameNum};
+                double[] stepframes = {0.0, 1.0, 1.0, totFrameNum*timePerFrame};
                 double[] stepToPlot = new double[4];
-                for (int frameNum = 0; frameNum < totFrameNum; frameNum++) frames[frameNum] = frameNum + 1;
+                for (int frameNum = 0; frameNum < totFrameNum; frameNum++) frames[frameNum] = frameNum*timePerFrame;
                 for (int classToPlot = 0; classToPlot < 3; classToPlot++) {
                     ImageStack imstackin = new ImageStack(plotWidth, plotHeight);
                     int plotcount = 0;
@@ -771,8 +769,8 @@ public class PMJ_Window {
                                 toplot[framenum] = traces[channelToStepFit][framenum][partNum];
                             }
                             plot2.add("line", frames, toplot);
-                            stepframes[1] = stepfits[0][partNum];
-                            stepframes[2] = stepfits[0][partNum] + 1;
+                            stepframes[1] = stepfits[0][partNum]*timePerFrame;
+                            stepframes[2] = (stepfits[0][partNum] + 1)*timePerFrame;
                             stepToPlot[0] = stepfits[1][partNum];
                             stepToPlot[1] = stepfits[1][partNum];
                             stepToPlot[2] = stepfits[2][partNum];
@@ -810,7 +808,7 @@ public class PMJ_Window {
                 int partCount = 0;
                 for(int i=0;i<totFrameNum;i++){
                     while(survivalCurve[partCount]-0.001<i && partCount+1<survivalCurve.length)partCount++;
-                    survivalCurveX[i] = i;
+                    survivalCurveX[i] = i*timePerFrame;
                     survivalCurveY[i] = stepCount-partCount+noStepCount;
                     //System.out.println(String.valueOf(i)+" "+String.valueOf(partCount)+" "+String.valueOf((int)(survivalCurve[partCount]))+" "+String.valueOf(stepCount)+" "+String.valueOf(noStepCount)+" "+String.valueOf(survivalCurve[0]));
                 }
