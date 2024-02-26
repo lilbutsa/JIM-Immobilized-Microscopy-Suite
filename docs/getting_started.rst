@@ -47,6 +47,6 @@ ImageJ
 ------
 ImageJ has its own built-in colour adjusters to help with colour blind difficulties which do the same function:
 
-.. image:: imagej_colorblind.png
+.. image:: imagej_colorblind.PNG
   :width: 600
   :alt: Colorblind Adjustment in ImageJ
