@@ -35,7 +35,30 @@ Running this section should open a file selection window. Select the file *Tutor
 
 This section also automatically finds the Jim_Programs folder by assuming that the Generate_Single_Channel_Traces file is still in the Jim distribution file. If you want to shift the Generate_Single_Channel_Traces file to another location, you will need to manually set the JIM variable to the path name for the Jim_Programs folder.
 
-Running this section will create a folder in the same as the tiff stack with the same name as the tiff stack that the results of all analysis will be saved in. In this case a file called Jim_Test_Array_Example will be created in the Example_Data folder.
+There is no ".ome" on the end of the tif file so we can set **Additional Extensions to Remove** to 0.
+
+The data is all contained in a single file so we can set **Multiple Files Per Image Stack** to false;
+
+Running this section will create a folder in the same as the tiff stack with the same name as the tiff stack that the results of all analysis will be saved in. In this case a file called *Tutorial_1_Jim_Test_Array* will be created in the *1b_Point_Array_With_Noise* folder.
 
 Note that if you are rerunning this analysis, this section may give you a warning that the directory already exists. This is not a problem, you can just ignore it.
+
+
+2) Organise Channels
+===================
+
+This section combines multi-file tiffs into a single big-tiff and splits a multi-channel tiff stack into individual files for each channel to make it easier for downstream processing.
+
+As this example is a single file single channel dataset, it just checks the order of files (using ome metadata if it exists) and copies the file to the anlysis folder in the correct order.
+
+This is single channel data so set **Number of Channels** to 1. We know it is in order so we can **Disable Metadata**. We want to use the entire dataset so we set **Stack Start Frame** to 1 and **Stack End Frame** to -1.
+
+We don't need to orientate the data at all so we can leave **Channels to Transform** empty. When this is the case, the last three parameters (**Vertical Flip**,**Horizontal Flip** and **Rotate**) are not used so can be set to anything.
+
+After running this section, a tiff file called *Raw_Image_Stack_Channel_1.tif*
+
+
+3) Align Channels and Calculate Drifts
+======================================
+
 
