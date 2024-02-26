@@ -2,11 +2,11 @@
 Tutorial 1 - Single Channel Trace Generation
 ********************************************
 
-This is an artificial example designed to introduce new users to the basic functionality of JIM and what a standard workflow looks like when working with single channel data. 
+This tutorial analyses an artificial example designed to introduce new users to the basic functionality of JIM and what a standard workflow looks like when working with single channel data. 
 
 There are two versions of this example data - with and without noise. Without noise provides a neat check that the measured intensities correspond to theoretical values. With noise provides a test for the detection limits of the software. 
 
-The raw data for the without noise version is found in *Examples_To_Run\\1_Point_Array_No_Noise\\Tutorial_1_Jim_Test_Array_No_Noise.tif*. The example with noise is found in *Examples_To_Run\\1b_Point_Array_With_Noise\\Tutorial_1_Jim_Test_Array.tif*
+The without noise dataset is found in *Examples_To_Run\\1_Point_Array_No_Noise\\Tutorial_1_Jim_Test_Array_No_Noise.tif*. The example with noise is found in *Examples_To_Run\\1b_Point_Array_With_Noise\\Tutorial_1_Jim_Test_Array.tif*
 
 This tutorial will use the with noise example, however the without noise data can be used with the exact same parameters.
 
