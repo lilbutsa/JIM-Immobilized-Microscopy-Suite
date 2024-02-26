@@ -6,7 +6,7 @@ This is an artificial example designed to introduce new users to the basic funct
 
 There are two versions of this example data - with and without noise. Without noise provides a neat check that the measured intensities correspond to theoretical values. With noise provides a test for the detection limits of the software. 
 
-The raw data for the without noise version is found in *Examples_To_Run\1_Point_Array_No_Noise\Tutorial_1_Jim_Test_Array_No_Noise.tif*. The example with noise is found in *Examples_To_Run\1b_Point_Array_With_Noise\Tutorial_1_Jim_Test_Array.tif*
+The raw data for the without noise version is found in *Examples_To_Run\\1_Point_Array_No_Noise\\Tutorial_1_Jim_Test_Array_No_Noise.tif*. The example with noise is found in *Examples_To_Run\\1b_Point_Array_With_Noise\\Tutorial_1_Jim_Test_Array.tif*
 
 This tutorial will use the with noise example, however the without noise data can be used with the exact same parameters.
 
@@ -26,12 +26,12 @@ At the end of the protocol, there is then the option to batch analyse an entire 
 
 Often there will be standard parameters that a user would like to use as a starting spot for analysing a type of data. Importing parameters gives the user a way to load those parameters.
 
-The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\1a_Point_Array_No_Noise\Tutorial_1_Final_Parameters.csv*
+The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\\1a_Point_Array_No_Noise\\Tutorial_1_Final_Parameters.csv*
 
 1) Select Input File
 ====================
 
-Running this section should open a file selection window. Select the file *Tutorial_1_Jim_Test_Array.tif* which is located in the *Examples_To_Run\1b_Point_Array_With_Noise folder\* of the JIM distribution.
+Running this section should open a file selection window. Select the file *Tutorial_1_Jim_Test_Array.tif* which is located in the *Examples_To_Run\\1b_Point_Array_With_Noise folder\\* of the JIM distribution.
 
 This section also automatically finds the Jim_Programs folder by assuming that the Generate_Single_Channel_Traces file is still in the Jim distribution file. If you want to shift the Generate_Single_Channel_Traces file to another location, you will need to manually set the JIM variable to the path name for the Jim_Programs folder.
 
