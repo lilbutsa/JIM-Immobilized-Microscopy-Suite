@@ -18,6 +18,7 @@ Contents
    installation	
    getting_started
    begin_here_generate_traces
+   output_file_formats
    Jimbob
 
 .. toctree::
