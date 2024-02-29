@@ -123,7 +123,6 @@ As the detectionEndFrame parameter is increased the noise in the image decreases
 
 JIM also provide the option to create an image using the max projection rather than the mean. To do this set useMaxProjection = true. This is useful if you have bright short lived states that are not synchronised, for example transient binding. However, as the max is also taken for the background, dim particle detection may becomes inherently difficult. Running this section with the parameters:
 
-
 Using a max projection, the brightness of spots are less affected by whether they only exist for a small number of frames (all spots on each row are approximately the same intensity). However, the background is much higher than using the subaverageing approach so most particles in the top few rows of this image would be impossible to detect. Good signal to noise is important to use the max projection as a method to detect particles that are transiently present in few frames of the image. 
 
 If you played with this optional max projection; ensure that you rerun 
@@ -142,19 +141,20 @@ The thresholding process involves a few pre-processing steps. A full description
 
 To determine the correct value to use for the cutoff we first want to turn all of the filters off. 
 To do all this set:
-left = 0
-right = 0
-top = 0
-bottom = 0
-minCount = -1
-maxCount =10000000
-minEccentricity = -0.1; 
-maxEccentricity = 1.1;
-minLength = 0;
-maxLength = 10000000
-maxDistFromLinear = 10000000
+Min. dist. from left edge = 0
+Min. dist. from right edge = 0
+Min. dist. from top edge = 0
+Min. dist. from bottom edge = 0
+Min. pixel count = -1
+Max. pixel count =10000000
+Min. eccentricity = -0.1; 
+Max. eccentricity = 1.1;
+Min. length = 0;
+Max. length = 10000000
+Max. dist. from linear = 10000000
+Min. separation = -1;
 
-We can also adjust the detection image to give good contrast by setting: 
+For matlab, we can also adjust the detection image to give good contrast by setting: 
 displayMin = 0;
 displayMax = 3;
 
@@ -168,7 +168,7 @@ Note the large amount of background being detected (the blue random shapes).
 We then steadily increase the cutoff value until the point where minimal background is detected but all particles are still detected. In this example it occurs around cutoff = 0.85 which looks like:
 
 
-If the cutoff value were pushed too high, then the ability to detect particles becomes reduced, this is shown below with a cutoff = 1.5. 
+If the cutoff value were pushed too high, then the ability to detect particles becomes reduced, for example with a cutoff = 1.5. 
 
 
 It is important to avoid having particles that only have a couple of pixels detected (like for most of the particles in the 2nd  and 3rd row and the 1st column in this example) as it’s hard to differentiate that from background noise. 
@@ -177,17 +177,17 @@ Rerun the cutoff = 0.85 before continuing to look at filters.
 
 Having thresholded, we can then apply filters to isolate particles of interest. This program can be used to detect a range of shapes, this is demonstrated in the next tutorial (Tutorial 2 - Generating Multi Channel Traces with Jim_Test_2_Channel_Example). However, to keep this initial tutorial reasonably simple we will just look at the settings used to detect diffraction limited spots.
 
-We typically want to exclude particles close to the edge to avoid situations where only part of the particle has been detected. To do this we set:
-left = 10
-right = 10
-top = 10
-bottom = 10
-To exclude all particles within 10 pixels of any edge. The detection now looks like:
+We typically want to exclude particles close to the edge to avoid situations where only part of the particle has been detected. It is also important to ensure that particles don't drift off the edge of the image over the course of the experiment. Normally a value of 25 for real life data provides a good safety net. In this example, however, we have made the image size as small as possible to reduce file sizes - so we just want to exclude particles closer than 10 pixels from the edge. To do this we set:
+Min. dist. from left edge = 10
+Min. dist. from right edge = 10
+Min. dist. from top edge = 10
+Min. dist. from bottom edge = 10
+The detection now looks like:
 
 
 Objects excluded by filters are shown in green; which are all the small particles near the edge of the image.
 
-Next we want to exclude everything that is too small or too large (like the cross hair), as they tend to be rubbish. To do this we set the minimum number of pixels in a region to 10 and max to 100 by setting:
+Next we want to exclude everything that is too small or too large, as they tend to be rubbish. To do this we set the minimum number of pixels in a region to 10 and max to 100 by setting:
 minCount = 10
 maxCount = 100
 This gives a detection image of

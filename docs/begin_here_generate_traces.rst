@@ -149,12 +149,18 @@ Additional Background Detection
 Expand Regions
 ==============
 
-**Foreground Expansion Distance** - *expandForegroundDist* : Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+The foreground region (the region used to measure the fluorescence intensity) is both the yellow and green regions.
+**Foreground Expansion Distance** - *expandForegroundDist* : The pixel distance that the detected region of interest is to be expanded to ensure that it contains all of the fluorescence for that spot
 
-**Background Inner Distance** - *expandBackInnerDist* : Minimum distance to dilate beyond the ROI to measure the local background
+**Background Inner Distance** - *expandBackInnerDist* : The distance to expand from the detected region before the inner edge of the background region. Note that if this variable is set to less than foregroundDist , it will automatically be set equal to foregroundDist , i.e. the background starts from the edge of the expanded detected region.
 
-**Background Outer Distance** - *expandBackOuterDist* : Maximum distance to dilate beyond the ROI to measure the local background
+**Background Outer Distance** - *expandBackOuterDist* : The distance to expand the detected region to reach the edge of the background region
 
+Schematically these are:
+
+.. image:: Expansion_schematic.png
+  :width: 600
+  :alt: Schematic of the expand region parameters
 
 Calculate Traces
 ================
