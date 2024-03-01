@@ -162,6 +162,9 @@ Schematically these are:
   :width: 600
   :alt: Schematic of the expand region parameters
 
+The foreground region (the region used to measure the fluorescence intensity) is both the yellow and green regions.
+
+
 Calculate Traces
 ================
 
