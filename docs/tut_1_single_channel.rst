@@ -17,7 +17,8 @@ Users are strongly encouraged to open the dataset file with a program like Image
 .. image:: Tut_1_montage.png
   :width: 600
   :alt: Montage of Tutorial_1_Jim_Test_Array.tif
-  :legend: Montage of the dataset: The 10x10 array of diffraction limited spots. Every five frames one column of particles from the left disappears so that in frame one all 10 columns are present, in Frame 20 there are only 7 columns left and in Frame 40 there are only 3. Each successive row of particles is brighter than the previous. The top rows are so dim that with noise they unrecognisable.
+
+*Montage of the dataset: The 10x10 array of diffraction limited spots. Every five frames one column of particles from the left disappears so that in frame one all 10 columns are present, in Frame 20 there are only 7 columns left and in Frame 40 there are only 3. Each successive row of particles is brighter than the previous. The top rows are so dim that with noise they unrecognisable.*
 
 This dataset is generated in Mathematica using the *Tutorial_1_Jim_Test_Array_Generator.nb* program which is included in the Tutorial 1 folder, in case users wish to regenerate the data with different random numbers or modify it. 
 
@@ -29,7 +30,7 @@ At the end of the protocol, there is then the option to batch analyse an entire 
 0) Import Parameters
 ====================
 
-Often there will be standard parameters that a user would like to use as a starting spot for analysing a type of data. Importing parameters gives the user a way to load those parameters.
+Often there will be standard parameters that a user would like to start from for analysing a type of data. Importing parameters gives the user a way to load those parameters.
 
 The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\\1a_Point_Array_No_Noise\\Tutorial_1_Final_Parameters.csv*
 
