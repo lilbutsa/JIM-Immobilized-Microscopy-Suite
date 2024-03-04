@@ -279,3 +279,12 @@ Congratulations! You’ve completed your first tutorial. Generating traces is th
 For example, if this data were photobleaching single fluorophores, you would then run these traces through the single-molecule photobleaching routine which would stepfit the traces and then use the step heights to work out single fluorophore intensities and the step times to work out bleaching times. This is done in detail in the Single-Molecule Photobleaching Tutorial.
 
 Before that however, I would strongly recommend doing the Generate Multi-Channel Traces tutorial to learn how to generate traces for data with multiple colours and also particles of arbitrary shapes.
+
+Final Parameters
+===================
+The final parameters used for this tutorial are:
+
+.. csv-table:: Table Title
+   :file: 
+   :widths: 30, 70
+   :header-rows: 1
