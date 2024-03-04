@@ -8,17 +8,16 @@ Before doing this tutorial, make sure you are know how to `run a JIM script <htt
 
 This tutorial analyses an artificial example designed to introduce new users to the basic functionality of JIM and what a standard workflow looks like when working with single channel data. 
 
-The test array is a tif stack containing 50 images each 256x256 pixels in size. The full image contains a 12x12 array of diffraction limited spots. Each row of spots gets increasingly bright allowing users to experiment with the detection limits of JIM. Every 4 frames, an additional column in the image stack becomes dark, to demonstrate the interplay in detection difficulty between how bright a particle is and how long it is present in images. There are two versions of this example data - with and without noise. Without noise provides a neat check that the measured intensities correspond to theoretical values. With noise provides a test for the detection limits of the software. 
+The test array is a tif stack containing 50 images each 256x256 pixels in size. The full image contains a 10x10 array of diffraction limited spots. Each row of spots gets increasingly bright allowing users to experiment with the detection limits of JIM. Every 4 frames, an additional column in the image stack becomes dark, to demonstrate the interplay in detection difficulty between how bright a particle is and how long it is present in images. 
 
-The example with noise is *Tutorial_1_Jim_Test_Array.tif*. The without noise dataset *Tutorial_1_Jim_Test_Array_No_Noise.tif*. 
-
-This tutorial will use the with noise example, however the without noise data can be used with the exact same parameters.
+There are two versions of this example data - with and without noise. Without noise provides a neat check that the measured intensities correspond to theoretical values. With noise provides a test for the detection limits of the software. The example with noise is *Tutorial_1_Jim_Test_Array.tif*. The without noise dataset *Tutorial_1_Jim_Test_Array_No_Noise.tif*. This tutorial will use the with noise example, however the without noise data can be used with the exact same parameters.
 
 Users are strongly encouraged to open the dataset file with a program like ImageJ to get a feel for what the data looks like.
 
 .. image:: Tut_1_montage.png
   :width: 600
   :alt: Montage of Tutorial_1_Jim_Test_Array.tif
+  :legend: Montage of the dataset: The 10x10 array of diffraction limited spots. Every five frames one column of particles from the left disappears so that in frame one all 10 columns are present, in Frame 20 there are only 7 columns left and in Frame 40 there are only 3. Each successive row of particles is brighter than the previous. The top rows are so dim that with noise they unrecognisable.
 
 This dataset is generated in Mathematica using the *Tutorial_1_Jim_Test_Array_Generator.nb* program which is included in the Tutorial 1 folder, in case users wish to regenerate the data with different random numbers or modify it. 
 
