@@ -2,7 +2,7 @@
 Tutorial 1 - Single Channel Trace Generation
 ********************************************
 
-All data needed to follow this tutorial is found in the folder *Examples_To_Run\1_Jim_Test_Array\*.
+All data needed to follow this tutorial is found in the folder *Examples_To_Run\\1_Jim_Test_Array\\*.
 
 Before doing this tutorial, make sure you are know how to `run a JIM script <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/getting_started.html#>`_ and if you are using ImageJ you have the `plugins installed <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/installation.html#imagej-installation>`_.
 
