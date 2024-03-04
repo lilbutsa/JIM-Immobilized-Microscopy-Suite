@@ -2,6 +2,10 @@
 Tutorial 1 - Single Channel Trace Generation
 ********************************************
 
+All data needed to follow this tutorial is found in the folder *Examples_To_Run\1_Jim_Test_Array\*.
+
+Before doing this tutorial, make sure you are know how to `run a JIM script <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/getting_started.html#>`_ and if you are using ImageJ you have the `plugins installed <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/installation.html#imagej-installation>`_.
+
 This tutorial analyses an artificial example designed to introduce new users to the basic functionality of JIM and what a standard workflow looks like when working with single channel data. 
 
 The test array is a tif stack containing 50 images each 256x256 pixels in size. The full image contains a 12x12 array of diffraction limited spots. Each row of spots gets increasingly bright allowing users to experiment with the detection limits of JIM. Every 4 frames, an additional column in the image stack becomes dark, to demonstrate the interplay in detection difficulty between how bright a particle is and how long it is present in images. There are two versions of this example data - with and without noise. Without noise provides a neat check that the measured intensities correspond to theoretical values. With noise provides a test for the detection limits of the software. 
@@ -18,7 +22,7 @@ Users are strongly encouraged to open the dataset file with a program like Image
 
 This dataset is generated in Mathematica using the *Tutorial_1_Jim_Test_Array_Generator.nb* program which is included in the Tutorial 1 folder, in case users wish to regenerate the data with different random numbers or modify it. 
 
-The basic aim of this tutorial is to analyze the intensities and disappearance of spots over times in this video. This will be done using the The *Begin Here Generate Traces* program. This program has been implemented in Matlab, Python and ImageJ. All should give the same output.
+The basic aim of this tutorial is to analyze the intensities and disappearance of spots over times in this video. This will be done using the The *Begin Here Generate Traces* program. Further details of the parameters in this pipeline can be found `here <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/begin_here_generate_traces.html>`_
 
 The *Begin Here Generate Traces* pipeline contains 10 sections to generate traces for an image stack. Each stage can be rerun as required to adjust parameters for optimal detection. 
 At the end of the protocol, there is then the option to batch analyse an entire folder of image stacks using the same parameters. This is helpful if multiple fields of view or repeats have been performed for an experiment.
