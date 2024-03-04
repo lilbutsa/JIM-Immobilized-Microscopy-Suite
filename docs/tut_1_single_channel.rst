@@ -109,22 +109,25 @@ Obviously this example is artificial, but similiar artifacts can be observed in 
 
 (Optional) Calculating the Accuracy of Drift Correction
 -------------------------------------------------------
-This dataset is artificially generated, so the measured drift values can be compared to the exact drift values for each frame to calculate the accuracy of JIM alignment.  Running the Drift Correction section generates the file Aligned_Drifts.csv in the Jim_Test_Array_Example folder which can be opened with microsoft excel or similar and should look like:
+This dataset is artificially generated, so the measured drift values can be compared to the exact drift values for each frame to calculate the accuracy of JIM alignment.  Running the Drift Correction section generates the file *Alignment_Channel_1.csv* in the analysis folder which can be opened with microsoft excel or similar and should look like:
 
+.. image:: Tut_1_Alignment_Channel_1.PNG
+  :width: 600
+  :alt: Drift Correction Values
+
+*The calculated distance (in pixels) that each frame needs to be shifted in the x and y direction to overlay with the reference image.* 
 
 Ensure that this excel file is closed before you rerun the alignment program otherwise the Drift Correction program will not save the drift values using the new alignment parameters. 
 
-In this file each row corresponds to the drift measured in each frame for the x and y direction. To compare this to the actual drift of the image stack, there is an excel file in the Example_Data folder called Jim_Test_Array_Example_drifts.xls. Pasting the measured drifts into the first two columns of this file will calculate the error in drift alignment:
+In this file each row corresponds to the drift measured in each frame for the x and y direction. To compare this to the actual drift of the image stack, there is an excel file in the data folder called *Jim_Test_Array_Example_drifts.xls*. Pasting the measured drifts into the first two columns of this file will calculate the error in drift alignment:
 
-Overall this shows that the average error in drift is 0.37 pixels for a single iteration, which is sufficient for most applications. This can be reduced to 0.13 pixels using 3 iterations and goes as low as 0.1 pixels using 100 iterations. However, the increase in drift correction accuracy has a trade off where increasing iterations demands more computational time to allow detection of dimmer particles. 
+.. image:: Tut_1_Drift_Accuracy.PNG
+  :width: 600
+  :alt: Drift Correction Values
 
+Overall this shows that the average error in drift is 0.15 pixels for a single iteration. Regions or interest for traces are measured to the nearest pixel, so any drift correction to below half a pixel will result in optimal traces.
 
-For the rest of this analysis we will use the output from running the drift correction section with:
-iterations = 3
-alignStartFrame = 1
-alignEndFrame = 5
-
-REMINDER: rerunning this section with these settings is necessary to ensure that these values are used so subsequent parts of this tutorial can be followed. 
+Play around, try different settings and see how the accuracy of drift correction changes. Just remember that rerunning this section with the original settings is necessary to ensure that these values are used so subsequent parts of this tutorial can be followed. 
 
 4) Make Sub-Average
 ===================
