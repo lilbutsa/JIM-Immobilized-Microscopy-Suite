@@ -8,7 +8,7 @@ Before doing this tutorial, make sure you are know how to `run a JIM script <htt
 
 This tutorial analyses an artificial example designed to introduce new users to the basic functionality of JIM and what a standard workflow looks like when working with single channel data. 
 
-The test array is a tif stack containing 50 images each 256x256 pixels in size. The full image contains a 10x10 array of diffraction limited spots. Each row of spots gets increasingly bright allowing users to experiment with the detection limits of JIM. Every 4 frames, an additional column in the image stack becomes dark, to demonstrate the interplay in detection difficulty between how bright a particle is and how long it is present in images. 
+The test array is a tif stack containing 50 images. The inital images contains a 10x10 array of diffraction limited spots. Each row of spots gets increasingly bright allowing users to experiment with the detection limits of JIM. Every five frames, an additional column in the image stack becomes dark, to demonstrate the interplay in detection difficulty between how bright a particle is and how long it is present in images. A montage of this dataset is shown below.
 
 There are two versions of this example data - with and without noise. Without noise provides a neat check that the measured intensities correspond to theoretical values. With noise provides a test for the detection limits of the software. The example with noise is *Tutorial_1_Jim_Test_Array.tif*. The without noise dataset *Tutorial_1_Jim_Test_Array_No_Noise.tif*. This tutorial will use the with noise example, however the without noise data can be used with the exact same parameters.
 
@@ -34,6 +34,8 @@ Often there will be standard parameters that a user would like to start from for
 
 The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\\1a_Point_Array_No_Noise\\Tutorial_1_Final_Parameters.csv*
 
+The final parameters for this tutorial are also in a table `here <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/tut_1_single_channel.html#final-parameters>`_
+
 1) Select Input File
 ====================
 
@@ -45,13 +47,12 @@ There is no ".ome" on the end of the tif file so we can set **Additional Extensi
 
 The data is all contained in a single file so we can set **Multiple Files Per Image Stack** to false;
 
-Running this section will create a folder in the same as the tiff stack with the same name as the tiff stack that the results of all analysis will be saved in. In this case a file called *Tutorial_1_Jim_Test_Array* will be created in the *1b_Point_Array_With_Noise* folder.
+Running this section will create a folder in the same as the tiff stack with the same name as the tiff stack that the results of all analysis will be saved in. In this case a file called *Tutorial_1_Jim_Test_Array* will be created in the *Examples_To_Run\\1_Jim_Test_Array\\* folder.
 
 Note that if you are rerunning this analysis, this section may give you a warning that the directory already exists. This is not a problem, you can just ignore it.
 
-
 2) Organise Channels
-===================
+====================
 
 This section combines multi-file tiffs into a single big-tiff and splits a multi-channel tiff stack into individual files for each channel to make it easier for downstream processing.
 
@@ -61,34 +62,54 @@ This is single channel data so set **Number of Channels** to 1. We know it is in
 
 We don't need to orientate the data at all so we can leave **Channels to Transform** empty. When this is the case, the last three parameters (**Vertical Flip**,**Horizontal Flip** and **Rotate**) are not used so can be set to anything.
 
-After running this section, a tiff file called *Raw_Image_Stack_Channel_1.tif*
+After running this section, a tiff file called *Raw_Image_Stack_Channel_1.tif* should have been created in the analysis folder.
 
 
 3) Align/Drift Correct
-======================================
+======================
 
-We only need to drift correct in this section as it is single channel data. Drift correction is calculated by aligning every image in a stack to a reference image using cross correlation. The tricky part in accurately drift correction is generating a good reference image. Using a single frame as the reference works well if there is strong signal. However, if there is low signal to noise, the noise in the reference image will cause significant errors in the drift calculation. Alternatively, a mean image made by averaging across a range of frames helps to average out the noise from a single image. However, any drift between the images used to make the mean image will cause a blurring of reference image which will also cause significant errors in the drift calculation. Ultimately, the aim is to find a balance between these two extremes which gives the best reference image possible. 
+We only need to drift correct in this section as it is single channel data. Drift correction is calculated by aligning every image in a stack to a reference image using cross correlation. The tricky part in accurately drift correction is generating a good reference image. Using a single frame as the reference works well if there is strong signal. However, if there is low signal to noise, the noise in the reference image will cause significant errors in the drift calculation. Alternatively, using a mean image, made by averaging across a range of frames, helps to average out the noise from a single image. However, any drift between the images used to make the mean image will cause a blurring of reference image which will also cause significant errors in the drift calculation. Ultimately, the aim is to find a balance between these two extremes which gives the best reference image possible. 
 
 The final factor in deciding what frames to average for a reference image is that you want to choose frames when the majority of particles are present. The more signal in the reference image, the easier it is to align.
 
 In cases with high drift and low signal to noise, it is possible to run the drift correction iteratively, where the drift corrected image stack is used to generate the reference image for the next round of alignments. For most cases, setting *iterations* = 1 is sufficient if there is reasonable signal.
 
 In this example, all particles are present at the start and are reasonably bright but the data contains lots of drift, so it is reasonable to take an average of frames 1 to 5 for the reference image. To do this set the parameters:
-iterations = 1
-alignStartFrame = 1
-alignEndFrame = 5
+**Iterations** = 1
+**Alignment Start Frame** = 1
+**Alignment End Frame** = 5
+**Max Shift** = 10
 
-Max Shift Example
------------------
-The columns of particles in the dataset are evenly spaced, this  can lead to an artifact where the drift correction can align an image to to the wrong columns in the reference image. To see this, we can set the *Max Shift* to a large number like 1000, enable the save aligned stack and run the program. 
+After running this section, two images should open showing a before and after of the mean of the entire stack for alignment. These should look like:
 
+.. image:: tut_1_Before_After_Drift_Correction.png
+  :width: 600
+  :alt: Before and After Drift Correction
 
-Obviously, this example is artificial, but similiar artifacts can be observed in real world data. In particular data with low signal to noise and transient bright aggregates
+*The mean projection of the dataset before and after drift correction. Without drift correction, individual points are smeared because the sample moves. The drift correction is able to realign frames so the mean is of clean spots*
+
+When generating the final traces, the detected regions of interest are shifted for each frame to account for drift rather that shifting the image itself. A consequence of this is that it isn't necessary to output the drift corrected image stack, however this can still be anabled using the **Save Aligned Stack** variable is desired.   
+
+(Optional) Max Shift Example
+----------------------------
+The columns of particles in this dataset are evenly spaced, this can lead to an artifact where the drift correction can align an image to to the wrong columns in the reference image. To see this, we can set the *Max Shift* to a large number like 1000, enable the **Save Aligned Stack** and run the program. 
+
+Running this section should generate the file *Alignment_Channel_1_Aligned_Stack.tiff* in the analysis folder. Opening this file and examining it, the columns of particles can be seen to jump around erratically. Limiting Max Shift to a value less than the width of columns (for example 10), forces the drift correction to only align on the correct column.
+
+.. image:: tut_1_Max_Shift_Artifact.png
+  :width: 600
+  :alt: Max Shift Artifact
+
+*The drift correction can erroneously jump accross columns when allowed to align to anywhere in the image by setting Max Shift to 1000. This can be avoided by only searching for the best correlation within 10 pixels.*
+
+It is equally important that the **Max Shift** parameter is set to a value larger than the total drift observed in the experiment, otherwise the program will ignore the correct alignment and align to noise instead!
+
+Obviously this example is artificial, but similiar artifacts can be observed in real world data. In particular data with low signal to noise and transient bright aggregates can cause artifacts as the drift correction tries to overlay the aggregates rather than the actual data. 
 
 
 (Optional) Calculating the Accuracy of Drift Correction
 -------------------------------------------------------
-Given Jim_Test_Array_Exampl.tif is artificially generated data, the measured drift values can be compared to the exact drift values for each frame to calculate the accuracy of JIM alignment.  Running the Drift Correction section generates the file Aligned_Drifts.csv in the Jim_Test_Array_Example folder which can be opened with microsoft excel or similar and should look like:
+This dataset is artificially generated, so the measured drift values can be compared to the exact drift values for each frame to calculate the accuracy of JIM alignment.  Running the Drift Correction section generates the file Aligned_Drifts.csv in the Jim_Test_Array_Example folder which can be opened with microsoft excel or similar and should look like:
 
 
 Ensure that this excel file is closed before you rerun the alignment program otherwise the Drift Correction program will not save the drift values using the new alignment parameters. 
