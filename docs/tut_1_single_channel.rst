@@ -116,7 +116,7 @@ Obviously this example is artificial, but similiar artifacts can be observed in 
 This dataset is artificially generated, so the measured drift values can be compared to the exact drift values for each frame to calculate the accuracy of JIM alignment.  Running the Drift Correction section generates the file *Alignment_Channel_1.csv* in the analysis folder which can be opened with microsoft excel or similar and should look like:
 
 .. image:: Tut_1_Alignment_Channel_1.PNG
-  :width: 600
+  :width: 300
   :alt: Drift Correction Values
 
 *The calculated distance (in pixels) that each frame needs to be shifted in the x and y direction to overlay with the reference image.* 
@@ -156,20 +156,32 @@ Then change the **Detection End Frames** variable to 5, 25 and 50. The results s
 
 *As the Detection Start Frames parameter is increased the noise in the image decreases (background grey becoming more even as the more frames are used) which makes the top rows of dim particles Easier to identify. However, averaging makes the short lived particles to the left the image dimmer as they are being summed with more frames where they are not present.*
 
+Ultimately, the aim is to find the balance to take as large of a window as possible to minimise noise, but not so large that transient particles are also getting averaged out. For this data we will take the **Detection End Frames** = 25. Please rerun this section with the correct values before continuing.  
 
 (Optional) Detection Using a Maximum Projection
 -----------------------------------------------
 
-JIM also provide the option to create an image using the max projection rather than the mean. To do this set useMaxProjection = true. This is useful if you have bright short lived states that are not synchronised, for example transient binding. However, as the max is also taken for the background, dim particle detection may becomes inherently difficult. Running this section with the parameters:
+JIM also provide the option to create an image using the max projection rather than the mean. This is useful if you have bright short lived states that are not synchronised, for example transient binding. However, as the max is also taken for the background, dim particle detection may become difficult. Running this section with the parameters:
 
-Using a max projection, the brightness of spots are less affected by whether they only exist for a small number of frames (all spots on each row are approximately the same intensity). However, the background is much higher than using the subaverageing approach so most particles in the top few rows of this image would be impossible to detect. Good signal to noise is important to use the max projection as a method to detect particles that are transiently present in few frames of the image. 
+**Use Max Projection** = true
 
-If you played with this optional max projection; ensure that you rerun 
-useMaxProjection = false
-detectionStartFrame= 1
-detectionEndFrame = 25
-Before moving on with the tutorial
+**Detection Start Frames** = 1
 
+**Detection End Frames** = -1
+
+**Channels Weights** = 1
+
+These parameters will calculate the max projection of the entire dataset (negative numbers for **Detection End Frames** go from the end of the stack with -1 as the last frame):
+
+.. image:: tut_1_Detection_Max_Projection.png
+  :width: 300
+  :alt: Full stack max projection
+
+*Max projection of the full image stack. Particle intensities are less affected by the time they are present, but background is much higher.*
+
+Using a max projection, the brightness of spots are less affected by whether they only exist for a small number of frames (all spots on each row are approximately the same intensity) in comparison to using the mean projection. However, the background is much higher than using the subaverageing approach so most particles in the top few rows of this image would be impossible to detect. Good signal to noise is important to use the max projection as a method to detect particles that are transiently present in few frames of the image. 
+
+If you played with the max projection ensure that you rerun detection with the previous parameters before continuing.
 
 5) Detect Particles
 ===================
@@ -180,59 +192,81 @@ The thresholding process involves a few pre-processing steps. A full description
 
 To determine the correct value to use for the cutoff we first want to turn all of the filters off. 
 To do all this set:
-Min. dist. from left edge = 0
-Min. dist. from right edge = 0
-Min. dist. from top edge = 0
-Min. dist. from bottom edge = 0
-Min. pixel count = -1
-Max. pixel count =10000000
-Min. eccentricity = -0.1; 
-Max. eccentricity = 1.1;
-Min. length = 0;
-Max. length = 10000000
-Max. dist. from linear = 10000000
-Min. separation = -1;
+
+**Min. dist. from left edge** = 0
+
+**Min. dist. from right edge** = 0
+
+**Min. dist. from top edge** = 0
+
+**Min. dist. from bottom edge** = 0
+
+**Min. pixel count** = -1**
+
+**Max. pixel count** =10000000
+
+**Min. eccentricity** = -0.1
+
+**Max. eccentricity** = 1.1
+
+**Min. length** = 0
+
+**Max. length** = 10000000
+
+**Max. dist. from linear** = 10000000
+
+**Min. separation** = -1;
 
 For matlab, we can also adjust the detection image to give good contrast by setting: 
+
 displayMin = 0;
+
 displayMax = 3;
 
 We then want to run the detect particles section with a range of cutoff values. The image used for detection is shown in red, and the detected regions are in blue. Bright spots which have been detected will appear pinky/white.
 
-Normally it is good practice to start with a low value where the background is being fully detected (cutoff = 0.5  for this example) which should look like:
+Normally it is good practice to start with a low value where the background is being fully detected (**cutoff** = 0.3  for this example). We then steadily increase the cutoff value until the point where minimal background is detected but all particles are still detected. In this example it occurs around **cutoff** = 0.6. If the cutoff value were pushed too high, then the ability to detect particles becomes reduced, for example with a **cutoff** = 1.5. 
 
 
+.. image:: tut_1_Detection_cutoff.png
+  :width: 600
+  :alt: Detection cutoffs
 
-Note the large amount of background being detected (the blue random shapes).
-We then steadily increase the cutoff value until the point where minimal background is detected but all particles are still detected. In this example it occurs around cutoff = 0.85 which looks like:
-
-
-If the cutoff value were pushed too high, then the ability to detect particles becomes reduced, for example with a cutoff = 1.5. 
+*Varying the cutoff for detection. With cutoff = 0.3, large amounts of background are being detected (the blue random shapes). These more or less disappear when the cutoff is increased to 0.6. Going too high (cutoff = 1.5) causes all of the top row and most of the first column to no longer be detected.*
 
 
 It is important to avoid having particles that only have a couple of pixels detected (like for most of the particles in the 2nd  and 3rd row and the 1st column in this example) as it’s hard to differentiate that from background noise. 
 
-Rerun the cutoff = 0.85 before continuing to look at filters.
+Rerun the cutoff = 0.6 before continuing to look at filters.
 
-Having thresholded, we can then apply filters to isolate particles of interest. This program can be used to detect a range of shapes, this is demonstrated in the next tutorial (Tutorial 2 - Generating Multi Channel Traces with Jim_Test_2_Channel_Example). However, to keep this initial tutorial reasonably simple we will just look at the settings used to detect diffraction limited spots.
+Having thresholded, we can then apply filters to isolate particles of interest. This program can be used to detect a range of shapes, this is demonstrated in the `Tutorial 2<https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/tut_2_multi_channel.html#>`_. However, to keep this initial tutorial reasonably simple we will just look at the settings used to detect diffraction limited spots.
 
 We typically want to exclude particles close to the edge to avoid situations where only part of the particle has been detected. It is also important to ensure that particles don't drift off the edge of the image over the course of the experiment. Normally a value of 25 for real life data provides a good safety net. In this example, however, we have made the image size as small as possible to reduce file sizes - so we just want to exclude particles closer than 10 pixels from the edge. To do this we set:
-Min. dist. from left edge = 10
-Min. dist. from right edge = 10
-Min. dist. from top edge = 10
-Min. dist. from bottom edge = 10
-The detection now looks like:
+**Min. dist. from left edge** = 10
 
+**Min. dist. from right edge** = 10
 
-Objects excluded by filters are shown in green; which are all the small particles near the edge of the image.
+**Min. dist. from top edge** = 10
+
+**Min. dist. from bottom edge** = 10
+
 
 Next we want to exclude everything that is too small or too large, as they tend to be rubbish. To do this we set the minimum number of pixels in a region to 10 and max to 100 by setting:
-minCount = 10
-maxCount = 100
-This gives a detection image of
+
+**minCount** = 10
+
+**maxCount** = 100
+
+This gives a detection image of:
 
 
-Further constraints can be added, in particular setting a max eccentricity, to further filter for single particles. This is explored further in the next tutorial. 
+.. image:: tut_1_Detection_filters.png
+  :width: 300
+  :alt: Detection Filters
+
+*Filtering detected regions to select particles of interest. Blue areas are the particles that will be used for generating traces. Objects excluded by filters are shown in green; which are all the small particles near the edge of the image.*
+
+Further constraints can be added, in particular setting a max eccentricity, to further filter for single particles. This is explored further in the next `Tutorial 2<https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/tut_2_multi_channel.html#>`_.
 
 6) Additional Backgrounds
 =========================
@@ -259,9 +293,12 @@ backOuterDist - the distance to expand the detected region to reach the edge of 
 
 Setting these values to:
 
-foregroundDist = 4.1; 
-backInnerDist = 4.1;
-backOuterDist = 20;
+**foregroundDist** = 4.1; 
+
+**backInnerDist** = 4.1;
+
+**backOuterDist** = 20;
+
 Gives:
 
 
