@@ -150,13 +150,11 @@ This can be demonstrated by running this section multiple times with different d
 
 Then change the **Detection End Frames** variable to 5, 25 and 50. The results should appear as shown
 
-
 .. image:: tut_1_Detection_End_Frame.png
   :width: 600
-  :alt: Drift Correction Accuracy
+  :alt: Detection End Frame Analysis
 
-
-As the detectionEndFrame parameter is increased the noise in the image decreases (notice the background grey becoming more even as the more frames are used) which makes the top rows of dim particles (yellow boxes below) much clearer. However, averaging makes the short lived particles to the left the image dimmer (pink boxes below).
+*As the Detection Start Frames parameter is increased the noise in the image decreases (background grey becoming more even as the more frames are used) which makes the top rows of dim particles Easier to identify. However, averaging makes the short lived particles to the left the image dimmer as they are being summed with more frames where they are not present.*
 
 
 (Optional) Detection Using a Maximum Projection
