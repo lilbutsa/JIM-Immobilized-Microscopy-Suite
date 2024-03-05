@@ -75,9 +75,13 @@ The final factor in deciding what frames to average for a reference image is tha
 In cases with high drift and low signal to noise, it is possible to run the drift correction iteratively, where the drift corrected image stack is used to generate the reference image for the next round of alignments. For most cases, setting *iterations* = 1 is sufficient if there is reasonable signal.
 
 In this example, all particles are present at the start and are reasonably bright but the data contains lots of drift, so it is reasonable to take an average of frames 1 to 5 for the reference image. To do this set the parameters:
+
 **Iterations** = 1
+
 **Alignment Start Frame** = 1
+
 **Alignment End Frame** = 5
+
 **Max Shift** = 10
 
 After running this section, two images should open showing a before and after of the mean of the entire stack for alignment. These should look like:
@@ -123,7 +127,9 @@ In this file each row corresponds to the drift measured in each frame for the x 
 
 .. image:: Tut_1_Drift_Accuracy.PNG
   :width: 600
-  :alt: Drift Correction Values
+  :alt: Drift Correction Accuracy
+
+*The drift correction accuracy excel sheet (Jim_Test_Array_Example_drifts.xls) which compares the calculated drifts the exact values.*
 
 Overall this shows that the average error in drift is 0.15 pixels for a single iteration. Regions or interest for traces are measured to the nearest pixel, so any drift correction to below half a pixel will result in optimal traces.
 
@@ -135,12 +141,19 @@ Play around, try different settings and see how the accuracy of drift correction
 Having drift corrected the entire stack, the next section determines which section of the image stack is used for detection. In this section you select a range of frames from the drift corrected stack e.g. from frame 1- 10, to produce a mean image. This mean image is then used to detect particles for analysis. Increasing the number of frame to average allows the detection of long-lived dim particles (top row) but reduces sensitivity for short lived particles (left column) because the short lived signal is averaged out across more frames.
 
 This can be demonstrated by running this section multiple times with different detectionEndFramevalues. Set the parameters as:
-useMaxProjection = false
-detectionStartFrame = 1
-Then change the detectionEndFrame variable to 5, 25 and 50. The results should appear as shown
+
+**Use Max Projection** = false
+
+**Detection Start Frames** = 1
+
+**Channels Weights** = 1
+
+Then change the **Detection End Frames** variable to 5, 25 and 50. The results should appear as shown
 
 
-
+.. image:: tut_1_Detection_End_Frame.png
+  :width: 600
+  :alt: Drift Correction Accuracy
 
 
 As the detectionEndFrame parameter is increased the noise in the image decreases (notice the background grey becoming more even as the more frames are used) which makes the top rows of dim particles (yellow boxes below) much clearer. However, averaging makes the short lived particles to the left the image dimmer (pink boxes below).
