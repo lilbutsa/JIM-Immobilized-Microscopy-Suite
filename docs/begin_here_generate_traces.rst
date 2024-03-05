@@ -150,6 +150,7 @@ Expand Regions
 ==============
 
 The foreground region (the region used to measure the fluorescence intensity) is both the yellow and green regions.
+
 **Foreground Expansion Distance** - *expandForegroundDist* : The pixel distance that the detected region of interest is to be expanded to ensure that it contains all of the fluorescence for that spot
 
 **Background Inner Distance** - *expandBackInnerDist* : The distance to expand from the detected region before the inner edge of the background region. Note that if this variable is set to less than foregroundDist , it will automatically be set equal to foregroundDist , i.e. the background starts from the edge of the expanded detected region.

@@ -32,7 +32,7 @@ At the end of the protocol, there is then the option to batch analyse an entire 
 
 Often there will be standard parameters that a user would like to start from for analysing a type of data. Importing parameters gives the user a way to load those parameters.
 
-The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\\1a_Point_Array_No_Noise\\Tutorial_1_Final_Parameters.csv*
+The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\\1_Jim_Test_Array\\Tutorial_1_Final_Parameters.csv*
 
 The final parameters for this tutorial are also in a table `here <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/tut_1_single_channel.html#final-parameters>`_
 
