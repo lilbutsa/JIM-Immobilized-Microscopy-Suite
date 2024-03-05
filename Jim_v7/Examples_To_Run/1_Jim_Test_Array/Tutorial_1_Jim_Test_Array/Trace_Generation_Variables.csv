@@ -1,0 +1,50 @@
+Date, 2024-03-05
+additionalExtensionsToRemove,0
+multipleFilesPerImageStack,false 
+imStackNumberOfChannels,1
+imStackDisableMetadata,true 
+imStackStartFrame,1
+imStackEndFrame,-1
+imStackChannelsToTransform ,
+imStackVerticalFlipChannel ,1
+imStackHorizontalFlipChannel ,0
+imStackRotateChannel ,0
+alignIterations,1
+alignStartFrame,1
+alignEndFrame,5
+alignMaxShift,10.00
+alignOutputStacks,false 
+alignMaxInt,65000 65000
+alignSNRdetectionCutoff,1.00
+alignManually,false 
+alignXOffset,0
+alignYOffset,0
+alignRotationAngle,0
+alignScalingFactor,1
+detectUsingMaxProjection,false 
+detectionStartFrame,1
+detectionEndFrame,25
+detectWeights ,1
+detectionCutoff,0.60
+detectLeftEdge,10
+detectRightEdge,10
+detectTopEdge,10
+detectBottomEdge,10
+detectMinCount,10
+detectMaxCount,100
+detectMinEccentricity,-0.10
+detectMaxEccentricity,1.10
+detectMinLength,0.00
+detectMaxLength,10000.00
+detectMaxDistFromLinear,10000.00
+detectMinSeparation,-1000.00
+additionBackgroundDetect ,false 
+additionBackgroundUseMaxProjection ,true 
+additionalBackgroundStartFrame ,1 1
+additionalBackgroundEndFrame ,-1 -1
+additionalBackgroundWeights  ,1 1
+additionBackgroundCutoff ,1.00
+expandForegroundDist,4.10
+expandBackInnerDist,4.10
+expandBackOuterDist,20.00
+verboseOutput,false 

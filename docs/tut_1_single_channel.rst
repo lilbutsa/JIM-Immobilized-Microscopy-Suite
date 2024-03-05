@@ -259,7 +259,6 @@ Next we want to exclude everything that is too small or too large, as they tend 
 
 This gives a detection image of:
 
-
 .. image:: tut_1_Detection_filters.png
   :width: 300
   :alt: Detection Filters
@@ -281,17 +280,9 @@ As neither of these cases are relevant here, we can set *Detect additional backg
 
 The next stage of analysis expands each detected region to make sure that all of the fluorescence from each particle is completely confined within the detected region. 
 
-The area further surrounding the detected region is then used to estimate the background fluorescence surrounding the corresponding detected particle to be subtracted off to obtain the particles signal. Using the local background surrounding each spot, as opposed to one global background value for all particles, compensates for any unevenness in the illumination profile in the image or differences in focus of the field of view. 
+The area further surrounding the detected region is then used to estimate the background fluorescence surrounding the corresponding detected particle to be subtracted off to obtain the particles signal. Using the local background surrounding each spot, as opposed to one global background value for all particles, compensates for any unevenness in the illumination profile in the image or differences in focus of the field of view. The background area will excludes all other expanded detected regions as well as detected regions that was excluded by the filters. This is useful as it means that any bright spots in the background noise will not skew the background reading. 
 
-There are three parameters for this section:
-
-foregroundDist - the pixel distance that the detected region of interest is to be expanded to ensure that it contains all of the fluorescence for that spot.
-
-backInnerDist - the distance to expand from the detected region before the inner edge of the background region. Note that if this variable is set to less than foregroundDist , it will automatically be set equal to foregroundDist , i.e. the background starts from the edge of the expanded detected region.
-
-backOuterDist - the distance to expand the detected region to reach the edge of the background region
-
-Setting these values to:
+The typical values used are:
 
 **foregroundDist** = 4.1; 
 
@@ -299,52 +290,77 @@ Setting these values to:
 
 **backOuterDist** = 20;
 
-Gives:
+Details of these parameters can be found `here<https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/begin_here_generate_traces.html#expand-regions>`_.
 
+Running this section gives:
 
-Here the detection image is shown in red, the expanded detect regions are in green and the background regions are shown in blue. The combination of red and green gives yellow, showing that the fluorescence for each particle is well contained within each green region.
+.. image:: tut_1_Expanded.png
+  :width: 300
+  :alt: Exanded Regions
 
-The background area will excludes all other expanded detected regions as well as detected regions that was excluded by the filters. This is useful as it means that any bright spots in the background noise will not skew the background reading. 
+*Expanded shapes for each region. The detection image is shown in red, the expanded detect regions are in green and the background regions are shown in blue. The combination of red and green gives yellow, showing that the fluorescence for each particle is well contained within each green region.*
 
+These default values work for the vast majority of cases. The key points to check in the output image is that all of the flourescence (yellow) is contained in the green areas, and that the background area is sufficient that there is a reasonable blue area for every particle. The only times this is likely to not be the case is if you have a mix of very bright and dim particles, if the microscope has a pixel size much bigger, or smaller, then Nyquist sampling, or if the sample is really crowded.
 
 8) Calculate Traces
 ===================
 The final step of generating traces outputs a table of the intensity of each particle over time. Drift is accounted for over the entire image stack and background noise is subtracted from the intensity of each detected region. Each detected region is considered to be a particle and the intensity, measured in arbitrary units, of that particle is tracked over time, measured in frames. 
-Running this section creates the file Channel_1_Flourescent_Intensities.csv in the Jim_Test_Array_Example folder. Opening this in microsoft excel (or similar) will show a table like this:
+Running this section creates the file Channel_1_Flourescent_Intensities.csv in the analysis folder. Opening this in microsoft excel (or similar) will show a table like this:
 
-In this data, each row corresponds to individual analysed particles where each column holds the intensity value for each frame. Plotting a single row will show the trace for that particle. For example plotting the 100th line gives the plot:
+.. image:: tut_1_Excel_Traces.png
+  :width: 600
+  :alt: Traces Opened In Excel
 
 
+In this data, each row corresponds to individual analysed particles where each column holds the intensity value for each frame. Plotting a single row will show the trace for that particle. For example plotting the 50th line gives the plot:
 
-Where we can see by eye that this particle had an intensity of around 3500 and disappears in the 41st frame. 
+Where we can see by eye that this particle had an intensity of around 2500 and disappears in the 35st frame.
+
+.. image:: tut_1_Excel_Traces_Plot.png
+  :width: 300
+  :alt: Traces Opened In Excel
+ 
 
 Setting verboseOutput = true creates an additional output (Channel_1_Verbose_Traces.csv in the analysis folder) which gives statistics for each intensity such as position of particle, minimum, maximum, mean and median intensities for background and foreground etc.  Full details of this file can be found in the Calculate_Traces.exe program documentation. This can be helpful for troubleshooting but for the most part is not needed and can become a very large file if the image stack has a lot of frames and a lot of regions of interest. Therefore, it is recommended to keep  verboseOutput = false. 
 
-Running this section also saves all the variables that have been used to generate these traces. The file is called Trace_Generation_Variables.csv and is located in the Jim_Test_Array_Example folder. It should look like:
+Running this section also saves all the variables that have been used to generate these traces. The file is called Trace_Generation_Variables.csv and is located in the analysis folder. This file can be used to reload the same parameters back into this program in the future. 
 
 9) View Traces
 ==============
 
 Running the next section will display two figures. The first is an image showing the particle number for each detected region. This makes it easy to connect which trace corresponds to which particle. For reference, this image is called Detected_Filtered_Region_Numbers.tiff in the results folder and was actually generated by the detect particles section. It should look like this:
 
+.. image:: tut_1_Positions_Image.png
+  :width: 300
+  :alt: Position Numbers
+
+
 The second figure should display a page of traces where the particle intensity is plotted against the frame number. The variable pageNumber dictates which page of results are displayed. For example, setting this variable to pageNumber = 1 will print traces 1 to 36, 
 The figure may look different when JIM is run across different program but the underlying plots should look similar to:
 
+.. image:: tut_1_Traces_Page_1.png
+  :width: 300
+  :alt: Traces Page 1
+
 Looking at the particle number image, we see that this first page is displaying particles from the top of the image where particles are extremely dim. This is reflected by these traces being incredibly noisy. 
 
-As this is artificial data, we know what the theoretical intensity for each spot is. For convenience, in the generating this example, we made the intensity proportional to the y position so that we can just apply a conversion factor. To calculate the theoretical intensity of each point multiply the Y position by 20. For example, Particle 33  (the bottom row, third column of the table) has a y position of 97 and so should have an intensity of 97*20=1940.
+As this is artificial data, we know what the theoretical intensity for each spot is. For convenience, in the generating this example, we made the intensity proportional to the y position so that we can just apply a conversion factor. To calculate the theoretical intensity of each point multiply the Y position by 20. For example, Particle 33  (the bottom row, third column of the table) has a y position of 80 and so should have an intensity of 80x20=1600.
 
-To work out the theoretical disappearing time of each point divide the x by 5 then round it to the nearest divisor of four. For example particle 33 has an x position of 55 so 55/5 = 11 which would then round to 12. 
+To work out the theoretical disappearing time of each point divide the x by 4 then round it to the nearest divisor of 5. For example particle 33 has an x position of 58 so 58/4 = 14.5 which would then round to 15. 
 
 In reality, it is going to be near impossible to step fit the top three rows of traces - the signal to noise is simply too low. However, most of the bottom three lines are borderline possible to step fit.
 
-Changing the page number shows that as you move down the image, the signal to noise of traces increases as expected. For example, page three looks like:
+Changing the page number shows that as you move down the image, the signal to noise of traces increases as expected. For example, page two looks like:
 
-he difference between frames where particles are present versus absent in these traces are more pronounced. Looking at the particle number image we see that these are particles just below the centre crosshair. Most of these traces can be reasonably step fit. 
+.. image:: tut_1_Traces_Page_2.png
+  :width: 300
+  :alt: Traces Page 2
+
+The difference between frames where particles are present versus absent in these traces are more pronounced. Most of these traces can be reasonably step fit. 
 
 Moving through the pages (by increasing the pageNumber variable), we see that as we move down the image steps become more and more pronounced.
 
-JIM measures the integrated fluorescence intensity over the foreground region. For diffraction limited spots, like this example, it is sometimes helpful to convert these values to the peak amplitude of the best fit gaussian. To do this, you need to know the standard deviation of the best fit Gaussian (set by the microscope design). Conversion is then a simple case of dividing the integrated intensity by 2πσ2. In this example, the standard deviation of each gaussian is (10/π)0.5 giving a conversion factor of 20. (how convenient…) So a particle with an intensity of 2000 would have an amplitude of 100.
+JIM measures the integrated fluorescence intensity over the foreground region. For diffraction limited spots, like this example, it is sometimes helpful to convert these values to the peak amplitude of the best fit gaussian. To do this, you need to know the standard deviation of the best fit Gaussian (set by the microscope design). Conversion is then a simple case of dividing the integrated intensity by 2π σ^2. In this example, the standard deviation of each gaussian is (10/π)^0.5 giving a conversion factor of 20. (how convenient…) So a particle with an intensity of 2000 would have an amplitude of 100.
 
 Congratulations! You’ve completed your first tutorial. Generating traces is the first step in almost all quantification protocols (except kymograph analysis which is another tutorial for another day…). Once you have traces, you can then manipulate them how you please to extract whatever information you desire.
 
@@ -356,7 +372,7 @@ Final Parameters
 ===================
 The final parameters used for this tutorial are:
 
-.. csv-table:: Table Title
-   :file: 
+.. csv-table:: Final Tutorial 1 Parameters
+   :file: Tutorial_1_Final_Parameters.csv
    :widths: 30, 70
    :header-rows: 1
