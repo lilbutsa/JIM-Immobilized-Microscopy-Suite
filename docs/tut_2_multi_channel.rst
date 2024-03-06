@@ -37,9 +37,13 @@ The final parameters for this tutorial are also in a table `here <https://jim-im
 
 Running this section will open a window asking you to select the image file to analyse. Select the file *Tutorial_2_MultiChannel_Multishape.tif* is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the main JIM folder.
 
-There is no ".ome" on the end of the tif file so we can set **Additional Extensions to Remove** to 0.
+There is no ".ome" on the end of the tif file so we can set 
 
-The data is all contained in a single file so we can set **Multiple Files Per Image Stack** to false;
+**Additional Extensions to Remove** = 0.
+
+The data is all contained in a single file so we can set 
+
+**Multiple Files Per Image Stack** = false;
 
 This section also automatically finds the Jim_Programs folder by assuming that the Generate_Multi_Channel_Traces file is in the Jim distribution file. If you want to move the Generate_Multi_Channel_Traces file to another location, you will need to manually change the JIM variable to the pathname for the Jim_Programs folder.
 
