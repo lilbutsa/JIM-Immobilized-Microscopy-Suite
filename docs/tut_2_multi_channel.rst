@@ -2,15 +2,24 @@
 Tutorial 2 - Generating Multi-Channel Traces
 ********************************************
 
-Some experiments may involve the acquisition of two or more colours to generate a multi-dimensional image stack containing multiple coloured channels. 
-Furthermore, the particles that you are interested to analyse are not necessarily regular in shape as shown in previous examples. 
+Some experiments may involve the acquisition of two or more fluorophores to generate a multi-dimensional image stack containing multiple coloured channels. 
+Furthermore, the particles that you are interested to analyse are not necessarily regular in shape as shown in previous examples.
+ 
 JIM provides the ability to analyse multi-channel images with functions to detect and select particles with arbitrary shapes for subsequent analysis. 
 The following is an artificially generated example designed to introduce new users to the abilities of JIM to generate traces from multi-channel data containing arbitrarily shaped objects. 
-The artificial multi-channel image below contains the following shapes: diffraction spots with increasing distance in between, round particles with varying diameters, lines with varying length 
-and thickness, and a T shaped object with length increasing on one side. 
+The artificial multi-channel image below contains the following shapes: diffraction spots pairs with increasing distance in between them, round particles with varying diameters, lines with varying length 
+and thickness, and a T shaped object with length increasing on the stem.
 
-The file Jim_2_Channel_Example.tif is located in the Example_Data folder of the JIM distribution. Users are strongly encouraged to open this file with a program like ImageJ to get a feel for what the data looks like. The file contains two channels both containing the array of shapes displayed above with 30 images in each channel. The array in Channel 1 starts off bright then becomes dim. Channel 2 starts off dim then gradually becomes bright. Channel 2 has an offset of 5 pixels in both x and y respective to Channel 1 plus a rotation of 0.05 radians to simulate slight misalignment between cameras in a real-life multi-camera system. The two channels have a directional drift downward at a rate of 1 pixel a frame and have a large jump at the 16th frame to simulate a stage drift over time which could happen during long imaging sessions. Through this tutorial, we will learn how JIM can deal with all of these challenges.
-Below we show Channel 1 on top and Channel 2 on the bottom to give a visual idea of what the data looks like. However, it is far more informative to open the data in ImageJ.
+The file *Tutorial_2_MultiChannel_Multishape.tif* is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the JIM distribution. Users are strongly encouraged to open this file with a program like ImageJ to get a feel for what the data looks like. The file contains three channels all containing the array of shapes displayed above with 30 images in each channel. The array in Channel 1 starts off bright then becomes dim, Channel 2 starts off dim then gradually becomes bright and Channel 3 starts bright, dims in the middle then brightens again. 
+
+Channel 2 is horizontallty fillped and has an offset of 5 pixels in both x and y respective to Channel 1 plus a rotation of 0.05 radians to simulate slight misalignment between cameras in a real-life multi-camera system. Similiarly, Channel 3 is rotated approximately 180 degrees and slightly misaligned.
+
+All channels have a directional drift downward at a rate of 1 pixel a frame and have a large jump at the 16th frame to simulate a stage drift over time which could happen during long imaging sessions. Through this tutorial, we will learn how JIM can deal with all of these challenges.
+Below we a montage of the dataset to give a visual idea of what the data looks like. However, it is far more informative to open the data in ImageJ.
+
+.. image:: Tut_2_montage.png
+  :width: 600
+  :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif
 
 In the Example_Data folder there is a Mathematica file called Jim_2_Channel_Example_Generator.nb  which was used to make this example. It is included in case a user wants to modify any aspect of the example data.
 
@@ -19,45 +28,63 @@ In the Example_Data folder there is a Mathematica file called Jim_2_Channel_Exam
 
 Often there will be standard parameters that a user would like to start from for analysing a type of data. Importing parameters gives the user a way to load those parameters.
 
-The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\\2_Multi_Channel_Multi_Shape\\Tutorial_1_Final_Parameters.csv*
+The parameters used for this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\\2_Multi_Channel_Multi_Shape\\Tutorial_2_Final_Parameters.csv*
 
-The final parameters for this tutorial are also in a table `here <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/tut_1_single_channel.html#final-parameters>`_
+The final parameters for this tutorial are also in a table `here <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/tut_2_multi_channel.html#final-parameters>`_
 
 1) Select Input File
 ====================
 
-Running this section will open a window asking you to select the image file to analyse. Select the file Jim_2_Channel_Example.tif which is located in the Example_Data\Tutorial_2_Jim_2_Channel_Examplefolder of the main JIM folder.
-
-This section also automatically finds the Jim_Programs folder by assuming that the Generate_Multi_Channel_Traces file is in the Jim distribution file. If you want to move the Generate_Multi_Channel_Traces file to another location, you will need to manually change the JIM variable to the pathname for the Jim_Programs folder.
-
-Running this section will create a folder using the tiff image stack as the filename within the folder in which the image is located. All analysis files will be stored in this newly created folder. In our example, a folder called Jim_Test_Array_Example will be created in the Jim_2_Channel_Example folder.
-
-
-Running this section should open a file selection window. Select the file *Tutorial_1_Jim_Test_Array.tif* which is located in the *Examples_To_Run\\1b_Point_Array_With_Noise folder\\* of the JIM distribution.
+Running this section will open a window asking you to select the image file to analyse. Select the file *Tutorial_2_MultiChannel_Multishape.tif* is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the main JIM folder.
 
 There is no ".ome" on the end of the tif file so we can set **Additional Extensions to Remove** to 0.
 
 The data is all contained in a single file so we can set **Multiple Files Per Image Stack** to false;
 
-Running this section will create a folder in the same as the tiff stack with the same name as the tiff stack that the results of all analysis will be saved in. In this case a file called *Tutorial_1_Jim_Test_Array* will be created in the *Examples_To_Run\\1_Jim_Test_Array\\* folder.
+This section also automatically finds the Jim_Programs folder by assuming that the Generate_Multi_Channel_Traces file is in the Jim distribution file. If you want to move the Generate_Multi_Channel_Traces file to another location, you will need to manually change the JIM variable to the pathname for the Jim_Programs folder.
+
+Running this section will create a folder using the tiff image stack as the filename within the folder in which the image is located. All analysis files will be stored in this newly created folder. In our example, a folder called *Tutorial_2_MultiChannel_Multishape* will be created in the *2_MultiChannel_And_Shapes* folder.
 
 Note that if you are rerunning this analysis, this section may give you a warning that the directory already exists. This is not a problem, you can just ignore it.
+
 
 2) Organise Channels
 ====================
 
-This section splits a multi-channel tiff stack into individual files for each channel to make it easier for downstream processing.
-
-The program is able to read micromanager (https://micro-manager.org/) metadata files to ensure images stacks are split correctly even if they are not saved in order. To do this set useMetadataFile = true. 
-
-If you have used different acquisition software or simulated data like ours, set 
-useMetadataFile = false. 
-If a metadata file is not used, this program assumes that images are saved in alternating order. For example, in a two channel imagestack, the first image will correspond to frame 1 from channel 1 then the second image will be frame 1 from channel 2 followed by frame 2 from channel 1 etc. As a result, it is important to make sure that files are saved in the correct order or they will not split correctly.
+This section splits and orientates a multi-channel tiff stack into individual files for each channel to make it easier for downstream processing.
 
 Set numberOfChannels equal to the number of channels that you have in your file. In this case:
-numberOfChannels = 2 
 
-Running this section should create two files in the Jim_2_Channel_Example folder - Images_Channel_1.tiff and Images_Channel_2.tiff. 
+**numberOfChannels** = 3
+
+We know it is in order so we can **Disable Metadata**. We want to use the entire dataset (keeping in mind that negative numbers go from the end of the stack), so we set: 
+
+**Stack Start Frame** = 1
+
+**Stack End Frame** = -1
+
+Next, we know that Channel 2 has been horizontally flipped and Channel 3 has been rotated by 180 degrees so we can reorientate both of these channels. Do do this, we set channels 2 and 3 to be transformed:
+
+**Channels to transform** = 2 3
+
+We don't wan't to vertical flip either of these two channels:
+
+**Vertical Flip** = 0 0
+
+We want to horizontally flip Channel 2 but not 3:
+
+**Horizontal Flip** = 1 0
+
+and we want to Rotate Channel 3 by 180 degrees and leave Channel 2 alone:
+
+**Rotate** = 0 180
+
+After running this section, three tiff stacks should be created in the analysis folder,Raw_Image_Stack_Channel_1, 2 and 3, corresponding to the three channels, which should be correctly orientated, although not precisely aligned: 
+
+.. image:: tut_2_Montage_Transformed.png
+  :width: 600
+  :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif after Transformation
+
 
 
 3) Align/Drift Correct
