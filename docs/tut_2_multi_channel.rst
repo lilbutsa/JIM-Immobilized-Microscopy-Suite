@@ -17,7 +17,7 @@ Channel 2 is horizontallty fillped and has an offset of 5 pixels in both x and y
 All channels have a directional drift downward at a rate of 1 pixel a frame and have a large jump at the 16th frame to simulate a stage drift over time which could happen during long imaging sessions. Through this tutorial, we will learn how JIM can deal with all of these challenges.
 Below we a montage of the dataset to give a visual idea of what the data looks like. However, it is far more informative to open the data in ImageJ.
 
-.. image:: Tut_2_montage.png
+.. image:: tut_2_montage.png
   :width: 600
   :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif
 
