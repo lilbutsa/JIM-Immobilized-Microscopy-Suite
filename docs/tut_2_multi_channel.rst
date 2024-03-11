@@ -2,17 +2,15 @@
 Tutorial 2 - Generating Multi-Channel Traces
 ********************************************
 
-Some experiments may involve the acquisition of two or more fluorophores to generate a multi-dimensional image stack containing multiple coloured channels. 
-Furthermore, the particles that you are interested to analyse are not necessarily regular in shape as shown in previous examples.
- 
+Particles of interest are not always regular diffraction limited spots like in the previous example.
+Some experiments involve the acquisition of two or more fluorophores to generate a multi-dimensional image stack containing multiple coloured channels. 
 JIM provides the ability to analyse multi-channel images with functions to detect and select particles with arbitrary shapes for subsequent analysis. 
-The following is an artificially generated example designed to introduce new users to the abilities of JIM to generate traces from multi-channel data containing arbitrarily shaped objects. 
+
+This tutorial analyses an artificially generated example designed to introduce new users to the abilities of JIM to generate traces from multi-channel data containing arbitrarily shaped objects. 
 The artificial multi-channel image below contains the following shapes: diffraction spots pairs with increasing distance in between them, round particles with varying diameters, lines with varying length 
-and thickness, and a T shaped object with length increasing on the stem.
+and thickness, and a T shaped object with length increasing on the stem. 
 
-The file *Tutorial_2_MultiChannel_Multishape.tif* is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the JIM distribution. Users are strongly encouraged to open this file with a program like ImageJ to get a feel for what the data looks like. The file contains three channels all containing the array of shapes displayed above with 30 images in each channel. The array in Channel 1 starts off bright then becomes dim, Channel 2 starts off dim then gradually becomes bright and Channel 3 starts bright, dims in the middle then brightens again. 
-
-Channel 2 is horizontallty fillped and has an offset of 5 pixels in both x and y respective to Channel 1 plus a rotation of 0.05 radians to simulate slight misalignment between cameras in a real-life multi-camera system. Similiarly, Channel 3 is rotated approximately 180 degrees and slightly misaligned.
+The data also contains three channels: The array in Channel 1 starts off bright then becomes dim, Channel 2 starts off dim then gradually becomes bright and Channel 3 starts bright, dims in the middle then brightens again. Channel 2 is horizontallty flipped and has an offset of 5 pixels in both x and y respective to Channel 1 plus a rotation of 0.05 radians to simulate slight misalignment between cameras in a real-life multi-camera system. Similiarly, Channel 3 is rotated approximately 180 degrees and slightly misaligned.
 
 All channels have a directional drift downward at a rate of 1 pixel a frame and have a large jump at the 16th frame to simulate a stage drift over time which could happen during long imaging sessions. Through this tutorial, we will learn how JIM can deal with all of these challenges.
 Below we a montage of the dataset to give a visual idea of what the data looks like. However, it is far more informative to open the data in ImageJ.
@@ -20,6 +18,8 @@ Below we a montage of the dataset to give a visual idea of what the data looks l
 .. image:: tut_2_Montage.png
   :width: 600
   :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif
+
+The file *Tutorial_2_MultiChannel_Multishape.tif* is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the JIM distribution. Users are strongly encouraged to open this file with a program like ImageJ to get a feel for what the data looks like. The file contains three channels all containing the array of shapes displayed above with 30 images in each channel. 
 
 In the Example_Data folder there is a Mathematica file called Jim_2_Channel_Example_Generator.nb  which was used to make this example. It is included in case a user wants to modify any aspect of the example data.
 
