@@ -21,7 +21,7 @@ Below we a montage of the dataset to give a visual idea of what the data looks l
 
 The file *Tutorial_2_MultiChannel_Multishape.tif* is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the JIM distribution. Users are strongly encouraged to open this file with a program like ImageJ to get a feel for what the data looks like. The file contains three channels all containing the array of shapes displayed above with 30 images in each channel. 
 
-In the Example_Data folder there is a Mathematica file called Jim_2_Channel_Example_Generator.nb  which was used to make this example. It is included in case a user wants to modify any aspect of the example data.
+In the data folder there is a Mathematica file called *Jim_2_Channel_Example_Generator.nb* which was used to make this example in case the user wants to modify any aspect of the example data.
 
 0) Import Parameters
 ====================
@@ -94,78 +94,99 @@ After running this section, three tiff stacks should be created in the analysis 
 3) Align/Drift Correct
 ======================
 
-The Channel alignment module consists of two parts The first part involves three parameters (iterations, alignStartFrame and alignEndFrame) that control the drift correction for the program, while the last five (manualAlignment, rotationAngle, scalingFactor, xoffset and yoffset) allow the user to manually input the alignment settings between channels if known.
+The Channel alignment module consists of two parts: Drift correction and Channel Alignment.
 
-To begin the tutorial, we will assume that the alignment between channels is not known. To determine the best alignment parameters using JIM, we set
+Drift correction works by first creating a mean (mean projection) from a selection of image from the image stack defined from alignStartFrame to alignEndFrame, before individually aligning every frame to that mean. It is important to select a part of the image stack where the signal is observed in all channels simultaneously. In this example, we can choose any frame from the middle of the image stack, (i.e both channels are reasonably bright) so that the alignment runs successfully. For example, setting:
 
-manualAlignment = false
+**iterations** = 1
+**alignStartFrame** = 14
+**alignEndFrame** = 14
+**MaxShift** = 30
 
-The values of the other four alignment parameters are ignored when manualAlignment is set to false.
+For this tutorial, we will assume that the alignment between channels is not known. There are two parameters that can help with calculating between channels, although neithr are relevent here. *Alignment Max Int.* is used to ignore overly bright particles like aggregates. This is not the case here so we set this to large values for all channels by setting:
 
-The drift correction parameters (iterations, alignStartFrame and alignEndFrame) are analogous to their function in the Drift Correction section of the Generate_Single_Channel_Traces program from Tutorial 1. It is strongly recommended to try Tutorial 1 before attempting this section.
+**Alignment Max Int.**= 65000 65000 65000
 
-Drift correction works by first creating a mean (mean projection)  from a selection of image from the image stack defined from alignStartFrame to alignEndFrame, before individually aligning every frame to that mean. This alignment can then be run iteratively where the mean aligned image can be used for the next round of alignments. This can be useful if the initial alignment image is noisy. Setting iterations = 1 is sufficient for most cases if there is strong signal and minimal drift in the data.
+Note that we need to include one value for each channel.
 
-It is important to select a part of the image stack where the strongest signal is observed in both channels simultaneously to aid with alignment. In Jim_2_Channel_Example.tif , we can choose any frame from the middle of the image stack, (i.e both channels are reasonably bright) so that the alignment runs successfully. For example, setting:
+The parameter *Alignment SNR detection Cutoff* causes the program to throw an error if the quality of alignment (calculated by corss correlation) falls below this cutoff. This is mostly useful for batch processing where this will stop the analysis if the alignment isn't found. In general leaving this value at the defualt is fine:
 
-iterations = 1;
-alignStartFrame = 14;
-alignEndFrame = 14;
+**Alignment SNR detection Cutoff** = 0.2
 
-Will give an initial alignment image of:
+To calculate the best alignment parameters using JIM we also need to set
 
-Channel 1 is shown in Green and Channel 2 is shown in Red. This is an ample signal for both channels to align. The final alignment generated is:
+**manualAlignment** = false
 
+The values of the other four manual alignment parameters are ignored when manualAlignment is set to false.
 
-We can see this by outputting the aligned stacks:
+Running this section will give an initial and final alignment image of:
+
+.. image:: tut_2_Before_After_Drift_Correction.png
+  :width: 600
+  :alt: Tutorial_2_MultiChannel_Multishape.tif before and after alignment
+
+*Before and after drift correction and channel alignment of the dataset. Channel 1 is shown in Red, Channel 2 is shown in Green and Channel 3 is blue.*
+
+We can also see the result of alignment by enabling the outputting the aligned stacks and viewing the resulting files:
 
 .. image:: tut_2_Montage_Aligned.png
   :width: 600
-  :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif after Transformation
+  :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif after Alignment
+
+*Montage of the aligned image stacks (Alignment_Channel_1_Aligned_Stack.tiff,Alignment_Channel_2_Aligned_Stack.tiff and Alignment_Channel_3_Aligned_Stack.tiff).*
 
 
-(Alignment_Channel_1_Aligned_Stack.tiff,Alignment_Channel_2_Aligned_Stack.tiff and Alignment_Channel_3_Aligned_Stack.tiff)
+(Optional) Calculating the Accuracy of Drift Correction
+-------------------------------------------------------
 
-With channel alignment parameters of 
-max angle =  -2.94 
-max scale = 1.0045  
-x offset = -4.5 
-y offset = -5.7 
-versus the actual values used to generate the simulated data: 
-max angle =-2.87 
-max scale = 1  
-x offset = -5 
-y offset = -5.
+Just as in Tutorial 1, this example is artificial data so we can calculate the accuracy of drift correction, however, in this example we can also look at the accuracy of the channel to channel alignment.
 
-The slight error in alignment can be seen in the red and green burrs around the edge of some shapes. This is especially noticeable on the diffracted spot on the top left corner of the image. Below is the particle zoomed in:
+The alignment between channels can be found in the file *Alignment_Channel_To_Channel_Alignment.csv* in the analysis folder:
 
+.. image:: tut_2_Channel_to_channel_excel.png
+  :width: 600
+  :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif after Alignment
 
-In reality, an error this small has no effect on the end traces as the slight misalignment between channels will be engulfed by expanding the foreground region during the masking process.  
+In comparison the actual values are:
 
+.. list-table:: Actual Alignment Values
+   :widths: 25 25 25 25 25
+   :header-rows: 1
 
-
-For reference, We can see perfect channel alignment looks by manually inputting the channel alignment. To do this set:
-iterations = 1;
-alignStartFrame = 15;
-alignEndFrame = 15;
-manualAlignment = true; 
-rotationAngle = -2.86;
-scalingFactor = 1;
-xoffset = -5;
-yoffset = -5;
-
-Which has an initial mean of:
-
-
-And a final alignment of:
+   * - Channel Number
+     - Angle
+     - Scale
+     - X Offset
+     - Y Offset
+   * - 2
+     - -2
+     - 1
+     - -5
+     - -5
+   * - 2
+     - 2
+     - 1
+     - -5
+     - -5
 
 
-If we had input the results of JIM’s automatic alignment (max angle = -2.94 max scale = 1.0045 x offset = -4.5 y offset = -5.7) and set manual alignment to true we would have got back to the same slight misalignment between channels observed with the automatic alignment.
-Note that with manual alignment the initial alignment image is not gaussian blurred. This is not important but worth mentioning in case something seemed askew.
-Troubleshooting Alignment issues
-Running the image alignment script should have created a number of image files in the analysis folder which can be used for debugging problems with the alignment program. Files generated by the alignment program can be identified by the prefix Aligned:
- 
-Shown above is an image of the analysis folder with the 10 files generated by the alignment program highlighted.
+The calculations can be done using the file Jim_2_Channel_Example.xls which is in the Tutorial_2_Jim_2_Channel_Example folder. Replace first two columns of the Jim_2_Channel_Example.xls with the measured drifts from the Aligned_Drifts.csv file in the Jim_2_Channel_Example. This allows users to quantify the error in drift alignment. For example, running parameters:
+
+iterations = 1; 
+alignStartFrame = 15; 
+alignEndFrame = 15; 
+manualAlignment = false;
+
+And copying the measured drifts gives:
+
+From this we see that the average error is 0.13 pixels in each direction, which is much more accurate than we need for downstream processing. 
+For the rest of this analysis we will use the output from running the drift correction section with:
+iterations = 1; 
+alignStartFrame = 15; 
+alignEndFrame = 15; 
+manualAlignment = false;
+
+REMINDER: it is necessary to rerun this section with these settings to ensure that these values are used forfollow subsequent parts of this tutorial for consistency.
 
 
 (Optional) Potential pitfalls of Channel Alignment
@@ -239,26 +260,7 @@ Notice that there is a duplicate of each particle diagonally from each other. Th
 The detected image transform will ultimately only be correct for one of the particle sets (which is yellow) while the other set is misaligned, appearing as red and green colours.
 We recommend looking at the raw image to identify jump and avoid choosing an initial mean region where a jump occurs to avoid this misalignment problem. In principle, one frame may be chosen for alignment if the signal is strong enough. 
 
-(Optional) Calculating the Accuracy of Drift Correction
--------------------------------------------------------
 
-Just as in Tutorial 1, this example is artificial data so we can calculate the accuracy of drift correction. The calculations can be done using the file Jim_2_Channel_Example.xls which is in the Tutorial_2_Jim_2_Channel_Example folder. Replace first two columns of the Jim_2_Channel_Example.xls with the measured drifts from the Aligned_Drifts.csv file in the Jim_2_Channel_Example. This allows users to quantify the error in drift alignment. For example, running parameters:
-
-iterations = 1; 
-alignStartFrame = 15; 
-alignEndFrame = 15; 
-manualAlignment = false;
-
-And copying the measured drifts gives:
-
-From this we see that the average error is 0.13 pixels in each direction, which is much more accurate than we need for downstream processing. 
-For the rest of this analysis we will use the output from running the drift correction section with:
-iterations = 1; 
-alignStartFrame = 15; 
-alignEndFrame = 15; 
-manualAlignment = false;
-
-REMINDER: it is necessary to rerun this section with these settings to ensure that these values are used forfollow subsequent parts of this tutorial for consistency.
 
 
 4) Make Sub-Average
