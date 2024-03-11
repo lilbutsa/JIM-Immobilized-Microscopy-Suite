@@ -145,7 +145,7 @@ The alignment between channels can be found in the file *Alignment_Channel_To_Ch
 
 .. image:: tut_2_Channel_to_channel_excel.png
   :width: 600
-  :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif after Alignment
+  :alt: Channel to Channel alignment Values
 
 In comparison the actual values are:
 
@@ -169,44 +169,34 @@ In comparison the actual values are:
      - -5
      - -5
 
+Comparing these values, we see that all values are within half a pixel. Regions of interest for traces are measured to the nearest pixel, so an alignment of this quality is sufficient.
 
-The calculations can be done using the file Jim_2_Channel_Example.xls which is in the Tutorial_2_Jim_2_Channel_Example folder. Replace first two columns of the Jim_2_Channel_Example.xls with the measured drifts from the Aligned_Drifts.csv file in the Jim_2_Channel_Example. This allows users to quantify the error in drift alignment. For example, running parameters:
+To calculate the accuracy of the drift correction, drifts from the file *Alignment_Channel_1.csv* in the analysis folder need to be copied into the first two columns of the file *2_Drift_Accuracy_Calculator.xls* in the data file.
+This should then give:
 
-iterations = 1; 
-alignStartFrame = 15; 
-alignEndFrame = 15; 
-manualAlignment = false;
+.. image:: Tut_2_Drift_Accuracy.PNG
+  :width: 600
+  :alt: Drift Accuracy calculations
 
-And copying the measured drifts gives:
-
-From this we see that the average error is 0.13 pixels in each direction, which is much more accurate than we need for downstream processing. 
-For the rest of this analysis we will use the output from running the drift correction section with:
-iterations = 1; 
-alignStartFrame = 15; 
-alignEndFrame = 15; 
-manualAlignment = false;
-
-REMINDER: it is necessary to rerun this section with these settings to ensure that these values are used forfollow subsequent parts of this tutorial for consistency.
+Calculating the drift in this data is much easier than the first tutorial as the signal to noise in the data is much better. The quality of drift correction is reflected in this with an average error of 0.02 pixels, which is ample for downstream analysis.
 
 
 (Optional) Potential pitfalls of Channel Alignment
 --------------------------------------------------
 
-Under the hood the alignment program can be broken up into five parts:
+*Insufficient Signal in all channels for alignment*
 
-An initial mean is created for each channel by taking the mean from a selected subset of the image stack where there are detectable signal in both channels. This generates the initial partial mean - so called because it is before the two channels are aligned and only uses part of the image stack. There is a separate image for each channel.
-All of the images for each channel are aligned to their respective partial mean image. This results in the initial full mean for each channel (because it is generated using the full image stack)
-The transformation between the two aligned stacks is calculated by finding the best alignment between the initial full mean images.
-A second partial mean is calculated by applying the alignment transformation to the same selected subset of the image stack from Section 1. This generates the aligned partial mean for each channel. It is partial because it only uses the selected substack and it is aligned because the images have been transformed to overlay.
-For each frame, all channels are combined using the alignmentment transform and drift corrected to the aligned partial mean. This gives rise to the aligned full mean for each channel which should all be free of drift and overlay on top of each other.
-In the case where the user already knows the alignment between channels (for example in batch processing after this code has been run on an example image stack), the program jumps straight to step 4. In cases where alignment is failing it is helpful to use these images  to understand where things have gone wrong.
-Common Causes of Alignment Problems
-Insufficient Signal in both channels for alignment
-If we try to use the first frame in the image as the initial mean we will run into problems asthee frame of channel 2 is  essentially just noise. To see this, set:
-iterations = 1 
-alignStartFrame = 1 
-alignEndFrame = 1
-manualAlignment = false; 
+If we try to use the first frame in the image as the initial mean we will run into problems as the image in Channel 2 is just noise. To see this, set:
+
+**iterations** = 1
+**alignStartFrame** = 1
+**alignEndFrame** = 1
+**MaxShift** = 30
+
+**Alignment SNR detection Cutoff** = -1
+
+**manualAlignment** = false;
+ 
 Which gives an initial alignment image of 
 
 
@@ -259,8 +249,6 @@ Notice that there is a duplicate of each particle diagonally from each other. Th
 
 The detected image transform will ultimately only be correct for one of the particle sets (which is yellow) while the other set is misaligned, appearing as red and green colours.
 We recommend looking at the raw image to identify jump and avoid choosing an initial mean region where a jump occurs to avoid this misalignment problem. In principle, one frame may be chosen for alignment if the signal is strong enough. 
-
-
 
 
 4) Make Sub-Average

@@ -123,15 +123,15 @@ This dataset is artificially generated, so the measured drift values can be comp
 
 Ensure that this excel file is closed before you rerun the alignment program otherwise the Drift Correction program will not save the drift values using the new alignment parameters. 
 
-In this file each row corresponds to the drift measured in each frame for the x and y direction. To compare this to the actual drift of the image stack, there is an excel file in the data folder called *Jim_Test_Array_Example_drifts.xls*. Pasting the measured drifts into the first two columns of this file will calculate the error in drift alignment:
+In this file each row corresponds to the drift measured in each frame for the x and y direction. To compare this to the actual drift of the image stack, there is an excel file in the data folder called *1_Drift_Accuracy_Calculator.xls*. Pasting the measured drifts into the first two columns of this file will calculate the error in drift alignment:
 
 .. image:: Tut_1_Drift_Accuracy.PNG
   :width: 600
   :alt: Drift Correction Accuracy
 
-*The drift correction accuracy excel sheet (Jim_Test_Array_Example_drifts.xls) which compares the calculated drifts the exact values.*
+*The drift correction accuracy excel sheet (1_Drift_Accuracy_Calculator.xls) which compares the calculated drifts the exact values.*
 
-Overall this shows that the average error in drift is 0.15 pixels for a single iteration. Regions or interest for traces are measured to the nearest pixel, so any drift correction to below half a pixel will result in optimal traces.
+Overall this shows that the average error in drift is 0.15 pixels for a single iteration and all positions are within a pixel. Regions of interest for traces are measured to the nearest pixel, so this drift correction will result in optimal traces.
 
 Play around, try different settings and see how the accuracy of drift correction changes. Just remember that rerunning this section with the original settings is necessary to ensure that these values are used so subsequent parts of this tutorial can be followed. 
 
