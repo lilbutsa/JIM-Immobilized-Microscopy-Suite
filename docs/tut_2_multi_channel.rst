@@ -407,7 +407,7 @@ Details of these parameters can be found `here<https://jim-immobilized-microscop
 
 Running this section gives:
 
-.. image:: tut_1_Expanded.png
+.. image:: tut_2_Expanded.PNG
   :width: 300
   :alt: Exanded Regions
 
@@ -428,31 +428,48 @@ Each row in Channel_1_Flourescent_Intensities.csv corresponds to the same partic
 
 If we want information about any particle, we can open the file Detected_Filtered_Measurements.csv which gives information on the shape and position of each particle. It looks like:
 
-Again, every rowin this file corresponds to the same particle with the same row in  Channel_1_Flourescent_Intensities.csv and Channel_2_Flourescent_Intensities.csv.
+Again, every row in this file corresponds to the same particle in the same row in Channel_1_Flourescent_Intensities.csv and Channel_2_Flourescent_Intensities.csv.
 
 Setting verboseOutput = true creates an additional output for each channel (Channel_1_Verbose_Traces.csv, Channel_2_Verbose_Traces.csv etc. in the Jim_2_Channel_Example folder) which gives stats for each intensity such as max, min, mean and median intensities for background and foreground etc for each frame.  Full details of this file can be found in the Calculate_Traces.exe program documentation. This can be helpful for troubleshooting. or the most part, is not needed and the resulting file can be very large if the image stack has a lot of frames and a lot of regions of interest. Therefore, we will leave verboseOutput = false by default. 
 
-Running this section also generate a file that saves all the variables used to generate these traces. This file is called Trace_Generation_Variables.csv and is located in the Jim_2_Channel_Example folder. It should look like:
+Running this section also generate a file that saves all the variables used to generate these traces. This file is called Trace_Generation_Variables.csv and is located in the Jim_2_Channel_Example folder.
 
 9) View Traces
 ==============
 
-
 Just as with Generate_Single_Channel_Traces we can view the traces that we’ve just generated in this section. Running the next section will display two figures. The first image shows the particle location and numbers for each detected region.  This makes it easy to correlate which trace corresponds to which particle. The first figure should look like this:
+
+.. image:: Tut_2_Numbers.PNG
+  :width: 600
+  :alt: Particle Numbers
+
 
 The second figure displays a page containing an array traces. The variable pageNumber dictates which page of traces to display. For example, setting this variable to pageNumber = 1 will print traces 1 to 36 which should look like:
 
+.. image:: tut_2_Example_Page_1.png
+  :width: 600
+  :alt: Montage of Traces
 
-In these plots, the Red trace corresponds to signal from Channel 1 and the Blue trace corresponds to Channel 2. As expected, Channel 1 starts bright then dims over time whereas Channel 2 starts dim and becomes brighter.
+*Montage of measured traces. In each trace, the blue line corresponds to signal from Channel 1, the orange line corresponds to Channel 2 and the Yellow to Channel 3*
+ 
+
+10) Export Trace
+================
+
+.. image:: tut_2_Example_Page_1.png
+  :width: 600
+  :alt: Montage of Traces
+*The extracted trace for Particle 9. The montage of the images of the particle throughout the experiment is shown below the trace. Each row of the montage corresponds to Channels 1,2 and 3 respectively. Each column, is the mean of the 5 images in the corresponding range in the plot above.*
+
 
 Congratulations. You have successfully completed this module and should be familiar in using JIM  how to generate traces for one and two coloured channel data. It is now time to start  using these traces to answer your scientific aims. JIM includes many of our commonly used analysis modules such as determining intensity of a fluorophore by photobleaching and measuring binding affinities. We have tutorials for each of these modules to illustrate their applications. If you want to use traces to do something that is outside the scope of the included files, we also include templates to help set you on the road to writing your own software.
 
 
 Final Parameters
 ===================
-The final parameters used for this tutorial can be loaded from the file *Tutorial_1_Final_Parameters.csv* in the dataset folder. The parameters are :
+The final parameters used for this tutorial can be loaded from the file *Tutorial_2_Final_Parameters.csv* in the dataset folder. The parameters are :
 
-.. csv-table:: Final Tutorial 1 Parameters
-   :file: Tutorial_1_Final_Parameters.csv
+.. csv-table:: Final Tutorial 2 Parameters
+   :file: Tutorial_2_Final_Parameters.csv
    :widths: 30, 30
    :header-rows: 0
