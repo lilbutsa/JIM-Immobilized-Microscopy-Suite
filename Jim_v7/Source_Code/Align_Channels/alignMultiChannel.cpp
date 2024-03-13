@@ -31,8 +31,8 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 		for (int i = 0; i < numOfChan; i++) {
 			std::cout << "Calculating initial drift for Channel " << i + 1 << "\n";
 			//adjustedOutputFilename = fileBase + "_Channel_" + to_string(i + 1) + "_Drift.csv";
-			driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, "", false, meanimage[i], "");
-			//driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, fileBase + "Troubleshooting" + to_string(i + 1), true, meanimage[i], adjustedOutputFilename);
+			//driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, "", false, meanimage[i], "");
+			driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, fileBase + "Troubleshooting" + to_string(i + 1), true, meanimage[i], "");
 
 		}
 	}
@@ -81,10 +81,9 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 		//thresholdStack.write1dImage(meanimage[i]);
 
 
-
-
 		ippsMeanStdDev_32f(meanimage[i].data(), imagePoints, &mean, &stddev, ippAlgHintFast);
 		ippsSubC_32f_I(mean, meanimage[i].data(), imagePoints);
+		ippsDotProd_32f(meanimage[i].data(), meanimage[i].data(), imagePoints, &stddev);
 		ippsDivC_32f_I(stddev, meanimage[i].data(), imagePoints);
 	}
 
@@ -96,7 +95,7 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 	imageTransform_32f transformclass(imageWidth, imagePoints / imageWidth);
 
 	float xoffset, yoffset, maxangle, maxscale, maxcc;
-	double deltain, hmaxscale, hmaxangle,backgroundcc;
+	double deltain, hmaxscale, hmaxangle;
 	int maxcount;
 	vector<float> vSNR;
 
@@ -104,7 +103,6 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 	vector< vector<float> > channelalignment(numOfChan-1,vector<float>(4,0));
 	vector<float> combinedmean = meanimage[0];
 
-	vector<float> imageout(21 * 21, 0.0);
 
 	int ccwidth = 21;
 	vector<vector<int>> edgepos = { {-2,-2},{-1,-2},{0,-2},{1,-2},{2,-2},{-2,-1},{2,-1},{-2,0},{2,0},{-2,1},{2,1},{-2,2},{-1,2},{0,2},{1,2},{2,2} };
@@ -112,15 +110,16 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 	for (int i = 1; i < numOfChan; i++) {
 		std::cout << "Aligning Channel " << i + 1 << endl;
 		maxcc = 0;
-		deltain =  10;
+		deltain =  4;
 		maxscale = 1;
 		maxangle = 0;
 		maxcount = 0;
 
+
 		alignclass.preloadImage(meanimage[0]);
 
-		for (int delta = 0; delta < 2; delta++) {
-			deltain *= 0.1;
+		for (int delta = 0; delta < 3; delta++) {
+			deltain *= 0.25;
 			hmaxscale = maxscale;
 			hmaxangle = maxangle;
 
@@ -131,11 +130,17 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 			//cout << "mid angle = " << hmaxangle << " \n";
 			for (double scale = hmaxscale - 0.1*deltain; scale <= hmaxscale + 0.10001*deltain; scale = scale + 0.01*deltain)for (double angle = hmaxangle - 0.5*10 * deltain; angle <= hmaxangle + 0.5*10.0001 * deltain; angle = angle + 0.5*1 * deltain) {
 				transformclass.transform(meanimage[i], imaget, angle*3.14159 / 180.0, scale, 0.0, 0.0);//ch
+
+				ippsMeanStdDev_32f(imaget.data(), imagePoints, &mean, &stddev, ippAlgHintFast);
+				ippsSubC_32f_I(mean, imaget.data(), imagePoints);
+				ippsDotProd_32f(imaget.data(), imaget.data(), imagePoints, &stddev);
+				ippsDivC_32f_I(stddev, imaget.data(), imagePoints);
+
+
 				alignclass.imageAligntopixelpreloaded(imaget, maxShift);
 				//else alignclass.imageAlign(meanimage[0], imaget, maxShift);
 				//alignclass.imageAlign(meanimage[0], imaget, maxShift);
 
-				imageout[imagecount] = alignclass.max1dval/10;
 
 				if (alignclass.max1dval > maxcc) {
 					maxcount = imagecount;
@@ -152,17 +157,7 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 				//cout << "maxcc = " << alignclass.max1dval << " max angle =  " << angle << " max scale = " << scale << "  x offset = " << alignclass.offsetx << " y offset = " << alignclass.offsety << endl;
 			}
 
-			if (delta == 0) {
-				int backgroundcount = 0;
-				int xmax = maxcount % ccwidth;
-				int ymax = (int)maxcount / ccwidth;
-				for (int boxcount = 0; boxcount < edgepos.size(); boxcount++) 
-					if(xmax+edgepos[boxcount][0]>-1 && xmax + edgepos[boxcount][0] < ccwidth && ymax + edgepos[boxcount][1]>-1 && ymax + edgepos[boxcount][1] < ccwidth){
-						backgroundcc += 10 * imageout[xmax + edgepos[boxcount][0] + ccwidth * (ymax + edgepos[boxcount][1])];
-						backgroundcount++;
-					}
-				backgroundcc *= 1 / ((double)backgroundcount);
-			}
+
 
 			//adjustedOutputFilename = fileBase + "_maxcc_" + to_string(delta) + ".tiff";
 			//BLTiffIO::TiffOutput(adjustedOutputFilename, ccwidth, ccwidth, 16).write1dImage(imageout);
@@ -176,15 +171,17 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 		xoffset = alignclass.offsetx;
 		yoffset = alignclass.offsety;
 
-		std::cout << "Fit SNR = " << maxcc/backgroundcc << "  x offset = " << xoffset << " y offset = " << yoffset << " max angle =  " << maxangle << " max scale = " << maxscale  << endl;
+		std::cout << "Fit CC = " << maxcc << "  x offset = " << xoffset << " y offset = " << yoffset << " max angle =  " << maxangle << " max scale = " << maxscale  << endl;
 
 		channelalignment[i-1][0] = xoffset;
 		channelalignment[i-1][1] = yoffset;
 		channelalignment[i-1][2] = maxangle;
 		channelalignment[i-1][3] = maxscale;
 		
-		vSNR.push_back(maxcc / backgroundcc);
+		vSNR.push_back(maxcc);
 	}
+
+
 
 	if (*min_element(vSNR.begin(), vSNR.end())<SNRCutoff) {
 

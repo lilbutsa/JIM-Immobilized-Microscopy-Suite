@@ -14,7 +14,7 @@ void rotateImage(std::vector< std::vector<uint16_t>>& imageio, int angle);
 int main(int argc, char* argv[])
 {
 	std::cout << "TIFF CHANNEL SPLITTER\n";
-	for (int i = 1; i < argc; i++)std::cout << argv[i] << "\n";
+	//for (int i = 1; i < argc; i++)std::cout << argv[i] << "\n";
 
 
 	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
@@ -87,16 +87,29 @@ int main(int argc, char* argv[])
 			if (std::string(argv[i]) == "-BigTiff") bBigTiff = true;
 			if (std::string(argv[i]) == "-DisableBigTiff") bBigTiff = false;
 			if (std::string(argv[i]) == "-Transform") {
-				int channelsToTransform = 0;
-				for (int j = i + 1; j < argc && std::string(argv[j]).substr(0, 1) != "-"; j++) channelsToTransform++;
+				std::vector<int> transformArguments;
+				std::string delimiter = " ";
+				for (int j = i + 1; j < argc && std::string(argv[j]).substr(0, 1) != "-"; j++) {
+					size_t pos = 0;
+					std::string inputStr = argv[j];
+
+					while ((pos = inputStr.find(delimiter)) != std::string::npos) {
+						transformArguments.push_back(stoi(inputStr.substr(0, pos)));
+						inputStr.erase(0, pos + delimiter.length());
+					}
+					transformArguments.push_back(stoi(inputStr));
+				}
+
+				int channelsToTransform = transformArguments.size();
 				if (channelsToTransform % 4 != 0)throw std::invalid_argument("Invalid Number of transform parameters.\n Four parameters required per channel:\n[Channels to transform] [Vertical Flip each channel (0 = no, 1 = yes)] [Horizontal Flip each channel (0 = no, 1 = yes)] [Rotate each channel clockwise (0, 90, 180 or 270)]");
 				tranformations = vector<vector<int>>(channelsToTransform / 4, vector<int>(4, 0));
 				try {
+
 					for (int j = 0; j < channelsToTransform; j++) {
-						tranformations[j%(channelsToTransform/4)][j /((channelsToTransform / 4))] = stoi(argv[i + 1 + j]);
+						tranformations[j%(channelsToTransform/4)][j /((channelsToTransform / 4))] = transformArguments[j];
 					}
 					for (int j = 0; j < channelsToTransform / 4; j++) {
-						std::cout << "Transforming Channel " << tranformations[j][0] << " ";
+						std::cout << "Transforming Channel " << tranformations[j][0];
 						if (tranformations[j][1] == 1)std::cout << " Flipping Vertically ";
 						if (tranformations[j][2] == 1)std::cout << " Flipping Vertically ";
 						if (tranformations[j][3] > 1)std::cout << " Rotating "<< tranformations[j][3]<<" Degrees";

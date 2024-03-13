@@ -206,17 +206,24 @@ int main(int argc, char *argv[])
 	BLTiffIO::TiffOutput(output + "_Background_Regions.tif", imageWidth, imageHeight,8).write1dImage(backgroundregion);
 
 	std::vector<std::vector<int>> transformPos = expandedpos;
+
+	//std::cout << "Channel 1 " << transformPos[0].size() << "\n";
+	//for (int i = 0; i < transformPos[0].size(); i++)std::cout << transformPos[0][i] << " ";
+	//std::cout << "\n";
+
 	transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
 	BLCSVIO::writeCSV(output + "_ROI_Positions_Channel_1.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
 	transformPos = backgroundpos;
 	transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
 	BLCSVIO::writeCSV(output + "_Background_Positions_Channel_1.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
-	
 	if (bChannelAlignment) {
+		//std::cout << "Outputting MultiChannel Positions\n";
 		vector<vector<double>> channelAlign(50, vector<double>(11, 0.0));
 		BLCSVIO::readCSV(channelAlignmentFileName, channelAlign, headerLine);
 		for (int chancount = 0; chancount < channelAlign.size(); chancount++) {
+			
 			transformPos = transformPosition(channelAlign[chancount], expandedpos, imageWidth, imageHeight);
+			//std::cout << "Channel " << chancount + 2 <<" "<< transformPos[0].size()<< "\n";
 			transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
 			BLCSVIO::writeCSV(output + "_ROI_Positions_Channel_"+ to_string(chancount + 2) +".csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
 
@@ -236,9 +243,10 @@ vector<vector<int>> transformPosition(vector<double> alignIn , vector<vector<int
 	double xcentre = alignIn[9];
 	double ycentre = alignIn[10];
 
-	for (int pos = 1; pos < positions.size(); pos++) {
+	for (int pos = 0; pos < positions.size(); pos++) {
+		//cout <<"transform "<< pos << " " << positions[pos][0] << " " << positions[pos].size() << "\n";
+		singleLine.clear();
 		for (int i = 0; i < positions[pos].size(); i++) {
-			singleLine.clear();
 			double xin = (int)positions[pos][i] % imageWidth;
 			double yin = (int)positions[pos][i] / imageWidth;
 			xin += -xcentre;
@@ -257,7 +265,6 @@ vector<vector<int>> transformPosition(vector<double> alignIn , vector<vector<int
 			singleLine.push_back(ceil(xout) + floor(yout) * imageWidth);
 			singleLine.push_back(floor(xout) + ceil(yout) * imageWidth);
 			singleLine.push_back(ceil(xout) + ceil(yout) * imageWidth);
-
 		}
 		sort(singleLine.begin(), singleLine.end());
 		singleLine.erase(unique(singleLine.begin(), singleLine.end()), singleLine.end());

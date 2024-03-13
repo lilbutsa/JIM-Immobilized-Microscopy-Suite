@@ -171,12 +171,20 @@ void driftCorrect(vector<BLTiffIO::TiffInput*> is, vector< vector<float>> alignm
 		BLCSVIO::writeCSV(myFileName, driftsout, "X Drift, Y Drift\n");
 
 		for (int chancount = 0; chancount < alignment.size(); chancount++) {
+			float x1 = cos(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
+			float y1 = -sin(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
+			float x2= sin(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
+			float y2 = cos(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
+			//std::cout << "transform = " << chancount << " " << x1 << " " <<y1 << " " << x2 << " " << y2 << "\n";
+
 			vector<vector<float>> transformedDrifts = driftsout;
 			for (int pos = 0; pos < transformedDrifts.size(); pos++) {
 				float xin = transformedDrifts[pos][0];
 				float yin = transformedDrifts[pos][1];
-				driftsout[pos][0] = xin * alignment[chancount][5] + yin * alignment[chancount][6];
-				driftsout[pos][1] = xin * alignment[chancount][7] + yin * alignment[chancount][8];
+
+				transformedDrifts[pos][0] = xin * x1 + yin * y1;
+				transformedDrifts[pos][1] = xin * x2 + yin * y2;
+
 			}
 
 			myFileName = driftFileName + "_Channel_" + to_string(chancount+2)+".csv";

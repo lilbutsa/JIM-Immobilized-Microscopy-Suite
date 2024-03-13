@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 		cout << "-Iterations i (Default i = 1) Specify the number of alignment iterations to run\n";
 		cout << "-MaxShift i (Default i = unlimited) The maximum amount of drift in x and y that will be searched for during alignment\n";
 		cout << "-MaxIntensities i j ... to number of channels (Default i = unlimited) Pixels over this intensity are ignored during alignment\n";
-		cout << "-SNRCutoff i (Default i = 1.05) SNR of alignment below which an alignment error is thrown\n";
+		cout << "-SNRCutoff i (Default i = 0.2) SNR of alignment below which an alignment error is thrown\n";
 		cout << "-OutputAligned (Default false) Save the aligned imade stacks\n";
 		cout << "-SkipIndependentDrifts (Default false) Only Generate combined drifts, For Channel to Channel alignment use the reference frames\n";
 		cout << "-Alignment Manually input the alignment between channels. Requires 4 values per extra channel (x offset ch2, ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n";
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 	uint32_t iterations = 2,start = 0, end = 1000000000;
 	vector<float> maxIntensities;
 	vector<vector<float>> alignments;
-	float maxShift = 1000000, SNRCutoff = 1.05;
+	float maxShift = 1000000, SNRCutoff = 0.2;
 	bool outputAligned = false;
 
 
@@ -93,18 +93,43 @@ int main(int argc, char *argv[])
 			}
 			if (std::string(argv[i]) == "-Alignment") {
 				inputalignment = true;
-				if (i + 4 * (numInputFiles-1) >= argc)throw std::invalid_argument("Not Enough Alignment Inputs.\nRequires 4 values per extra channel (x offset ch2 ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n");
-				for (int j = 0; j < 4; j++)for (int k = 0; k < numInputFiles - 1; k++)
-					try { alignments[k][j] = stod(argv[i + 1 + k + j * (numInputFiles - 1)]); }
-				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid alignment Value\nInput :" + std::string(argv[i + 1 + k + j * (numInputFiles - 1)]) + "\nRequires 4 values per extra channel (x offset ch2, ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n"); }
+
+				std::vector<double> alignmentArguments;
+				std::string delimiter = " ";
+				for (int j = i + 1; j < argc && std::string(argv[j]).substr(0, 1) != "-"; j++) {
+					size_t pos = 0;
+					std::string inputStr = argv[j];
+
+					while ((pos = inputStr.find(delimiter)) != std::string::npos) {
+						alignmentArguments.push_back(stod(inputStr.substr(0, pos)));
+						inputStr.erase(0, pos + delimiter.length());
+					}
+					alignmentArguments.push_back(stod(inputStr));
+				}
+
+				if (alignmentArguments.size()<4*(numInputFiles-1))throw std::invalid_argument("Not Enough Alignment Inputs.\nRequires 4 values per extra channel (x offset ch2 ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n");
+				for (int j = 0; j < 4; j++)for (int k = 0; k < numInputFiles - 1; k++)alignments[k][j] = alignmentArguments[ k + j * (numInputFiles - 1)]; 
+			
 			}
 			if (std::string(argv[i]) == "-MaxIntensities") {
-				if (i + (numInputFiles) >= argc)throw std::invalid_argument("Not Enough Max Intensity Inputs.\nRequires one value per channel\n");
-				for (int k = 0; k < numInputFiles; k++)
-					try { maxIntensities[k] = stod(argv[i + 1 + k]); }
-				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Max Intensity Value\nInput :" + std::string(argv[i + 1 + k]) + "\nRequires one value per channel\n"); }
-			}
 
+				std::vector<double> maxIntArguments;
+				std::string delimiter = " ";
+				for (int j = i + 1; j < argc && std::string(argv[j]).substr(0, 1) != "-"; j++) {
+					size_t pos = 0;
+					std::string inputStr = argv[j];
+
+					while ((pos = inputStr.find(delimiter)) != std::string::npos) {
+						maxIntArguments.push_back(stod(inputStr.substr(0, pos)));
+						inputStr.erase(0, pos + delimiter.length());
+					}
+					maxIntArguments.push_back(stod(inputStr));
+				}
+
+				if (maxIntArguments.size() < numInputFiles)throw std::invalid_argument("Not Enough Max Intensity Inputs.\nRequires one value per channel\n");
+				for (int k = 0; k < numInputFiles; k++)maxIntensities[k] = maxIntArguments[k];
+
+			}
 		}
 	}
 	catch (const std::invalid_argument & e) {

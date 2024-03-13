@@ -35,7 +35,7 @@ The final parameters for this tutorial are also in a table `here <https://jim-im
 1) Select Input File
 ====================
 
-Running this section will open a window asking you to select the image file to analyse. Select the file *Tutorial_2_MultiChannel_Multishape.tif* is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the main JIM folder.
+Running this section will open a window asking you to select the image file to analyse. Select the file *Tutorial_2_MultiChannel_Multishape.tif* which is located in the *Examples_To_Run\\2_MultiChannel_And_Shapes\\* of the main JIM folder.
 
 There is no ".ome" on the end of the tif file so we can set 
 

@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 
 	vector<float> image1(imagePoints), alignedimage(imagePoints, 0.0);
 	
-	uint32_t numOutputImages = ((end - start)) / delta;
+	uint32_t numOutputImages =floor( ((end - start) / delta)+1);
 	uint32_t outputStart = (measurements[particle - 1][14]-3) + (measurements[particle - 1][16]-3) * imageWidth;
 	uint32_t outputWidth = measurements[particle - 1][15] - measurements[particle - 1][14] + 7;
 	uint32_t outputHeight = measurements[particle - 1][17] - measurements[particle - 1][16] + 7;
