@@ -99,13 +99,16 @@ The Channel alignment module consists of two parts: Drift correction and Channel
 Drift correction works by first creating a mean (mean projection) from a selection of image from the image stack defined from alignStartFrame to alignEndFrame, before individually aligning every frame to that mean. It is important to select a part of the image stack where the signal is observed in all channels simultaneously. In this example, we can choose any frame from the middle of the image stack, (i.e both channels are reasonably bright) so that the alignment runs successfully. For example, setting:
 
 **iterations** = 1
+
 **alignStartFrame** = 14
+
 **alignEndFrame** = 14
+
 **MaxShift** = 30
 
 For this tutorial, we will assume that the alignment between channels is not known. There are two parameters that can help with calculating between channels, although neithr are relevent here. *Alignment Max Int.* is used to ignore overly bright particles like aggregates. This is not the case here so we set this to large values for all channels by setting:
 
-**Alignment Max Int.**= 65000 65000 65000
+**Alignment Max Int. ** = 65000 65000 65000
 
 Note that we need to include one value for each channel.
 
@@ -189,8 +192,11 @@ Calculating the drift in this data is much easier than the first tutorial as the
 If we try to use the first frame in the image as the initial mean we will run into problems as the image in Channel 2 is just noise. To see this, set:
 
 **iterations** = 1
+
 **alignStartFrame** = 1
+
 **alignEndFrame** = 1
+
 **MaxShift** = 30
 
 **Alignment SNR detection Cutoff** = -1
@@ -239,7 +245,8 @@ In summary, the number of frames used for the initial mean should be kept to as 
 Jumps in Field of View
 Misalignment can occur if you choose frames for the initial partial mean containing a jump where the field of view moves significantly between two frames (for example when the microscope stage has been bumped). In this case, the initial mean image will essentially have two copies of each feature in the image, one from averaging frames before the jump and the second copy from averaging frames after the jump. When the alignment runs, some frames will align to the pattern from before the jump and some will align to after the jump. The net result is that the end aligned image will appear to have ghosted duplicates of particles in it. We can observe this with our example as it contains a jump between the 16th and 17th frame. Setting:
 
-iterations = 1; 
+iterations = 1
+ 
 alignStartFrame = 14; 
 alignEndFrame = 19; 
 manualAlignment = false; 
@@ -456,7 +463,7 @@ The second figure displays a page containing an array traces. The variable pageN
 10) Export Trace
 ================
 
-.. image:: tut_2_Example_Page_1.png
+.. image:: tut_2_Trace_9_Extraction.png
   :width: 600
   :alt: Montage of Traces
 *The extracted trace for Particle 9. The montage of the images of the particle throughout the experiment is shown below the trace. Each row of the montage corresponds to Channels 1,2 and 3 respectively. Each column, is the mean of the 5 images in the corresponding range in the plot above.*
