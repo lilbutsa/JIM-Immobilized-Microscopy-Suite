@@ -15,12 +15,12 @@ alignEndFrame,12
 alignMaxShift,30.00
 alignOutputStacks,false 
 alignMaxInt,65000 65000 65000
-alignSNRdetectionCutoff,0.20
+alignSNRCutoff,0.20
 alignManually,false 
-alignXOffset,0
-alignYOffset,0
-alignRotationAngle,0
-alignScalingFactor,1
+alignXOffset,-5 -5
+alignYOffset,-5 -5
+alignRotationAngle,-2 2
+alignScalingFactor,1 1
 detectUsingMaxProjection,false 
 detectionStartFrame,1 -5 1
 detectionEndFrame,5 -1 5

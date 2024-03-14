@@ -10,7 +10,7 @@ sysVar.paramtab = table2cell(sysVar.paramtab);
 sysVar.line = splitlines(fileread([sysConst.JIM,'\Begin_Here_Generate_Traces.m']));
 
 sysVar.paramIsString = [7 8 9 10 16 19 20 21 22 24 25 26 42 43 44];
-%%
+
 for i=1:length(sysVar.paramtab)
     sysVar.toreplace = find(contains(sysVar.line,sysVar.paramtab{i,1},'IgnoreCase',true),1);
     sysVar.linein = sysVar.line{sysVar.toreplace};
