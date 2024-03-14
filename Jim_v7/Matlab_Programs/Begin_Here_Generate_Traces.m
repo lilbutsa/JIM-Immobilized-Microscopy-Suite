@@ -9,10 +9,17 @@ sysVar.paramtab = table2cell(sysVar.paramtab);
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 sysVar.line = splitlines(fileread([sysConst.JIM,'\Begin_Here_Generate_Traces.m']));
 
+sysVar.paramIsString = [7 8 9 10 16 19 20 21 22 24 25 26 42 43 44];
+%%
 for i=1:length(sysVar.paramtab)
     sysVar.toreplace = find(contains(sysVar.line,sysVar.paramtab{i,1},'IgnoreCase',true),1);
     sysVar.linein = sysVar.line{sysVar.toreplace};
-    sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ' sysVar.paramtab{i,2} sysVar.linein(strfind(sysVar.linein,';'):end)];
+    if max(sysVar.paramIsString==i)
+        sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ''' sysVar.paramtab{i,2} '''' sysVar.linein(strfind(sysVar.linein,';'):end)];
+    else
+        sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ' sysVar.paramtab{i,2} sysVar.linein(strfind(sysVar.linein,';'):end)];
+
+    end
 end
 sysVar.fid = fopen([sysConst.JIM,'\Begin_Here_Generate_Traces.m'],'w');
 for i=1:size(sysVar.line,1)

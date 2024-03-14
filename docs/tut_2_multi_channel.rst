@@ -106,17 +106,17 @@ Drift correction works by first creating a mean (mean projection) from a selecti
 
 **MaxShift** = 30
 
-For this tutorial, we will assume that the alignment between channels is not known. There are two parameters that can help with calculating between channels, although neithr are relevent here. *Alignment Max Int.* is used to ignore overly bright particles like aggregates. This is not the case here so we set this to large values for all channels by setting:
+For this tutorial, we will assume that the alignment between channels is not known. There are two parameters that can help with calculating between channels, although neithr are relevent here. *Alignment Max Int.* is used to ignore overly bright particles like aggregates. This is not the case here so we set this to large values for all channels by setting
 
 **Alignment Max Int. ** = 65000 65000 65000
 
 Note that we need to include one value for each channel.
 
-The parameter *Alignment SNR detection Cutoff* causes the program to throw an error if the quality of alignment (calculated by corss correlation) falls below this cutoff. This is mostly useful for batch processing where this will stop the analysis if the alignment isn't found. In general leaving this value at the defualt is fine:
+The parameter **Alignment SNR detection Cutoff** causes the program to throw an error if the quality of alignment (calculated by corss correlation) falls below this cutoff. This is mostly useful for batch processing where this will stop the analysis if the alignment isn't found. In general leaving this value at the defualt is fine:
 
 **Alignment SNR detection Cutoff** = 0.2
 
-To calculate the best alignment parameters using JIM we also need to set
+To calculate the best alignment parameters using JIM we also need to input that we are not giving it an alignment by setting
 
 **manualAlignment** = false
 
@@ -166,7 +166,7 @@ In comparison the actual values are:
      - 1
      - -5
      - -5
-   * - 2
+   * - 3
      - 2
      - 1
      - -5
