@@ -741,7 +741,7 @@ parfor i=1:sysConst.NumberOfFiles
 
         cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,sysConst.backgroundMaxProjectionString,' -Weights ',additionalBackgroundWeights];
         if additionBackgroundUseMaxProjection
-            cmd = [cmd,' -MaxProjection'];
+            cmd = [sysVar.cmd,' -MaxProjection'];
         end   
 
         system(cmd);
@@ -753,24 +753,30 @@ parfor i=1:sysConst.NumberOfFiles
 
     % 3.7) Fit areas around each shape 
 
-    cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
-    if additionBackgroundDetect
-        cmd = [cmd,' -extraBackgroundFile "',workingDir,'Background_Detected_Positions.csv"'];
-    end
-    if imStackNumberOfChannels > 1
-        cmd = [cmd,' -channelAlignment "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv"'];
-    end
+    cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',workingDir,'Detected_Filtered_Positions.csv" ',sysConst.backgroundFileStr,' "',workingDir,'Expanded_Channel_1" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
+    system(cmd)
 
-    system(cmd) 
+    for j = 2:imStackNumberOfChannels
+
+       cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',workingDir,'Transformed_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Transformed_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Channel_',num2str(j),'" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
+       system(cmd)
+    end
 
     % 3.8) Calculate amplitude for each frame for each channel
     
-    for j = 1:imStackNumberOfChannels
-        cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Alignment_Channel_',num2str(j),'.csv'];
-        if traceVerboseOutput
-            cmd = [sysVar.cmd,' -Verbose'];
-        end  
-        system(cmd);    
+    driftStr = 'Alignment_Combined_Drift.csv"';
+    if traceIndependentDrifts && imStackNumberOfChannels>1
+        driftStr = 'Alignment_Channel_1_Drift.csv"';
+    end
+    cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_1.tif" "',workingDir,'Expanded_Channel_1_ROI_Positions.csv" "',workingDir,'Expanded_Channel_1_Background_Positions.csv" "',workingDir,'Channel_1" -Drift "',workingDir,driftStr,sysConst.verboseString];
+    system(cmd)
+    for j = 2:imStackNumberOfChannels
+        driftStr = ['Transformed_Drifts_Channel_',num2str(j),'.csv"'];
+        if traceIndependentDrifts
+            driftStr = ['Alignment_Channel_',num2str(j),'_Drift.csv"'];
+        end
+        cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_Channel_',num2str(j),'_ROI_Positions.csv" "',workingDir,'Expanded_Channel_',num2str(j),'_Background_Positions.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,driftStr,sysConst.verboseString];
+        system(cmd);
     end
     
     
