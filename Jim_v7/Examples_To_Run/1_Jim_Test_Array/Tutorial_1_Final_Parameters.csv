@@ -1,6 +1,6 @@
 Date, 2024-03-05
 additionalExtensionsToRemove,0
-multipleFilesPerImageStack,false 
+imStackMultipleFiles,false 
 imStackNumberOfChannels,1
 imStackDisableMetadata,true 
 imStackStartFrame,1

@@ -30,7 +30,6 @@ matlab.desktop.editor.openAndGoToLine([sysConst.JIM,'\Begin_Here_Generate_Traces
 
 %% 1) Select the input tiff file and Create a Folder for results
 additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
-multipleFilesPerImageStack = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
 
@@ -75,16 +74,13 @@ if ~exist(workingDir, 'dir')
    mkdir(workingDir)%make a subfolder with that name
 end
 
-if multipleFilesPerImageStack
-    completeName = arrayfun(@(x)['"',sysVar.pathName,x.name,'" '],dir(sysVar.pathName)','UniformOutput',false);
-    completeName = completeName(contains(completeName,'.tif','IgnoreCase',true));
-    completeName = sort(completeName);
-    completeName = horzcat(completeName{:});
-else
-    completeName = ['"',completeName,'" '];
-end
+
+completeName = ['"',completeName,'" '];
+
 
 %% 2) Organise Image Stack into channels 
+imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
+
 imStackNumberOfChannels = 3; % Input the number of channels in the data
 
 imStackDisableMetadata = false ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
@@ -123,6 +119,10 @@ if ischar(imStackRotateChannel)==false
 end
 
 sysVar.cmd = [sysConst.JIM,'Tiff_Channel_Splitter',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack" ',completeName,'-NumberOfChannels ',num2str(imStackNumberOfChannels),' -StartFrame ',num2str(imStackStartFrame),' -EndFrame ',num2str(imStackEndFrame)];
+
+if imStackMultipleFiles
+    sysVar.cmd = [ sysVar.cmd ,' -DetectMultipleFiles'];
+end
 
 if ~isempty(imStackChannelsToTransform)    
      sysVar.cmd = [ sysVar.cmd ,' -Transform ',imStackChannelsToTransform,' ',imStackVerticalFlipChannel,' ',imStackHorizontalFlipChannel,' ',imStackRotateChannel];
@@ -168,8 +168,8 @@ alignSNRCutoff = 0.20; % Set a minimum alignment SNR to throw warnings
 
 %Parameters for Manual Alignment
 alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
-alignXoffset = '-5 -5';
-alignYoffset = '-5 -5';
+alignXOffset = '-5 -5';
+alignYOffset = '-5 -5';
 alignRotationAngle = '-2 2';
 alignScalingFactor = '1 1';
 
@@ -179,7 +179,7 @@ alignScalingFactor = '1 1';
 sysVar.cmd = [sysConst.JIM,'Align_Channels',sysConst.fileEXE,' "',workingDir,'Alignment"',sysVar.allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(alignIterations),' -MaxShift ',num2str(alignMaxShift)];
 
 if alignManually
-    sysVar.cmd = [sysVar.cmd,' -Alignment ',alignXoffset,' ',alignYoffset,' ',alignRotationAngle,' ',alignScalingFactor];
+    sysVar.cmd = [sysVar.cmd,' -Alignment ',alignXOffset,' ',alignYOffset,' ',alignRotationAngle,' ',alignScalingFactor];
 elseif imStackNumberOfChannels>1
     sysVar.cmd = [sysVar.cmd,' -MaxIntensities ',alignMaxIntensities,' -SNRCutoff ',num2str(alignSNRCutoff)];
 end
@@ -196,7 +196,7 @@ if sysVar.returnVal == 0
     if imStackNumberOfChannels>1
         for i=1:3
             if i<= imStackNumberOfChannels
-            sysVar.imout{i} = im2double(imread([workingDir,'Alignment_Reference_Frames_After.tiff'],i));
+            sysVar.imout{i} = im2double(imread([workingDir,'Alignment_Full_Projection_Before.tiff'],i));
             sysVar.imout{i} = (sysVar.imout{i}-min(min(sysVar.imout{i})))./(prctile(reshape(sysVar.imout{i}.',1,[]),99.5)-min(min(sysVar.imout{i})));
             else
                sysVar.imout{i} = 0.*sysVar.imout{1};
@@ -229,7 +229,7 @@ if sysVar.returnVal == 0
 end
 disp('Alignment completed');
 
-%% 4a) Make a SubAverage of Frames for each Channel for Detection 
+%% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectionStartFrame = '1 -5 1'; %first frame of the reference region for detection for each channel
@@ -261,7 +261,7 @@ sysVar.channel1Im = (sysVar.channel1Im-min(min(sysVar.channel1Im)))./(prctile(re
 imshow(sysVar.channel1Im);
 disp('Average projection completed');
 
-%% 4b) Detect Particles
+%% 5) Detect Particles
 
 %Thresholding
 detectionCutoff = 1.00; % The cutoff for the initial thresholding. Typically in range 0.25-2
@@ -307,7 +307,7 @@ sysVar.combinedImage = cat(3, sysVar.overlayColour1(1).*sysVar.channel1Im+sysVar
 imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
-%% 5a) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
+%% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
 additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
 additionBackgroundUseMaxProjection = true ; %Use a max projection rather than mean. This is better for short lived blinking particles
@@ -323,7 +323,7 @@ additionBackgroundCutoff = 1.00; %Threshold for particles to be detected for bac
 
 if additionBackgroundDetect
 
-    sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,sysConst.backgroundMaxProjectionString,' -Weights ',additionalBackgroundWeights];
+    sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
     if additionBackgroundUseMaxProjection
         sysVar.cmd = [sysVar.cmd,' -MaxProjection'];
     end   
@@ -345,7 +345,7 @@ if additionBackgroundDetect
 end
 
 
-%% 6) Expand Regions
+%% 7) Expand Regions
 expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
 expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
 expandBackOuterDist = 20.00; % Maximum distance to dilate beyond the ROI to measure the local background
@@ -355,7 +355,7 @@ sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. 
 
 %don't touch from here
 
-sysVar.cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
+sysVar.cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
 if additionBackgroundDetect
     sysVar.cmd = [sysVar.cmd,' -extraBackgroundFile "',workingDir,'Background_Detected_Positions.csv"'];
 end
@@ -379,7 +379,7 @@ imshow(sysVar.combinedImage);
 
 disp('Finished Expanding ROIs');
 
-%% 7) Calculate Traces
+%% 8) Calculate Traces
 traceVerboseOutput = false ; % Create additional file with additional statistics on each particle in each frame. Warning, this file can get very large. In general you don't want this.
 
 %don't touch from here
@@ -395,7 +395,7 @@ end
 sysConst.falsetrue = ['false';'true '];
 sysConst.variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nadditionalExtensionsToRemove,',num2str(additionalExtensionsToRemove)...
-    ,'\nmultipleFilesPerImageStack,',sysConst.falsetrue(multipleFilesPerImageStack+1,:)...
+    ,'\nimStackMultipleFiles,',sysConst.falsetrue(imStackMultipleFiles+1,:)...
     ,'\nimStackNumberOfChannels,', num2str(imStackNumberOfChannels) ...
     ,'\nimStackDisableMetadata,', sysConst.falsetrue(imStackDisableMetadata+1,:)...
     ,'\nimStackStartFrame,', num2str(imStackStartFrame)...
@@ -412,8 +412,8 @@ sysConst.variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nalignMaxIntensities,',alignMaxIntensities...
     ,'\nalignSNRCutoff,',num2str(alignSNRCutoff)...
     ,'\nalignManually,',sysConst.falsetrue(alignManually+1,:)...
-    ,'\nalignXOffset,',alignXoffset...
-    ,'\nalignYOffset,', alignYoffset...
+    ,'\nalignXOffset,',alignXOffset...
+    ,'\nalignYOffset,', alignYOffset...
     ,'\nalignRotationAngle,',alignRotationAngle...
     ,'\nalignScalingFactor,', alignScalingFactor...
     ,'\ndetectUsingMaxProjection,',sysConst.falsetrue(detectUsingMaxProjection+1,:)...
@@ -455,7 +455,7 @@ disp('Finished Generating Traces');
 sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
-%% 8a) Plot Page of Traces
+%% 9) View Traces
 montage.pageNumber =1; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'Frames'; % Unit to use for x axis 
@@ -502,7 +502,7 @@ for i=1:28
     if i+28*(montage.pageNumber-1)<=size(sysVar.traces1,1)
         subplot(7,4,i)
         hold on
-        title(['Particle ' num2str(i+28*(montage.pageNumber-1)) ' x ' num2str(round(sysVar.measures(i+28*(montage.pageNumber-1),1))) ' y ' num2str(round(sysVar.measures(i+28*(montage.pageNumber-1),2)))])
+        title(['No. ' num2str(i+28*(montage.pageNumber-1)) ' x ' num2str(round(sysVar.measures(i+28*(montage.pageNumber-1),1))) ' y ' num2str(round(sysVar.measures(i+28*(montage.pageNumber-1),2)))])
         %title(['Particle ' num2str(i+28*(montage.pageNumber-1))],'FontName','Myriad Pro','FontSize',9)
         if imStackNumberOfChannels>1
             yyaxis left
@@ -540,11 +540,11 @@ for i=1:28
 end
 movegui(sysVar.fig);
 set(findobj(gcf,'type','axes'),'FontName','Myriad Pro','FontSize',9, 'LineWidth', 1.5);
-print([workingDir 'Examples\' 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
-print([workingDir 'Examples\' 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
+print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
+print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
 savefig(sysVar.fig,[workingDir 'Examples\' 'Example_Page_' num2str(montage.pageNumber)],'compact');
 end
-%% 8b)Extract Individual Trace and montage
+%% 10)Extract Individual Trace and montage
 montage.traceNo = 9;
 montage.start = 3;
 montage.end = 28;
@@ -553,12 +553,18 @@ montage.average = 5;
 
 montage.outputParticleImageStack = true;% Create a Tiff stack of the ROI of the particle
 
-% Don't tought from here
-for toCollapse = 1
-sysConst.ParticleStackStr = '';
+% Don't touch from here
+
+sysVar.cmd = [sysConst.JIM,'Isolate_Particle',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Examples\Example" ',sysVar.allChannelNames,' -Start ',num2str(montage.start),' -End ',num2str(montage.end),' -Particle ',num2str(montage.traceNo),' -Delta ',num2str(montage.delta),' -Average ',num2str(montage.average)];
 if montage.outputParticleImageStack
-    sysConst.ParticleStackStr = ' -outputImageStack';
+    sysVar.cmd = [sysVar.cmd ' -outputImageStack'];
 end
+
+system(sysVar.cmd);   
+    
+sysVar.channel1Im = imread([workingDir,'Examples\Example_Trace_' num2str(montage.traceNo) '_Range_' num2str(montage.start) '_' num2str(montage.delta) '_' num2str(montage.end) '_montage.tiff']);
+figure('Name',['Particle ' num2str(montage.traceNo) ' montage']);
+imshow(sysVar.channel1Im,'Border','tight','InitialMagnification',200);    
 
 sysVar.opts.Colors= get(groot,'defaultAxesColorOrder');sysVar.opts.width=10;sysVar.opts.height= 6;sysVar.opts.fontType= 'Myriad Pro';sysVar.opts.fontSize= 9;
     sysVar.fig = figure; sysVar.fig.Units= 'centimeters';sysVar.fig.Position(3)= sysVar.opts.width;sysVar.fig.Position(4)= sysVar.opts.height;
@@ -609,20 +615,14 @@ print([workingDir 'Examples\Example_Trace_' num2str(montage.traceNo)], '-dpng', 
 print([workingDir 'Examples\Example_Trace_' num2str(montage.traceNo)], '-depsc', '-r600');
 savefig(sysVar.fig,[workingDir 'Examples\Example_Trace_' num2str(montage.traceNo)],'compact');
 
-sysVar.cmd = [sysConst.JIM,'Isolate_Particle',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Examples\Example" ',sysVar.allChannelNames,' -Start ',num2str(montage.start),' -End ',num2str(montage.end),' -Particle ',num2str(montage.traceNo),' -Delta ',num2str(montage.delta),' -Average ',num2str(montage.average),sysConst.ParticleStackStr];
-system(sysVar.cmd);
 
-sysVar.channel1Im = imread([workingDir,'Examples\Example_Trace_' num2str(montage.traceNo) '_Range_' num2str(montage.start) '_' num2str(montage.delta) '_' num2str(montage.end) '_montage.tiff']);
-figure('Name',['Particle ' num2str(montage.traceNo) ' montage']);
-imshow(sysVar.channel1Im,'Border','tight','InitialMagnification',200);
-end
 %% Continue from here for batch processing
 %
 %
 %
 %
 %
-%% 9) Detect files for batch
+%% 1) Detect files for batch
 filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 for toCollapse = 1
@@ -640,7 +640,7 @@ allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),filesep,x.name],dir(cell2mat(y
 allFiles = horzcat(allFiles{:})';
 allFiles = allFiles(contains(allFiles,'.tif','IgnoreCase',true));
 
-if multipleFilesPerImageStack
+if imStackMultipleFiles
     sysVar.allFolders = arrayfun(@(x) fileparts(allFiles{x}),1:max(size(allFiles)),'UniformOutput',false);
     [~,folderPos] = unique(sysVar.allFolders);
     allFiles = allFiles(folderPos);
@@ -648,7 +648,7 @@ end
 sysConst.NumberOfFiles=size(allFiles,1);
 disp(['There are ',num2str(sysConst.NumberOfFiles),' files to analyse']);
 end
-%% 10) Batch Analyse
+%% 2) Batch Analyse
 overwritePreviouslyAnalysed = true;
 deleteWorkingImageStacks = true;
 
@@ -677,7 +677,7 @@ parfor i=1:sysConst.NumberOfFiles
         continue
     end
     
-    if multipleFilesPerImageStack
+    if imStackMultipleFiles
         completeName = arrayfun(@(x)['"',pathName,x.name,'" '],dir(pathName)','UniformOutput',false);
         completeName = completeName(contains(completeName,'.tif','IgnoreCase',true));
         completeName = horzcat(completeName{:});
@@ -708,10 +708,10 @@ parfor i=1:sysConst.NumberOfFiles
         allChannelNames = [allChannelNames,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif"'];
     end
 
-    cmd = [sysConst.JIM,'Align_Channels',sysConst.fileEXE,' "',workingDir,'Alignment"',sysVar.allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(alignIterations),' -MaxShift ',num2str(alignMaxShift)];
+    cmd = [sysConst.JIM,'Align_Channels',sysConst.fileEXE,' "',workingDir,'Alignment"',allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(alignIterations),' -MaxShift ',num2str(alignMaxShift)];
 
     if alignManually
-        cmd = [cmd,' -Alignment ',alignXoffset,' ',alignYoffset,' ',alignRotationAngle,' ',alignScalingFactor];
+        cmd = [cmd,' -Alignment ',alignXOffset,' ',alignYOffset,' ',alignRotationAngle,' ',alignScalingFactor];
     elseif imStackNumberOfChannels>1
         cmd = [cmd,' -MaxIntensities ',alignMaxIntensities,' -SNRCutoff ',num2str(alignSNRCutoff)];
     end
@@ -724,7 +724,7 @@ parfor i=1:sysConst.NumberOfFiles
 
 
     % make submean
-    cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Image_For_Detection"',sysVar.allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
+    cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Image_For_Detection"',allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
     if detectUsingMaxProjection
         cmd = [cmd,' -MaxProjection'];
     end
@@ -739,7 +739,7 @@ parfor i=1:sysConst.NumberOfFiles
     %background Detect
     if additionBackgroundDetect
 
-        cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,sysConst.backgroundMaxProjectionString,' -Weights ',additionalBackgroundWeights];
+        cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
         if additionBackgroundUseMaxProjection
             cmd = [cmd,' -MaxProjection'];
         end   
@@ -753,15 +753,15 @@ parfor i=1:sysConst.NumberOfFiles
 
     % 3.7) Fit areas around each shape 
 
-    cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
+    cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',workingDir,'Detected_Filtered_Positions.csv" "',workingDir,'Detected_Positions.csv" "',workingDir,'Expanded" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
     if additionBackgroundDetect
         cmd = [cmd,' -extraBackgroundFile "',workingDir,'Background_Detected_Positions.csv"'];
     end
     if imStackNumberOfChannels > 1
         cmd = [cmd,' -channelAlignment "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv"'];
     end
-
-    system(cmd) 
+    
+    system(cmd);
 
     % 3.8) Calculate amplitude for each frame for each channel
     
@@ -787,14 +787,14 @@ parfor i=1:sysConst.NumberOfFiles
 end
 
 disp('Batch Process Completed');
-%% 11) Extract Traces to Separate Folder
+%% 3) Extract Traces to Separate Folder
 %sysVar.fileName = 'G:\My_Jim\20221412_VLP_Len_5%488_50ms\';
 sysVar.outputFolder = uigetdir(); 
 sysVar.outputFolder = [sysVar.outputFolder,filesep];
-%%
+
 sysVar.outputFile = [arrayfun(@(x)[x.folder,'\',x.name],dir([sysVar.fileName '**\*_Fluorescent_Intensities.csv']),'UniformOutput',false);arrayfun(@(x)[x.folder,'\',x.name],dir([sysVar.fileName '**\*_Fluorescent_Backgrounds.csv']),'UniformOutput',false)];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
-%% 
+
 for i=1:length(sysVar.outputFile)
     sysVar.fileNameIn = sysVar.outputFile{i};
     sysVar.fileNameIn = extractAfter(sysVar.fileNameIn,length(sysVar.fileName));

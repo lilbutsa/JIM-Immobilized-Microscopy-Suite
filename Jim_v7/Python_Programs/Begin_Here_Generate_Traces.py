@@ -3,195 +3,227 @@ from sys import platform as _platform
 import sys
 import os
 import tkinter as tk
-print(sys.path)
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import csv
 import numpy as np
 from tkinter import filedialog
 from PIL import Image
+from multiprocessing import Pool
 
-sectionNumber = 1
+sectionNumber = 12
 # Sections
+
+# 0 - Import Parameters
 # 1 - Select input file and create a folder for results
 # 2 - Split File into Individual Channels
 # 3 - Align Channels and Calculate Drifts
 # 4 - Make a SubAverage of the Image Stack for Detection
 # 5 - Detect Particles
-# 6 - Additional Background Detection Subaverage
-# 7 - Additional Background Detect
-# 8 - Expand Regions
-# 9 - Calculate Traces
-# 10 - View Traces
-# 11 - Extract Trace
-# 12 - Detect files for batch
-# 13 - Batch Analyse
-# 14 - Export Traces
+# 6 - Additional Background Detection
+# 7 - Expand Regions
+# 8 - Calculate Traces
+# 9 - View Traces
+# 10 - Extract Trace
+# 11 - Detect files for batch
+# 12 - Batch Analyse
+# 13 - Export All Batch Traces
 
 # ~~~~PARAMETER INPUTS~~~~ #
 
 # General Display Parameters
 
-# Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1
-overlayColours1 = [1, 0, 0]
-overlayColours2 = [0, 1, 0]
-overlayColours3 = [0, 0, 1]
+# Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1. Make sure there are at least one colour for each channel
+overlayColours = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
 # This just adjusts the contrast in the displayed image. It does NOT effect detection
 displayMin = 0
-displayMax = 1
+displayMax = 95
 
 # 1 - Select Input File
 additionalExtensionsToRemove = 0  # remove extra .ome from working folder name if you want to
-multipleFilesPerImageStack = False   # choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
-
 
 # 2 - Split File into Individual Channels Parameters
-imStackNumberOfChannels = 2  # Input the number of channels in the data
-
-imStackChannelsToTransform = ''  # If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3
-imStackVerticalFlipChannel = '1'  # For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
-imStackHorizontalFlipChannel = '0'  #  Same as vertical
-imStackRotateChannel = '0'  #  Rotate should either be 0, 90, 180 or 270 for the angle to rotate each selected channel
+imStackMultipleFiles = False  # choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
+imStackNumberOfChannels = 3  # Input the number of channels in the data
 
 imStackDisableMetadata = False  # Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
 imStackStartFrame = 1  # Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1  # Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
-imStackPreSplitChannels = False  # Some scopes output channels as individual files. These files can be organised in another script, in which case set this to true.
-
+imStackChannelsToTransform = '2 3'  # If no channels need to be transformed set channelsToTransform 
+imStackVerticalFlipChannel = '0 0'  # For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
+imStackHorizontalFlipChannel = '1 0'  # Same as vertical
+imStackRotateChannel = '0 180'  # Rotate should either be 0, 90, 180 or 270 for the angle to rotate each selected channel
 
 # 3 - Align Channels and Calculate Drifts Parameters
-alignIterations = 3  # Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
+alignIterations = 1  # Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
-alignStartFrame = 1  # Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 5
+alignStartFrame = 12  # Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 12
 
-alignMaxShift = 20  # Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 30  # Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
-#Output the aligned image stacks. Note this is not required by JIM but can
-#be helpful for visualization. To save space, aligned stack will not output in batch
-#regarless of this value
-outputAlignedStacks = True
+# Output the aligned image stacks. Note this is not required by JIM but can
+# be helpful for visualization. To save space, aligned stack will not output in batch
+# regarless of this value
+alignOutputStacks = False
+
+# Parmeters for Automatic Alignment
+alignMaxIntensities = '65000 65000 65000'  # Set a threshold so that during channel to channel alignment agregates are ignored
+alignSNRCutoff = 0.20  # Set a minimum alignment SNR to throw warnings
 
 # Multi Channel Alignment
 alignManually = False  # Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
-alignXoffset = '0'
-alignYoffset = '0'
-alignRotationAngle = '0'
-alignScalingFactor = '1'
-
-#Parmeters for Automatic Alignment
-alignMaxIntensities = '64000'  # Set a threshold so that during channel to channel alignment agregates are ignored
-alignSNRCutoff = 1  # Set a minimum alignment SNR to throw warnings
-
-skipIndependentDrifts = False  # If there is strong signal in both channels, or using manual alignment, this can speed up alignment. Don't use if you want independent drifts
+alignXOffset = '-5 -5'
+alignYOffset = '-5 -5'
+alignRotationAngle = '-2 2'
+alignScalingFactor = '1 1'
 
 # 4 - Make a SubAverage of the Image Stack for Detection Parameters
 detectUsingMaxProjection = False  # Use a max projection rather than mean. This is better for short lived blinking particles
 
-detectionStartFrame = '1'  # first frame of the reference region for detection for each channel
-detectionEndFrame = '5'  # last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
-
-# Normalizing makes all channels the same max to min intensity before combining.
-# This is good if you want to detect bright things in one channel and dim things in another
-# This is bad if you want to detect dim things in both channels but one has bright things as well
-detectNormalizeBetweenChannels = False
+detectionStartFrame = '1 -5 1'  # first frame of the reference region for detection for each channel
+detectionEndFrame = '5 -1 5'  # last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectWeights = '1 1 1'  # Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another.
 
 # 5 - Detect Particles Parameters
 # Thresholding
-detectionCutoff = 0.5  # The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 1.00  # The cutoff for the initial thresholding. Typically in range 0.25-2
 
 # Filtering
-detectLeftEdge = 10  # Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-detectRightEdge = 10  # Excluded particles closer to the Right edge than this.
-detectTopEdge = 10  # Excluded particles closer to the Top edge than this.
-detectBottomEdge = 10  # Excluded particles closer to the Bottom edge than this.
+detectLeftEdge = 5  # Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 5  # Excluded particles closer to the Right edge than this.
+detectTopEdge = 5  # Excluded particles closer to the Top edge than this.
+detectBottomEdge = 5  # Excluded particles closer to the Bottom edge than this.
 
-detectMinCount = 10  # Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-detectMaxCount = 100  # Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+detectMinCount = 0  # Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+detectMaxCount = 10000  # Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-detectMinEccentricity = -0.1  # Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-detectMaxEccentricity = 0.4  # Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects
+detectMinEccentricity = -0.10  # Eccentricity of best fit ellipse goes from 0 to 1 - 0
+detectMaxEccentricity = 1.1  # Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects
 
-detectMinLength = 0  # Minimum number of pixels for the major axis of the best fit ellipse
-detectMaxLength = 10000000  # Maximum number of pixels for the major axis of the best fit ellipse
+detectMinLength = 0.00  # Minimum number of pixels for the major axis of the best fit ellipse
+detectMaxLength = 10000.00  # Maximum number of pixels for the major axis of the best fit ellipse
 
-detectMaxDistFromLinear = 10000000  # Maximum distance that a pixel can diviate from the major axis.
+detectMaxDistFromLinear = 10000.00  # Maximum distance that a pixel can diviate from the major axis.
 
-detectMinSeparation = 0  # Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = -1000.00  # Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
 # 6 - Additional Background Detection Subaverage - Use this to detect all other particles that are not in the detection image to cut around for background
 
 additionBackgroundDetect = False  # enable the additional detection. Disable if all particles were detected (before filtering) above.
 
-additionBackgroundUseMaxProjection = True  #Use a max projection rather than mean. This is better for short lived blinking particles
+additionBackgroundUseMaxProjection = True  # Use a max projection rather than mean. This is better for short lived blinking particles
 
-additionalBackgroundStartFrame = '1'  #first frame of the reference region for background detection
-additionalBackgroundEndFrame = '-1'  #last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundStartFrame = '1 1'  # first frame of the reference region for background detection
+additionalBackgroundEndFrame = '-1 -1'  # last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
+additionalBackgroundWeights = '1 1'
 
-additionalBackgroundNormalizeBetweenChannels = True
+additionBackgroundCutoff = 1.00  # Threshold for particles to be detected for background
 
-# 7 - Additional Background Detect
+# 7 - Expand Regions Parameters
 
-additionBackgroundCutoff = 0.5  # Threshold for particles to be detected for background
+expandForegroundDist = 4.10  # Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+expandBackInnerDist = 4.10  # Minimum distance to dilate beyond the ROI to measure the local background
+expandBackOuterDist = 20.00  # Maximum distance to dilate beyond the ROI to measure the local background
 
-# 8 - Expand Regions Parameters
-
-expandForegroundDist = 4.1  # Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 4.1  # Minimum distance to dilate beyond the ROI to measure the local background
-expandBackOuterDist = 30  # Maximum distance to dilate beyond the ROI to measure the local background
-
-# 9 - Calculate Traces Parameter
+# 8 - Calculate Traces Parameter
 traceVerboseOutput = False  # Create additional file with additional statistics on each particle in each frame. Warning, this file can get very large. In general you don't want this.
 
-traceIndependentDrifts = False  # Use separate drifts for each channel. Do not use unless you have a good reason to. This will only be needed if stage moves alot between images with sequential imaging or drift is coming from camera movement.
+# 9 - View Traces Parameter
+montagePageNumber = 1  # Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montageTimePerFrame = 1 # Set to zero to just have frames
+montageTimeUnits = 'Frames'  # Unit to use for x axis
 
-# 10 - View Traces Parameter
-montagePageNumber =1  # Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
-montageTimePerFrame = 0  # Set to zero to just have frames
-montageTimeUnits = 's'  # Unit to use for x axis
-
-# 11 - Extract Trace
-montageTraceNo = 23
-montageStart = 1
-montageEnd = 50
+# 10 - Extract Trace
+montageTraceNo = 9
+montageStart = 3
+montageEnd = 28
 montageDelta = 5
-montageAverage = 7
+montageAverage = 5
 
 montageOutputParticleImageStack = False  # Create a Tiff stack of the ROI of the particle
 
-# 12 - Detect files for batch
+# BATCH DETECTION SETTINGS
+
+# 11 - Detect files for batch
 filesInSubFolders = False
 
-# 13 - Batch Analysis
+# 12 - Batch Analysis
 overwritePreviouslyAnalysed = True
 deleteWorkingImageStacks = True
 
-
-
-
+batchNumberOfThreads = 5
 
 # ~~~~ Don't touch from here ~~~~ #
 
 pyfile = sys.argv[0]
 fileSep = '\\'
+JIM = ''
+fileEXE = str('')
+workingDir = ''
+completeName = ''
 if _platform == "linux" or _platform == "linux2":
-    JIM = os.path.dirname(os.path.dirname(pyfile)) + "/Jim_Programs_Linux/"
+    JIM = os.path.dirname(os.path.dirname(pyfile)) + "/c++_Base_Programs/Linux/"
     fileSep = '/'
-    fileEXE = ''
 elif _platform == "darwin":
-    JIM = os.path.dirname(os.path.dirname(pyfile)) + "/Jim_Programs_Mac/"
+    JIM = os.path.dirname(os.path.dirname(pyfile)) + "/c++_Base_Programs/Mac/"
     fileSep = '/'
-    fileEXE = ''
 elif _platform == "win32" or _platform == "win64":
-    JIM = os.path.dirname(os.path.dirname(pyfile)) + "\\Jim_Programs\\"
+    JIM = os.path.dirname(os.path.dirname(pyfile)) + "\\c++_Base_Programs\\Windows\\"
     fileEXE = '.exe'
 #  Change if not running in original distribution folder e.g. JIM = "C:\\Users\\James\\Desktop\\Jim_v#\\Jim_Programs\\"
 
+# 0 - Import Parameters
+if sectionNumber == 0:
+    root = tk.Tk()
+    root.withdraw()
 
+    completeName = filedialog.askopenfilename()
+    parameterList = list(csv.reader(open(completeName)))
+    parameterList.pop(0)
+
+    my_file = open(pyfile, "r")
+    data = my_file.read()
+    my_file.close()
+    programFileList = data.split('\n')
+
+    paramIsString = [6, 7, 8, 9, 15, 18, 19, 20, 21, 23, 24, 25, 41, 42, 43]
+    paramIndex = 0
+    for paramIn in parameterList:
+        index = [idx for idx, s in enumerate(programFileList) if paramIn[0] in s]
+        if len(index) == 0:
+            print(paramIn)
+            break
+
+        if len(paramIn) == 1:
+            paramVal = ''
+        else:
+            paramVal = paramIn[1]
+
+        paramVal = paramVal.replace('true', 'True')
+        paramVal = paramVal.replace('false', 'False')
+        if paramIndex in paramIsString:
+            stringOut = paramIn[0] + ' = \'' + paramVal + '\''
+        else:
+            stringOut = paramIn[0] + ' = ' + paramVal
+
+        splitLine = programFileList[index[0]].split('=')
+        splitLine = splitLine[1].split('#', 1)
+        if len(splitLine) > 1:
+            stringOut = stringOut + '  #' + splitLine[1]
+        print(stringOut)
+
+        programFileList[index[0]] = stringOut
+
+        paramIndex = paramIndex + 1
+
+    with open(pyfile, 'w') as f:
+        for line in programFileList:
+            f.write("%s\n" % line)
 
 # 1 - Select input file and create a folder for results
 if sectionNumber == 1:
@@ -201,24 +233,24 @@ if sectionNumber == 1:
     completeName = filedialog.askopenfilename()
     completeName = completeName.replace("/", fileSep)
     completeName = completeName.replace("\\", fileSep)
-    print(completeName)
-    baseName = os.path.basename(completeName);
-    splitBaseName = baseName.split(".");
-    baseNameOut = splitBaseName[0]
-    for x in range(1, len(splitBaseName) - additionalExtensionsToRemove-1):
-        baseNameOut = baseNameOut + "." + splitBaseName[x]
 
+    print(completeName)
+    baseName = os.path.basename(completeName)
+    splitBaseName = baseName.split(".")
+    baseNameOut = splitBaseName[0]
+    for x in range(1, len(splitBaseName) - additionalExtensionsToRemove - 1):
+        baseNameOut = baseNameOut + "." + splitBaseName[x]
     workingDir = os.path.dirname(completeName) + fileSep + baseNameOut + fileSep
 
     if not os.path.isdir(workingDir):
         os.makedirs(workingDir)
+
     savedFilenameFile = open(os.path.dirname(pyfile) + fileSep + "saveFilename.csv", "w")
-    savedFilenameFile.write(completeName)
+    savedFilenameFile.write(completeName + ',' + workingDir)
     savedFilenameFile.close()
 
-
-# 12 - Detect all files for batch
-if sectionNumber == 12:
+# 11 - Detect all files for batch
+if sectionNumber == 11:
     root = tk.Tk()
     root.withdraw()
     topFolder = filedialog.askdirectory(parent=root)
@@ -241,263 +273,298 @@ if sectionNumber == 12:
     print(fileList)
     savedFilenameFile = open(os.path.dirname(pyfile) + fileSep + "saveFilename.csv", "w")
     for i in range(len(fileList)):
-        savedFilenameFile.write(fileList[i] + "\n")
+        baseName = os.path.basename(fileList[i])
+        splitBaseName = baseName.split(".")
+        baseNameOut = splitBaseName[0]
+        for x in range(1, len(splitBaseName) - additionalExtensionsToRemove - 1):
+            baseNameOut = baseNameOut + "." + splitBaseName[x]
+        workingDir = os.path.dirname(fileList[i]) + fileSep + baseNameOut + fileSep
+
+        savedFilenameFile.write(fileList[i] + ',' + workingDir + "\n")
     savedFilenameFile.close()
 
-if sectionNumber != 1 and sectionNumber != 12:
+if sectionNumber > 1 and sectionNumber != 11:
     channelFile = os.path.dirname(pyfile) + fileSep + "saveFilename.csv"
     fileList = list(csv.reader(open(channelFile)))
 
-    for filein in fileList:
-        completeName = filein[0]
-
-        print('Analysing file '+completeName)
-        workingDir = os.path.dirname(completeName) + fileSep + str(os.path.basename(completeName).split(".", 1)[0]) + fileSep
-        if os.path.isfile(workingDir + "Channel_1_Fluorescent_Intensities.csv"):
-            print('Skipping '+ completeName + ' - Analysis already exists')
-            continue
-
-        if not os.path.isdir(workingDir):
-            os.makedirs(workingDir)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""
-
-
-
-
-if sectionNumber != 1 and sectionNumber != 11:
-    channelFile = os.path.dirname(pyfile) + fileSep + "saveFilename.csv"
-    fileList = list(csv.reader(open(channelFile)))
-    completeName = fileList[0][0]
-    print("Analysing "+completeName)
-    baseName = os.path.basename(completeName);
-    splitBaseName = baseName.split(".");
-    baseNameOut = splitBaseName[0]
-    for x in range(1, len(splitBaseName) - additionalExtensionsToRemove):
-        baseNameOut = baseNameOut + "." + splitBaseName[x]
-
-    workingDir = os.path.dirname(completeName) + fileSep + baseNameOut + fileSep
-
-
+    if sectionNumber < 11:
+        completeName = str(fileList[0][0])
+        workingDir = str(fileList[0][1])
 
 # 2 - Split File into Individual Channels Parameters
 if sectionNumber == 2:
-    if useMetadataFile:
-        metaFileName = (os.path.dirname(completename) + fileSep
-                        + str(os.path.basename(completename).split(".", 1)[0]) + '_metadata.txt')
-        cmd = (JIM + 'TIFF_Channel_Splitter' + fileEXE + ' \"' + completeName + '\" \"' + workingDir
-               + 'Images\" -MetadataFile \"' + metaFileName + '\"')
-    else:
-        cmd = (
-                    JIM + 'TIFF_Channel_Splitter' + fileEXE + ' \"' + completeName + '\" \"' + workingDir + 'Images\" -NumberOfChannels '
-                    + str(numberOfChannels))
+    cmd = (JIM + 'TIFF_Channel_Splitter' + fileEXE + ' \"' + workingDir + 'Raw_Image_Stack\" \"' + completeName
+           + '\"  -NumberOfChannels ' + str(imStackNumberOfChannels)
+           + ' -StartFrame ' + str(imStackStartFrame) + ' -EndFrame ' + str(imStackEndFrame))
+
+    if imStackMultipleFiles:
+        cmd = cmd + ' -DetectMultipleFiles'
+
+    if imStackChannelsToTransform != '':
+        cmd = (cmd + ' -Transform ' + imStackChannelsToTransform + ' ' + imStackVerticalFlipChannel + ' '
+               + imStackHorizontalFlipChannel + ' ' + imStackRotateChannel)
+
+    if imStackDisableMetadata:
+        cmd = cmd + ' -DisableMetadata'
+
     os.system(cmd)
 
-# 3 - Invert Second Channel
-if sectionNumber == 3 and invertChannel:
-    cmd = (JIM + 'Invert_Channel' + fileEXE + ' "' + workingDir + 'Images_Channel_' + channelToInvert + '.tiff" "' + workingDir +
-           'Images_Channel_' + channelToInvert + '_Inverted.tiff"')
-    system(cmd)
-    os.remove(workingDir + 'Images_Channel_' + channelToInvert + '.tiff')
-    os.rename(workingDir + 'Images_Channel_' + channelToInvert + '_Inverted.tiff', workingDir + 'Images_Channel_' + channelToInvert + '.tiff')
-
-# 4 - Align Channels and Calculate Drifts
-if sectionNumber == 4:
+# 3 - Align Channels and Calculate Drifts
+if sectionNumber == 3:
     allChannelNames = ''  # the string list of all channel names
-    for j in range(numberOfChannels):
-        allChannelNames += ' "' + workingDir + 'Images_Channel_' + str(j + 1) + '.tiff"'
+    for j in range(imStackNumberOfChannels):
+        allChannelNames += ' \"' + workingDir + 'Raw_Image_Stack_Channel_' + str(j + 1) + '.tif\"'
 
-    if manualAlignment:
-        cmd = (JIM + 'Align_Channels' + fileEXE + ' \"' + workingDir + "Aligned\"" + allChannelNames + " -Start "
-               + str(alignStartFrame) + " -End " + str(alignEndFrame) + ' -Iterations ' + str(iterations) +
-               ' -Alignment ' + str(xoffset) + ' ' + str(yoffset) + ' ' + str(rotationAngle) + ' ' + str(scalingFactor))
+    cmd = (JIM + 'Align_Channels' + fileEXE + ' \"' + workingDir + "Alignment\"" + allChannelNames + " -Start "
+           + str(alignStartFrame) + " -End " + str(alignEndFrame) + ' -Iterations ' + str(alignIterations)
+           + ' -MaxShift ' + str(alignMaxShift))
 
-    else:
-        cmd = (JIM + 'Align_Channels' + fileEXE + ' \"' + workingDir + "Aligned\"" + allChannelNames + " -Start "
-               + str(alignStartFrame) + " -End " + str(alignEndFrame) + ' -Iterations ' + str(iterations))
+    if alignManually:
+        cmd = cmd + ' -Alignment ' + alignXOffset + ' ' + alignYOffset + ' ' + alignRotationAngle + ' ' + alignScalingFactor
+
+    if alignOutputStacks:
+        cmd = cmd + ' -OutputAligned'
+
     os.system(cmd)
 
-    if manualAlignment:
-        channel1Im = np.array(Image.open(workingDir + "Aligned_aligned_partial_mean_1.tiff")).astype(float)
-        channel2Im = np.array(Image.open(workingDir + "Aligned_aligned_partial_mean_2.tiff")).astype(float)
-    else:
-        channel1Im = np.array(Image.open(workingDir + "Aligned_initial_partial_mean_1.tiff")).astype(float)
-        channel2Im = np.array(Image.open(workingDir + "Aligned_initial_partial_mean_2.tiff")).astype(float)
-
-    channel1Im = np.clip(
-        255 * (displayMax - displayMin) * (channel1Im - np.min(channel1Im)) / np.ptp(channel1Im) - displayMin, 0, 255)
-    channel2Im = np.clip(
-        255 * (displayMax - displayMin) * (channel2Im - np.min(channel2Im)) / np.ptp(channel2Im) - displayMin, 0, 255)
-
-    combinedImage = (np.dstack((overlayColours1[0] * channel1Im + overlayColours2[0] * channel2Im,
-                                overlayColours1[1] * channel1Im + overlayColours2[1] * channel2Im,
-                                overlayColours1[2] * channel1Im + overlayColours2[2] * channel2Im))).astype(np.uint8)
+    imin = Image.open(workingDir + "Alignment_Full_Projection_Before.tiff")
+    imred = np.zeros((imin.height, imin.width))
+    imgreen = np.zeros((imin.height, imin.width))
+    imblue = np.zeros((imin.height, imin.width))
+    for j in range(imin.n_frames):
+        imin.seek(j)
+        iminnp = np.array(imin).astype(float)
+        iminnp = np.clip(255 * (iminnp - np.percentile(iminnp, displayMin)) / (
+                np.percentile(iminnp, displayMax) - np.percentile(iminnp, displayMin)), 0, 255)
+        imred = imred + overlayColours[j][0] * iminnp
+        imgreen = imgreen + overlayColours[j][1] * iminnp
+        imblue = imblue + overlayColours[j][2] * iminnp
+    imout = np.dstack((imred, imgreen, imblue)).astype(np.uint8)
     plt.figure('Before Drift Correction and Alignment')
-    plt.imshow(combinedImage)
-
-    channel1Im = np.array(Image.open(workingDir + "Aligned_aligned_full_mean_1.tiff")).astype(float)
-    channel2Im = np.array(Image.open(workingDir + "Aligned_aligned_full_mean_2.tiff")).astype(float)
-    channel1Im = np.clip(
-        255 * (displayMax - displayMin) * (channel1Im - np.min(channel1Im)) / np.ptp(channel1Im) - displayMin, 0, 255)
-    channel2Im = np.clip(
-        255 * (displayMax - displayMin) * (channel2Im - np.min(channel2Im)) / np.ptp(channel2Im) - displayMin, 0, 255)
-
-    combinedImage = (np.dstack((overlayColours1[0] * channel1Im + overlayColours2[0] * channel2Im,
-                                overlayColours1[1] * channel1Im + overlayColours2[1] * channel2Im,
-                                overlayColours1[2] * channel1Im + overlayColours2[2] * channel2Im))).astype(np.uint8)
-    plt.figure('After Drift Correction and Alignment')
-    plt.imshow(combinedImage)
-
+    plt.imshow(imout)
     plt.show()
 
-# 5 - Make a SubAverage of the Image Stack for Detection
-if sectionNumber == 5:
+    imin = Image.open(workingDir + "Alignment_Full_Projection_After.tiff")
+    imred = np.zeros((imin.height, imin.width))
+    imgreen = np.zeros((imin.height, imin.width))
+    imblue = np.zeros((imin.height, imin.width))
+    for j in range(imin.n_frames):
+        imin.seek(j)
+        iminnp = np.array(imin).astype(float)
+        iminnp = np.clip(255 * (iminnp - np.percentile(iminnp, displayMin)) / (
+                np.percentile(iminnp, displayMax) - np.percentile(iminnp, displayMin)), 0, 255)
+        imred = imred + overlayColours[j][0] * iminnp
+        imgreen = imgreen + overlayColours[j][1] * iminnp
+        imblue = imblue + overlayColours[j][2] * iminnp
+    imout = np.dstack((imred, imgreen, imblue)).astype(np.uint8)
+    plt.figure('After Drift Correction and Alignment')
+    plt.imshow(imout)
+    plt.show()
+
+# 4- Make a SubAverage of the Image Stack for Detection
+if sectionNumber == 4:
     allChannelNames = ''  # the string list of all channel names
-    for j in range(numberOfChannels):
-        allChannelNames += ' "' + workingDir + 'Images_Channel_' + str(j + 1) + '.tiff"'
+    for j in range(imStackNumberOfChannels):
+        allChannelNames += ' \"' + workingDir + 'Raw_Image_Stack_Channel_' + str(j + 1) + '.tif\"'
 
-    maxProjectionString = ""
-    if useMaxProjection:
-        maxProjectionString = " -MaxProjection"
+    cmd = (JIM + 'Mean_of_Frames' + fileEXE + ' \"' + workingDir + 'Alignment_Channel_To_Channel_Alignment.csv\" \"'
+           + workingDir + "Alignment_Channel_1.csv\" \"" + workingDir + "Image_For_Detection\""
+           + allChannelNames + " -Start " + detectionStartFrame + " -End " + detectionEndFrame
+           + ' -Weights ' + detectWeights)
 
-    cmd = (
-                JIM + 'Mean_of_Frames' + fileEXE + ' \"' + workingDir + 'Aligned_channel_alignment.csv\" \"' + workingDir + "Aligned_Drifts.csv\" \"" + workingDir + "Aligned\""
-                + allChannelNames + " -Start " + detectionStartFrame + " -End " + detectionEndFrame + maxProjectionString)
+    if detectUsingMaxProjection:
+        cmd = cmd + ' -MaxProjection'
+
     os.system(cmd)
 
-    imName = workingDir + "Aligned_Partial_Mean.tiff"
+    imName = workingDir + "Image_For_Detection_Partial_Mean.tiff"
     img = mpimg.imread(imName)
     plt.figure('Sub-Average to use for detection')
     plt.imshow(img, cmap="gray")
     plt.show()
 
-# 6 - detect particles
-if sectionNumber == 6:
-    cmd = (JIM + 'Detect_Particles' + fileEXE + ' \"' + workingDir + 'Aligned_Partial_Mean.tiff\" \"' + workingDir
-           + 'Detected\" -BinarizeCutoff ' + str(cutoff) + ' -minLength ' + str(minLength) + ' -maxLength '
-           + str(maxLength) + ' -minCount ' + str(minCount) + ' -maxCount ' + str(maxCount)
-           + ' -minEccentricity ' + str(minEccentricity)
-           + ' -maxEccentricity ' + str(maxEccentricity) + ' -maxDistFromLinear ' + str(maxDistFromLinear)
-           + ' -left ' + str(left) + ' -right ' + str(right) + ' -top ' + str(top) + ' -bottom ' + str(bottom))
+# 5 - detect particles
+if sectionNumber == 5:
+    cmd = (
+                JIM + 'Detect_Particles' + fileEXE + ' \"' + workingDir + 'Image_For_Detection_Partial_Mean.tiff\" \"' + workingDir
+                + 'Detected\" -BinarizeCutoff ' + str(detectionCutoff) + ' -minLength ' + str(
+            detectMinLength) + ' -maxLength '
+                + str(detectMaxLength) + ' -minCount ' + str(detectMinCount) + ' -maxCount ' + str(detectMaxCount)
+                + ' -minEccentricity ' + str(detectMinEccentricity)
+                + ' -maxEccentricity ' + str(detectMaxEccentricity) + ' -maxDistFromLinear ' + str(
+            detectMaxDistFromLinear)
+                + ' -left ' + str(detectLeftEdge) + ' -right ' + str(detectRightEdge) + ' -top ' + str(
+            detectTopEdge) + ' -bottom ' + str(detectBottomEdge)
+                + ' -minSeparation ' + str(detectMinSeparation))
+
     os.system(cmd)
 
-    channel1Im = np.array(Image.open(workingDir + "Aligned_Partial_Mean.tiff")).astype(float)
-    channel1Im = np.clip(
-        255 * (displayMax - displayMin) * (channel1Im - np.min(channel1Im)) / np.ptp(channel1Im) - displayMin, 0, 255)
-    channel2Im = np.array(Image.open(workingDir + "Detected_Regions.tif"))
-    channel3Im = np.array(Image.open(workingDir + "Detected_Filtered_Regions.tif"))
-    combinedImage = (
-        np.dstack((overlayColours1[0] * channel1Im + overlayColours2[0] * channel2Im + overlayColours3[0] * channel3Im,
-                   overlayColours1[1] * channel1Im + overlayColours2[1] * channel2Im + overlayColours3[1] * channel3Im,
-                   overlayColours1[2] * channel1Im + overlayColours2[2] * channel2Im + overlayColours3[
-                       2] * channel3Im))).astype(np.uint8)
+    imin = []
+    imin.append(Image.open(workingDir + "Image_For_Detection_Partial_Mean.tiff"))
+    imin.append(Image.open(workingDir + 'Detected_Regions.tif'))
+    imin.append(Image.open(workingDir + 'Detected_Filtered_Regions.tif'))
+    imred = np.zeros((imin[0].height, imin[0].width))
+    imgreen = np.zeros((imin[0].height, imin[0].width))
+    imblue = np.zeros((imin[0].height, imin[0].width))
+    for j in range(len(imin)):
+        iminnp = np.array(imin[j]).astype(float)
+        iminnp = np.clip(255 * (iminnp - np.percentile(iminnp, displayMin)) / (
+                np.percentile(iminnp, displayMax) - np.percentile(iminnp, displayMin)), 0, 255)
+        imred = imred + overlayColours[j][0] * iminnp
+        imgreen = imgreen + overlayColours[j][1] * iminnp
+        imblue = imblue + overlayColours[j][2] * iminnp
+    imout = np.dstack((imred, imgreen, imblue)).astype(np.uint8)
     plt.figure(
         'Detected Particles - Red Original Image - Blue to White Selected ROIs - Green to Yellow->Excluded by filters')
-    plt.imshow(combinedImage)
+    plt.imshow(imout)
     plt.show()
 
-# 7 - Calculate Regions for Other Channels
-if sectionNumber == 7:
-    cmd = (JIM + 'Other_Channel_Positions' + fileEXE + ' "' + workingDir + 'Aligned_channel_alignment.csv" "' + workingDir +
-           'Aligned_Drifts.csv" "' + workingDir + 'Detected_Filtered_Measurements.csv" "' + workingDir +
-           'Detected_Filtered" -positions "' + workingDir + 'Detected_Filtered_Positions.csv" -backgroundpositions "' +
-           workingDir + 'Detected_Positions.csv"')
-    os.system(cmd)
+# 6 - Additional Background Detection
+if sectionNumber == 6:
+    if additionBackgroundDetect:
 
-# 8 - Expand Regions
-if sectionNumber == 8:
-    cmd = (JIM + 'Expand_Shapes' + fileEXE + ' "' + workingDir + 'Detected_Filtered_Positions.csv" "' + workingDir +
-           'Detected_Positions.csv" "' + workingDir + 'Expanded_Channel_1" -boundaryDist ' + str(foregroundDist) +
-           ' -backgroundDist ' + str(backOuterDist) + ' -backInnerRadius ' + str(backInnerDist))
-    os.system(cmd)
+        cmd = (JIM + 'Mean_of_Frames' + fileEXE + ' \"' + workingDir + 'Alignment_Channel_To_Channel_Alignment.csv\" \"'
+               + workingDir + "Alignment_Channel_1.csv\" \"" + workingDir + "Background\""
+               + allChannelNames + " -Start " + additionalBackgroundStartFrame + " -End " + additionalBackgroundEndFrame
+               + ' -Weights ' + additionalBackgroundWeights)
 
-    for j in range(2, numberOfChannels + 1):
-        cmd = (JIM + 'Expand_Shapes' + fileEXE + ' "' + workingDir + 'Detected_Filtered_Positions_Channel_' + str(j) + '.csv" "' +
-               workingDir + 'Detected_Filtered_Background_Positions_Channel_' + str(j) + '.csv" "' + workingDir +
-               'Expanded_Channel_' + str(j) + '" -boundaryDist ' + str(foregroundDist) + ' -backgroundDist ' +
-               str(backOuterDist) + ' -backInnerRadius ' + str(backInnerDist))
+        if additionBackgroundUseMaxProjection:
+            cmd = cmd + ' -MaxProjection'
+
         os.system(cmd)
 
-    for j in range(1, numberOfChannels + 1):
-        if j == 1:
-            channel1Im = np.array(Image.open(workingDir + 'Aligned_aligned_full_mean_1.tiff')).astype(float)
-        else:
-            channel1Im = np.array(Image.open(workingDir + 'Aligned_initial_full_mean_' + str(j) + '.tiff')).astype(
-                float)
-        channel1Im = np.clip(
-            255 * (displayMax - displayMin) * (channel1Im - np.min(channel1Im)) / np.ptp(channel1Im) - displayMin, 0,
-            255)
-        channel2Im = np.array(Image.open(workingDir + 'Expanded_Channel_' + str(j) + '_ROIs.tif'))
-        channel3Im = np.array(Image.open(workingDir + 'Expanded_Channel_' + str(j) + '_Background_Regions.tif'))
-        combinedImage = (np.dstack(
-            (overlayColours1[0] * channel1Im + overlayColours2[0] * channel2Im + overlayColours3[0] * channel3Im,
-             overlayColours1[1] * channel1Im + overlayColours2[1] * channel2Im + overlayColours3[1] * channel3Im,
-             overlayColours1[2] * channel1Im + overlayColours2[2] * channel2Im + overlayColours3[
-                 2] * channel3Im))).astype(np.uint8)
+        cmd = (
+                    JIM + 'Detect_Particles' + fileEXE + ' \"' + workingDir + 'Background_Partial_Mean.tiff\" \"' + workingDir
+                    + 'Background_Detected\" -BinarizeCutoff ' + str(additionBackgroundCutoff))
+        os.system(cmd)
+
+        imin = []
+        imin.append(Image.open(workingDir + "Image_For_Detection_Partial_Mean.tiff"))
+        imin.append(Image.open(workingDir + 'Detected_Regions.tif'))
+        imin.append(Image.open(workingDir + 'Detected_Filtered_Regions.tif'))
+        imred = np.zeros((imin[0].height, imin[0].width))
+        imgreen = np.zeros((imin[0].height, imin[0].width))
+        imblue = np.zeros((imin[0].height, imin[0].width))
+        for j in range(len(imin)):
+            iminnp = np.array(imin[j]).astype(float)
+            iminnp = np.clip(255 * (iminnp - np.percentile(iminnp, displayMin)) / (
+                    np.percentile(iminnp, displayMax) - np.percentile(iminnp, displayMin)), 0, 255)
+            imred = imred + overlayColours[j][0] * iminnp
+            imgreen = imgreen + overlayColours[j][1] * iminnp
+            imblue = imblue + overlayColours[j][2] * iminnp
+        imout = np.dstack((imred, imgreen, imblue)).astype(np.uint8)
         plt.figure(
-            'Channel ' + str(j) + ' Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
-        plt.imshow(combinedImage)
+            'Detected Background - Red Original Image - Blue to White Selected ROIs - Green to Yellow->Excluded by filters')
+        plt.imshow(imout)
+        plt.show()
 
-    plt.show()
+# 7 - Expand Regions
+if sectionNumber == 7:
+    cmd = (JIM + 'Expand_Shapes' + fileEXE + ' "' + workingDir + 'Detected_Filtered_Positions.csv" "' + workingDir +
+           'Detected_Positions.csv" "' + workingDir + 'Expanded" -boundaryDist ' + str(expandForegroundDist) +
+           ' -backgroundDist ' + str(expandBackOuterDist) + ' -backInnerRadius ' + str(expandBackInnerDist))
+    if additionBackgroundDetect:
+        cmd = cmd + ' -extraBackgroundFile "' + workingDir + 'Background_Detected_Positions.csv"'
 
-# 9 - Calculate Traces
-if sectionNumber == 9:
+    if imStackNumberOfChannels > 1:
+        cmd = cmd + ' -channelAlignment "' + workingDir + 'Alignment_Channel_To_Channel_Alignment.csv"'
 
-    verboseString = ''
-    if verboseOutput:
-        verboseString = ' -Verbose'
-
-    cmd = (JIM + 'Calculate_Traces' + fileEXE + ' \"' + workingDir + 'Images_Channel_1.tiff\" \"'
-           + workingDir + 'Expanded_Channel_1_ROI_Positions.csv\" \"'
-           + workingDir + 'Expanded_Channel_1_Background_Positions.csv\" \"' + workingDir + 'Channel_1\" -Drift \"'
-           + workingDir + 'Aligned_Drifts.csv\"' + verboseString)
     os.system(cmd)
 
-    for j in range(2, numberOfChannels + 1):
-        cmd = (JIM + 'Calculate_Traces' + fileEXE + ' \"' + workingDir + 'Images_Channel_' + str(j) + '.tiff\" \"'
-               + workingDir + 'Expanded_Channel_' + str(j) + '_ROI_Positions.csv\" \"'
-               + workingDir + 'Expanded_Channel_' + str(j) + '_Background_Positions.csv\" \"'
-               + workingDir + 'Channel_' + str(j) + '\" -Drift \"'
-               + workingDir + 'Detected_Filtered_Drifts_Channel_' + str(j) + '.csv\"' + verboseString)
+    imin = []
+    imin.append(Image.open(workingDir + "Image_For_Detection_Partial_Mean.tiff"))
+    imin.append(Image.open(workingDir + 'Expanded_ROIs.tif'))
+    imin.append(Image.open(workingDir + 'Expanded_Background_Regions.tif'))
+    imred = np.zeros((imin[0].height, imin[0].width))
+    imgreen = np.zeros((imin[0].height, imin[0].width))
+    imblue = np.zeros((imin[0].height, imin[0].width))
+    for j in range(len(imin)):
+        iminnp = np.array(imin[j]).astype(float)
+        iminnp = np.clip(255 * (iminnp - np.percentile(iminnp, displayMin)) / (
+                np.percentile(iminnp, displayMax) - np.percentile(iminnp, displayMin)), 0, 255)
+        imred = imred + overlayColours[j][0] * iminnp
+        imgreen = imgreen + overlayColours[j][1] * iminnp
+        imblue = imblue + overlayColours[j][2] * iminnp
+    imout = np.dstack((imred, imgreen, imblue)).astype(np.uint8)
+    plt.figure(
+        'Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
+    plt.imshow(imout)
+    plt.show()
+
+# 8 - Calculate Traces
+if sectionNumber == 8:
+    for j in range(imStackNumberOfChannels):
+        cmd = (JIM + 'Calculate_Traces' + fileEXE + ' \"' + workingDir + 'Raw_Image_Stack_Channel_' + str(
+            j + 1) + '.tif\" \"'
+               + workingDir + 'Expanded_ROI_Positions_Channel_' + str(j + 1) + '.csv\" \"'
+               + workingDir + 'Expanded_Background_Positions_Channel_' + str(j + 1) + '.csv\" \"'
+               + workingDir + 'Channel_' + str(j + 1)
+               + '\" -Drift \"' + workingDir + 'Alignment_Channel_' + str(j + 1) + '.csv\"')
+        if traceVerboseOutput:
+            cmd = cmd + ' -Verbose'
         os.system(cmd)
 
+    falsetrue = ['false', 'true'];
     variableString = ('Date, ' + str(datetime.date.today()) +
-                      '\nuseMetadataFile,' + str(int(useMetadataFile)) + '\nnumberOfChannels,' + str(numberOfChannels) +
-                      '\ninvertChannel,' + str(int(invertChannel)) + '\nchannelToInvert,' + str(channelToInvert) +
-                      '\niterations,' + str(iterations) +
-                      '\nalignStartFrame,' + str(alignStartFrame) + '\nalignEndFrame,' + str(alignEndFrame) +
-                      '\nmanualAlignment,' + str(int(manualAlignment)) +
-                      '\nrotationAngle,' + str(rotationAngle) + '\nscalingFactor,' + str(scalingFactor) +
-                      '\nxoffset,' + str(xoffset) + '\nyoffset,' + str(yoffset) +
-                      '\nuseMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + detectionStartFrame +
-                      '\ndetectionEndFrame,' + detectionEndFrame + '\ncutoff,' + str(cutoff) +
-                      '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(top) + '\nbottom,' + str(bottom) +
-                      '\nminCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) +
-                      '\nminEccentricity,' + str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) +
-                      '\nminLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) +
-                      '\nmaxDistFromLinear,' + str(maxDistFromLinear) + '\nforegroundDist,' + str(foregroundDist) +
-                      '\nbackInnerDist,' + str(backInnerDist) + '\nbackOuterDist,' + str(backOuterDist) +
-                      '\nverboseOutput,' + str(int(verboseOutput)))
+                      '\nadditionalExtensionsToRemove,' + str(additionalExtensionsToRemove) +
+                      '\nimStackMultipleFiles,' + falsetrue[int(imStackMultipleFiles)] +
+                      '\nimStackNumberOfChannels,' + str(imStackNumberOfChannels) +
+                      '\nimStackDisableMetadata,' + falsetrue[int(imStackDisableMetadata)] +
+                      '\nimStackStartFrame,' + str(imStackStartFrame) +
+                      '\nimStackEndFrame,' + str(imStackEndFrame) +
+                      '\nimStackChannelsToTransform,' + imStackChannelsToTransform +
+                      '\nimStackVerticalFlipChannel,' + imStackVerticalFlipChannel +
+                      '\nimStackHorizontalFlipChannel,' + imStackHorizontalFlipChannel +
+                      '\nimStackRotateChannel,' + imStackRotateChannel +
+                      '\nalignIterations,' + str(alignIterations) +
+                      '\nalignStartFrame,' + str(alignStartFrame) +
+                      '\nalignEndFrame,' + str(alignEndFrame) +
+                      '\nalignMaxShift,' + str(alignMaxShift) +
+                      '\nalignOutputStacks,' + falsetrue[int(alignOutputStacks)] +
+                      '\nalignMaxIntensities,' + alignMaxIntensities +
+                      '\nalignSNRCutoff,' + str(alignSNRCutoff) +
+                      '\nalignManually,' + falsetrue[int(alignManually)] +
+                      '\nalignXOffset,' + alignXOffset +
+                      '\nalignYOffset,' + alignYOffset +
+                      '\nalignRotationAngle,' + alignRotationAngle +
+                      '\nalignScalingFactor,' + alignScalingFactor +
+                      '\ndetectUsingMaxProjection,' + falsetrue[int(detectUsingMaxProjection)] +
+                      '\ndetectionStartFrame,' + detectionStartFrame +
+                      '\ndetectionEndFrame,' + detectionEndFrame +
+                      '\ndetectWeights,' + detectWeights +
+                      '\ndetectionCutoff,' + str(detectionCutoff) +
+                      '\ndetectLeftEdge,' + str(detectLeftEdge) +
+                      '\ndetectRightEdge,' + str(detectRightEdge) +
+                      '\ndetectTopEdge,' + str(detectTopEdge) +
+                      '\ndetectBottomEdge,' + str(detectBottomEdge) +
+                      '\ndetectMinCount,' + str(detectMinCount) +
+                      '\ndetectMaxCount,' + str(detectMaxCount) +
+                      '\ndetectMinEccentricity,' + str(detectMinEccentricity) +
+                      '\ndetectMaxEccentricity,' + str(detectMaxEccentricity) +
+                      '\ndetectMinLength,' + str(detectMinLength) +
+                      '\ndetectMaxLength,' + str(detectMaxLength) +
+                      '\ndetectMaxDistFromLinear,' + str(detectMaxDistFromLinear) +
+                      '\ndetectMinSeparation,' + str(detectMinSeparation) +
+                      '\nadditionBackgroundDetect,' + falsetrue[int(additionBackgroundDetect)] +
+                      '\nadditionBackgroundUseMaxProjection,' + falsetrue[int(additionBackgroundUseMaxProjection)] +
+                      '\nadditionalBackgroundStartFrame,' + additionalBackgroundStartFrame +
+                      '\nadditionalBackgroundEndFrame,' + additionalBackgroundEndFrame +
+                      '\nadditionalBackgroundWeights,' + additionalBackgroundWeights +
+                      '\nadditionBackgroundCutoff,' + str(additionBackgroundCutoff) +
+                      '\nexpandForegroundDist,' + str(expandForegroundDist) +
+                      '\nexpandBackInnerDist,' + str(expandBackInnerDist) +
+                      '\nexpandBackOuterDist,' + str(expandBackOuterDist) +
+                      '\ntraceVerboseOutput,' + falsetrue[int(traceVerboseOutput)])
+
 
     saveVariablesFile = open(workingDir + fileSep + "Trace_Generation_Variables.csv", "w")
     saveVariablesFile.write(variableString)
     saveVariablesFile.close()
 
-# 10 - View Traces
-if sectionNumber == 10:
+    print('Traces Generated')
+
+# 9 - View Traces
+if sectionNumber == 9:
     imName = workingDir + "Detected_Filtered_Region_Numbers.tif"
     img = mpimg.imread(imName)
     plt.figure('Before Drift Correction')
@@ -506,170 +573,249 @@ if sectionNumber == 10:
     channelFile = workingDir + "Detected_Filtered_Measurements.csv"
     measurements = list(csv.reader(open(channelFile)))
 
-    channelFile = workingDir + "Channel_1_Fluorescent_Intensities.csv"
-    data = list(csv.reader(open(channelFile)))
-    channelFile = workingDir + "Channel_2_Fluorescent_Intensities.csv"
-    data2 = list(csv.reader(open(channelFile)))
-    plt.figure(figsize=(13, 8))
-    for i in range(1, 37):
-        if len(data) > i + (pageNumber - 1) * 36:
-            plt.subplot(6, 6, i)
-            myMax = max(map(float, data[i + (pageNumber - 1) * 36]))
-            list2 = map(float, data[i + (pageNumber - 1) * 36])
-            plt.plot([x / myMax for x in map(float, data[i + (pageNumber - 1) * 36])], color='red')
-            myMax = max(map(float, data2[i + (pageNumber - 1) * 36]))
-            plt.plot([x / myMax for x in map(float, data2[i + (pageNumber - 1) * 36])], color='blue')
+    myColours = [[0, 0.447, 0.741], [0.85, 0.325, 0.098], [0.929, 0.694, 0.125], [0.494, 0.184, 0.556], [0.466, 0.674, 0.188], [0.301, 0.745, 0.933] ,[0.635, 0.078, 0.184]]
+    data = []
+    for j in range(imStackNumberOfChannels):
+        channelFile = workingDir + "Channel_"+str(j+1)+"_Fluorescent_Intensities.csv"
+        channelFile = list(csv.reader(open(channelFile)))
+        channelFile.pop(0)
+        data.append(np.array(channelFile).astype(float))
+
+    plt.subplots(figsize=(17.78/2, 22.86/2), facecolor=(1, 1, 1))
+    xpoints = np.arange(0.0,len(data[0][0]))* montageTimePerFrame;
+
+    for i in range(1, 29):
+        if len(data[0]) > i + (montagePageNumber - 1) * 28:
+            plt.subplot(7, 4, i)
+
+            for j in range(imStackNumberOfChannels):
+                toplot = data[j][i + (montagePageNumber - 1) * 28]
+                plt.plot(xpoints, toplot / max(toplot) , linewidth=2, color=myColours[j])
+
             plt.plot(plt.xlim(), [0, 0], color='black')
-            xpos = round(float(measurements[i + (pageNumber - 1) * 36][0]))
-            ypos = round(float(measurements[i + (pageNumber - 1) * 36][1]))
-            plt.title('Particle ' + str(i + (pageNumber - 1) * 36) + ' x ' + str(xpos) + ' y ' + str(ypos))
+            plt.ylim(-0.2, 1)
+            xpos = round(float(measurements[i + (montagePageNumber - 1) * 28][0]))
+            ypos = round(float(measurements[i + (montagePageNumber - 1) * 28][1]))
+            plt.title('No. ' + str(i + (montagePageNumber - 1) * 28) + ' x ' + str(xpos) + ' y ' + str(ypos), fontsize = 10, weight='bold')
+
+    plt.annotate('Time ('+montageTimeUnits+')', xy=(0.5, 0), xycoords = 'figure fraction',fontsize = 14, weight='bold',horizontalalignment = 'center')
+    plt.annotate('Normalised Intensity', xy=(0, 0.5), xycoords='figure fraction', fontsize=14,
+                 weight='bold',rotation = 90, va = 'center')
     plt.tight_layout()
+    if not os.path.isdir(workingDir + 'Examples'+fileSep):
+        os.makedirs(workingDir + 'Examples'+fileSep)
+    plt.savefig(workingDir + 'Examples'+fileSep+'Example_Page_'+str(montagePageNumber)+'.png', format = 'png', dpi = 600)
+    plt.savefig(workingDir + 'Examples' + fileSep + 'Example_Page_' + str(montagePageNumber) + '.svg', format='svg')
     plt.show()
 
+# 10 - Extract Traces
+if sectionNumber == 10:
+    allChannelNames = ''  # the string list of all channel names
+    for j in range(imStackNumberOfChannels):
+        allChannelNames += ' \"' + workingDir + 'Raw_Image_Stack_Channel_' + str(j + 1) + '.tif\"'
 
-# 12 - Batch Analysis
+    cmd = (JIM + 'Isolate_Particle' + fileEXE + ' \"' + workingDir + 'Alignment_Channel_To_Channel_Alignment.csv\" \"'
+           + workingDir + 'Alignment_Channel_1.csv\" \"' + workingDir + 'Detected_Filtered_Measurements.csv\" \"'
+           + workingDir + 'Examples\Example\" '+allChannelNames+ ' -Start '+str(montageStart)+ ' -End '+str(montageEnd)+ ' -Particle '
+           + str(montageTraceNo)+ ' -Delta '+str(montageDelta)+ ' -Average '+str(montageAverage))
 
+    if montageOutputParticleImageStack:
+        cmd = cmd + ' -outputImageStack'
+    os.system(cmd)
+
+    imName = (workingDir + 'Examples\Example_Trace_' + str(montageTraceNo) + '_Range_' + str(montageStart) + '_' +
+         str(montageDelta) + '_' + str(montageEnd) + '_montage.tiff')
+    img = mpimg.imread(imName)
+    plt.figure('Trace Montage')
+    plt.imshow(img, cmap="gray")
+    plt.show()
+
+    myColours = [[0, 0.447, 0.741], [0.85, 0.325, 0.098], [0.929, 0.694, 0.125], [0.494, 0.184, 0.556],
+                 [0.466, 0.674, 0.188], [0.301, 0.745, 0.933], [0.635, 0.078, 0.184]]
+
+    data = []
+    for j in range(imStackNumberOfChannels):
+        channelFile = workingDir + "Channel_"+str(j+1)+"_Fluorescent_Intensities.csv"
+        channelFile = list(csv.reader(open(channelFile)))
+        channelFile.pop(0)
+        data.append(np.array(channelFile).astype(float))
+
+    plt.figure(figsize=(4, 3), facecolor=(1, 1, 1))
+    xpoints = np.arange(0.0, len(data[0][0])) * montageTimePerFrame;
+
+    for j in range(imStackNumberOfChannels):
+        toplot = data[j][montageTraceNo]
+        plt.plot(xpoints, toplot / max(toplot), linewidth=4, color=myColours[j])
+
+    plt.plot(plt.xlim(), [0, 0], color='black')
+    plt.ylim(-0.2, 1)
+
+    plt.xlabel('Time (' + montageTimeUnits + ')', fontsize=14, weight='bold',ha='center')
+    plt.ylabel('Normalised Intensity', fontsize=14,weight='bold', rotation=90, va='center')
+    plt.tight_layout()
+
+    if not os.path.isdir(workingDir + 'Examples' + fileSep):
+        os.makedirs(workingDir + 'Examples' + fileSep)
+    plt.savefig(workingDir + 'Examples' + fileSep + 'Example_Trace_' + str(montageTraceNo) + '.png', format='png',
+                dpi=600)
+    plt.savefig(workingDir + 'Examples' + fileSep + 'Example_Trace_' + str(montageTraceNo) + '.svg', format='svg')
+    plt.show()
+
+#12 - Batch Process
 if sectionNumber == 12:
 
-    maxProjectionString = ""
-    if useMaxProjection:
-        maxProjectionString = " -MaxProjection"
+    def f(x):
+        completeNameIn = str(fileList[x][0])
+        workingDirIn = str(fileList[x][1])
+        print(completeNameIn)
+        print(workingDirIn)
 
-    verboseString = ''
-    if verboseOutput:
-        verboseString = ' -Verbose'
+        if not os.path.isdir(workingDirIn):
+            os.makedirs(workingDirIn)
 
-    for filein in fileList:
-        completeName = filein[0]
-        print('Analysing file '+completeName)
-        workingDir = os.path.dirname(completeName) + fileSep + str(os.path.basename(completeName).split(".", 1)[0]) + fileSep
-        if os.path.isfile(workingDir + "Channel_1_Fluorescent_Intensities.csv"):
-            print('Skipping '+ completeName + ' - Analysis already exists')
-            continue
+        cmdIn = (JIM + 'TIFF_Channel_Splitter' + fileEXE + ' \"' + workingDirIn + 'Raw_Image_Stack\" \"' + completeNameIn
+               + '\"  -NumberOfChannels ' + str(imStackNumberOfChannels)
+               + ' -StartFrame ' + str(imStackStartFrame) + ' -EndFrame ' + str(imStackEndFrame))
 
-        if not os.path.isdir(workingDir):
-            os.makedirs(workingDir)
+        if imStackMultipleFiles:
+            cmdIn = cmdIn + ' -DetectMultipleFiles'
+        if imStackChannelsToTransform != '':
+            cmdIn = (cmdIn + ' -Transform ' + imStackChannelsToTransform + ' ' + imStackVerticalFlipChannel + ' '
+                   + imStackHorizontalFlipChannel + ' ' + imStackRotateChannel)
+        if imStackDisableMetadata:
+            cmdIn = cmdIn + ' -DisableMetadata'
 
-        # 2 - Split File into Individual Channels Parameters
+        os.system(cmdIn)
 
-        if useMetadataFile:
-            metaFileName = (os.path.dirname(completename) + fileSep
-                            + str(os.path.basename(completename).split(".", 1)[0]) + '_metadata.txt')
-            cmd = (JIM + 'TIFF_Channel_Splitter' + fileEXE + ' \"' + completeName + '\" \"' + workingDir
-                   + 'Images\" -MetadataFile \"' + metaFileName + '\"')
-        else:
-            cmd = (
-                    JIM + 'TIFF_Channel_Splitter' + fileEXE + ' \"' + completeName + '\" \"' + workingDir + 'Images\" -NumberOfChannels '
-                    + str(numberOfChannels))
-        os.system(cmd)
+        allChannelNamesIn = ''  # the string list of all channel names
+        for j in range(imStackNumberOfChannels):
+            allChannelNamesIn += ' \"' + workingDirIn + 'Raw_Image_Stack_Channel_' + str(j + 1) + '.tif\"'
 
-        # 3 - Invert Second Channel
-        if invertChannel:
-            cmd = (JIM + 'Invert_Channel' + fileEXE + ' "' + workingDir + 'Images_Channel_2.tiff" "' + workingDir +
-                   'Images_Channel_2_Inverted.tiff"')
-            system(cmd)
-            os.remove(workingDir + 'Images_Channel_2.tiff')
-            os.rename(workingDir + 'Images_Channel_2_Inverted.tiff', workingDir + 'Images_Channel_2.tiff')
+        cmdIn = (JIM + 'Align_Channels' + fileEXE + ' \"' + workingDirIn + "Alignment\"" + allChannelNamesIn + " -Start "
+               + str(alignStartFrame) + " -End " + str(alignEndFrame) + ' -Iterations ' + str(alignIterations)
+               + ' -MaxShift ' + str(alignMaxShift))
+        if alignManually:
+            cmdIn = cmdIn + ' -Alignment ' + alignXOffset + ' ' + alignYOffset + ' ' + alignRotationAngle + ' ' + alignScalingFactor
+        if alignOutputStacks:
+            cmdIn = cmdIn + ' -OutputAligned'
+        os.system(cmdIn)
 
-        # 4 - Align Channels and Calculate Drifts
+        cmdIn = (JIM + 'Mean_of_Frames' + fileEXE + ' \"' + workingDirIn + 'Alignment_Channel_To_Channel_Alignment.csv\" \"'
+               + workingDirIn + "Alignment_Channel_1.csv\" \"" + workingDirIn + "Image_For_Detection\""
+               + allChannelNamesIn + " -Start " + detectionStartFrame + " -End " + detectionEndFrame
+               + ' -Weights ' + detectWeights)
+        if detectUsingMaxProjection:
+            cmdIn = cmdIn + ' -MaxProjection'
+        os.system(cmdIn)
 
-        allChannelNames = ''  # the string list of all channel names
-        for j in range(numberOfChannels):
-            allChannelNames += ' "' + workingDir + 'Images_Channel_' + str(j + 1) + '.tiff"'
+        cmdIn = (JIM + 'Detect_Particles' + fileEXE + ' \"' + workingDirIn + 'Image_For_Detection_Partial_Mean.tiff\" \"' + workingDirIn
+                    + 'Detected\" -BinarizeCutoff ' + str(detectionCutoff) + ' -minLength ' + str(
+                detectMinLength) + ' -maxLength '
+                    + str(detectMaxLength) + ' -minCount ' + str(detectMinCount) + ' -maxCount ' + str(detectMaxCount)
+                    + ' -minEccentricity ' + str(detectMinEccentricity)
+                    + ' -maxEccentricity ' + str(detectMaxEccentricity) + ' -maxDistFromLinear ' + str(
+                detectMaxDistFromLinear)
+                    + ' -left ' + str(detectLeftEdge) + ' -right ' + str(detectRightEdge) + ' -top ' + str(
+                detectTopEdge) + ' -bottom ' + str(detectBottomEdge)
+                    + ' -minSeparation ' + str(detectMinSeparation))
 
-        if manualAlignment:
-            cmd = (JIM + 'Align_Channels' + fileEXE + ' \"' + workingDir + "Aligned\"" + allChannelNames + " -Start "
-                   + str(alignStartFrame) + " -End " + str(alignEndFrame) + ' -Iterations ' + str(iterations) +
-                   ' -Alignment ' + str(xoffset) + ' ' + str(yoffset) + ' ' + str(rotationAngle) + ' ' + str(
-                        scalingFactor))
+        os.system(cmdIn)
 
-        else:
-            cmd = (JIM + 'Align_Channels' + fileEXE + ' \"' + workingDir + "Aligned\"" + allChannelNames + " -Start "
-                   + str(alignStartFrame) + " -End " + str(alignEndFrame) + ' -Iterations ' + str(iterations))
-        os.system(cmd)
+        if additionBackgroundDetect:
+            cmdIn = (JIM + 'Mean_of_Frames' + fileEXE + ' \"' + workingDirIn + 'Alignment_Channel_To_Channel_Alignment.csv\" \"'
+                   + workingDirIn + "Alignment_Channel_1.csv\" \"" + workingDirIn + "Background\""
+                   + allChannelNamesIn + " -Start " + additionalBackgroundStartFrame + " -End " + additionalBackgroundEndFrame
+                   + ' -Weights ' + additionalBackgroundWeights)
+            if additionBackgroundUseMaxProjection:
+                cmdIn = cmdIn + ' -MaxProjection'
+            os.system(cmdIn)
+            cmdIn = (
+                        JIM + 'Detect_Particles' + fileEXE + ' \"' + workingDirIn + 'Background_Partial_Mean.tiff\" \"' + workingDirIn
+                        + 'Background_Detected\" -BinarizeCutoff ' + str(additionBackgroundCutoff))
+            os.system(cmdIn)
 
-        # 5 - Make a SubAverage of the Image Stack for Detection
+        cmdIn = (JIM + 'Expand_Shapes' + fileEXE + ' "' + workingDirIn + 'Detected_Filtered_Positions.csv" "' + workingDirIn +
+               'Detected_Positions.csv" "' + workingDirIn + 'Expanded" -boundaryDist ' + str(expandForegroundDist) +
+               ' -backgroundDist ' + str(expandBackOuterDist) + ' -backInnerRadius ' + str(expandBackInnerDist))
+        if additionBackgroundDetect:
+            cmdIn = cmdIn + ' -extraBackgroundFile "' + workingDirIn + 'Background_Detected_Positions.csv"'
 
-        maxProjectionString = ""
-        if useMaxProjection:
-            maxProjectionString = " -MaxProjection"
+        if imStackNumberOfChannels > 1:
+            cmdIn = cmdIn + ' -channelAlignment "' + workingDirIn + 'Alignment_Channel_To_Channel_Alignment.csv"'
 
-        cmd = (
-                JIM + 'Mean_of_Frames' + fileEXE + ' \"' + workingDir + 'Aligned_channel_alignment.csv\" \"' + workingDir + "Aligned_Drifts.csv\" \"" + workingDir + "Aligned\""
-                + allChannelNames + " -Start " + detectionStartFrame + " -End " + detectionEndFrame + maxProjectionString)
-        os.system(cmd)
+        os.system(cmdIn)
 
-        # 6 - detect particles
+        for j in range(imStackNumberOfChannels):
+            cmdIn = (JIM + 'Calculate_Traces' + fileEXE + ' \"' + workingDirIn + 'Raw_Image_Stack_Channel_' + str(
+                j + 1) + '.tif\" \"'
+                   + workingDirIn + 'Expanded_ROI_Positions_Channel_' + str(j + 1) + '.csv\" \"'
+                   + workingDirIn + 'Expanded_Background_Positions_Channel_' + str(j + 1) + '.csv\" \"'
+                   + workingDirIn + 'Channel_' + str(j + 1)
+                   + '\" -Drift \"' + workingDirIn + 'Alignment_Channel_' + str(j + 1) + '.csv\"')
+            if traceVerboseOutput:
+                cmdIn = cmdIn + ' -Verbose'
+            os.system(cmdIn)
 
-        cmd = (JIM + 'Detect_Particles' + fileEXE + ' \"' + workingDir + 'Aligned_Partial_Mean.tiff\" \"' + workingDir
-               + 'Detected\" -BinarizeCutoff ' + str(cutoff) + ' -minLength ' + str(minLength) + ' -maxLength '
-               + str(maxLength) + ' -minCount ' + str(minCount) + ' -maxCount ' + str(maxCount)
-               + ' -minEccentricity ' + str(minEccentricity)
-               + ' -maxEccentricity ' + str(maxEccentricity) + ' -maxDistFromLinear ' + str(maxDistFromLinear)
-               + ' -left ' + str(left) + ' -right ' + str(right) + ' -top ' + str(top) + ' -bottom ' + str(bottom))
-        os.system(cmd)
-
-        # 7 - Calculate Regions for Other Channels
-
-        cmd = (JIM + 'Other_Channel_Positions' + fileEXE + ' "' + workingDir + 'Aligned_channel_alignment.csv" "' + workingDir +
-               'Aligned_Drifts.csv" "' + workingDir + 'Detected_Filtered_Measurements.csv" "' + workingDir +
-               'Detected_Filtered" -positions "' + workingDir + 'Detected_Filtered_Positions.csv" -backgroundpositions "' +
-               workingDir + 'Detected_Positions.csv"')
-        os.system(cmd)
-
-        # 8 - Expand Regions
-        cmd = (JIM + 'Expand_Shapes' + fileEXE + ' "' + workingDir + 'Detected_Filtered_Positions.csv" "' + workingDir +
-               'Detected_Positions.csv" "' + workingDir + 'Expanded_Channel_1" -boundaryDist ' + str(foregroundDist) +
-               ' -backgroundDist ' + str(backOuterDist) + ' -backInnerRadius ' + str(backInnerDist))
-        os.system(cmd)
-
-        for j in range(2, numberOfChannels + 1):
-            cmd = (JIM + 'Expand_Shapes' + fileEXE + ' "' + workingDir + 'Detected_Filtered_Positions_Channel_' + str(
-                j) + '.csv" "' +
-                   workingDir + 'Detected_Filtered_Background_Positions_Channel_' + str(j) + '.csv" "' + workingDir +
-                   'Expanded_Channel_' + str(j) + '" -boundaryDist ' + str(foregroundDist) + ' -backgroundDist ' +
-                   str(backOuterDist) + ' -backInnerRadius ' + str(backInnerDist))
-            os.system(cmd)
-
-        # 9 - Calculate Traces
-
-        cmd = (JIM + 'Calculate_Traces' + fileEXE + ' \"' + workingDir + 'Images_Channel_1.tiff\" \"'
-               + workingDir + 'Expanded_Channel_1_ROI_Positions.csv\" \"'
-               + workingDir + 'Expanded_Channel_1_Background_Positions.csv\" \"' + workingDir + 'Channel_1\" -Drift \"'
-               + workingDir + 'Aligned_Drifts.csv\"' + verboseString)
-        os.system(cmd)
-
-        for j in range(2, numberOfChannels + 1):
-            cmd = (JIM + 'Calculate_Traces' + fileEXE + ' \"' + workingDir + 'Images_Channel_' + str(j) + '.tiff\" \"'
-                   + workingDir + 'Expanded_Channel_' + str(j) + '_ROI_Positions.csv\" \"'
-                   + workingDir + 'Expanded_Channel_' + str(j) + '_Background_Positions.csv\" \"'
-                   + workingDir + 'Channel_' + str(j) + '\" -Drift \"'
-                   + workingDir + 'Detected_Filtered_Drifts_Channel_' + str(j) + '.csv\"' + verboseString)
-            os.system(cmd)
-
+        falsetrue = ['false', 'true'];
         variableString = ('Date, ' + str(datetime.date.today()) +
-                          '\nuseMetadataFile,' + str(int(useMetadataFile)) + '\nnumberOfChannels,' + str(
-                    numberOfChannels) +
-                          '\ninvertChannel,' + str(int(invertChannel)) + '\nchannelToInvert,' + str(channelToInvert) +
-                          '\niterations,' + str(iterations) +
-                          '\nalignStartFrame,' + str(alignStartFrame) + '\nalignEndFrame,' + str(alignEndFrame) +
-                          '\nmanualAlignment,' + str(int(manualAlignment)) +
-                          '\nrotationAngle,' + str(rotationAngle) + '\nscalingFactor,' + str(scalingFactor) +
-                          '\nxoffset,' + str(xoffset) + '\nyoffset,' + str(yoffset) +
-                          '\nuseMaxProjection,' + str(int(useMaxProjection)) + '\ndetectionStartFrame,' + detectionStartFrame +
-                          '\ndetectionEndFrame,' + detectionEndFrame + '\ncutoff,' + str(cutoff) +
-                          '\nleft,' + str(left) + '\nright,' + str(right) + '\ntop,' + str(top) + '\nbottom,' + str(bottom) +
-                          '\nminCount,' + str(minCount) + '\nmaxCount,' + str(maxCount) +
-                          '\nminEccentricity,' + str(minEccentricity) + '\nmaxEccentricity,' + str(maxEccentricity) +
-                          '\nminLength,' + str(minLength) + '\nmaxLength,' + str(maxLength) +
-                          '\nmaxDistFromLinear,' + str(maxDistFromLinear) + '\nforegroundDist,' + str(foregroundDist) +
-                          '\nbackInnerDist,' + str(backInnerDist) + '\nbackOuterDist,' + str(backOuterDist) +
-                          '\nverboseOutput,' + str(int(verboseOutput)))
+                          '\nadditionalExtensionsToRemove,' + str(additionalExtensionsToRemove) +
+                          '\nimStackMultipleFiles,' + falsetrue[int(imStackMultipleFiles)] +
+                          '\nimStackNumberOfChannels,' + str(imStackNumberOfChannels) +
+                          '\nimStackDisableMetadata,' + falsetrue[int(imStackDisableMetadata)] +
+                          '\nimStackStartFrame,' + str(imStackStartFrame) +
+                          '\nimStackEndFrame,' + str(imStackEndFrame) +
+                          '\nimStackChannelsToTransform,' + imStackChannelsToTransform +
+                          '\nimStackVerticalFlipChannel,' + imStackVerticalFlipChannel +
+                          '\nimStackHorizontalFlipChannel,' + imStackHorizontalFlipChannel +
+                          '\nimStackRotateChannel,' + imStackRotateChannel +
+                          '\nalignIterations,' + str(alignIterations) +
+                          '\nalignStartFrame,' + str(alignStartFrame) +
+                          '\nalignEndFrame,' + str(alignEndFrame) +
+                          '\nalignMaxShift,' + str(alignMaxShift) +
+                          '\nalignOutputStacks,' + falsetrue[int(alignOutputStacks)] +
+                          '\nalignMaxIntensities,' + alignMaxIntensities +
+                          '\nalignSNRCutoff,' + str(alignSNRCutoff) +
+                          '\nalignManually,' + falsetrue[int(alignManually)] +
+                          '\nalignXOffset,' + alignXOffset +
+                          '\nalignYOffset,' + alignYOffset +
+                          '\nalignRotationAngle,' + alignRotationAngle +
+                          '\nalignScalingFactor,' + alignScalingFactor +
+                          '\ndetectUsingMaxProjection,' + falsetrue[int(detectUsingMaxProjection)] +
+                          '\ndetectionStartFrame,' + detectionStartFrame +
+                          '\ndetectionEndFrame,' + detectionEndFrame +
+                          '\ndetectWeights,' + detectWeights +
+                          '\ndetectionCutoff,' + str(detectionCutoff) +
+                          '\ndetectLeftEdge,' + str(detectLeftEdge) +
+                          '\ndetectRightEdge,' + str(detectRightEdge) +
+                          '\ndetectTopEdge,' + str(detectTopEdge) +
+                          '\ndetectBottomEdge,' + str(detectBottomEdge) +
+                          '\ndetectMinCount,' + str(detectMinCount) +
+                          '\ndetectMaxCount,' + str(detectMaxCount) +
+                          '\ndetectMinEccentricity,' + str(detectMinEccentricity) +
+                          '\ndetectMaxEccentricity,' + str(detectMaxEccentricity) +
+                          '\ndetectMinLength,' + str(detectMinLength) +
+                          '\ndetectMaxLength,' + str(detectMaxLength) +
+                          '\ndetectMaxDistFromLinear,' + str(detectMaxDistFromLinear) +
+                          '\ndetectMinSeparation,' + str(detectMinSeparation) +
+                          '\nadditionBackgroundDetect,' + falsetrue[int(additionBackgroundDetect)] +
+                          '\nadditionBackgroundUseMaxProjection,' + falsetrue[int(additionBackgroundUseMaxProjection)] +
+                          '\nadditionalBackgroundStartFrame,' + additionalBackgroundStartFrame +
+                          '\nadditionalBackgroundEndFrame,' + additionalBackgroundEndFrame +
+                          '\nadditionalBackgroundWeights,' + additionalBackgroundWeights +
+                          '\nadditionBackgroundCutoff,' + str(additionBackgroundCutoff) +
+                          '\nexpandForegroundDist,' + str(expandForegroundDist) +
+                          '\nexpandBackInnerDist,' + str(expandBackInnerDist) +
+                          '\nexpandBackOuterDist,' + str(expandBackOuterDist) +
+                          '\ntraceVerboseOutput,' + falsetrue[int(traceVerboseOutput)])
 
-        saveVariablesFile = open(workingDir + fileSep + "Trace_Generation_Variables.csv", "w")
+        saveVariablesFile = open(workingDirIn + fileSep + "Trace_Generation_Variables.csv", "w")
         saveVariablesFile.write(variableString)
         saveVariablesFile.close()
 
-    print('Batch Analysis Completed')
+        return 0
 
-"""
+
+    if __name__ == '__main__':
+        p = Pool(batchNumberOfThreads)
+        p.map(f, np.arange(len(fileList)))
+        print('Batch Analysis Complete')
