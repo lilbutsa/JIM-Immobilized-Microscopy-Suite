@@ -7,7 +7,7 @@ sysVar.paramtab = readtable(completeName,'Format','%s%s');
 sysVar.paramtab = sysVar.paramtab(2:end,:);
 sysVar.paramtab = table2cell(sysVar.paramtab);
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
-sysVar.line = splitlines(fileread([sysConst.JIM,'\Begin_Here_Generate_Traces.m']));
+sysVar.line = splitlines(fileread([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m']));
 
 sysVar.paramIsString = [7 8 9 10 16 19 20 21 22 24 25 26 42 43 44];
 
@@ -21,7 +21,7 @@ for i=1:length(sysVar.paramtab)
 
     end
 end
-sysVar.fid = fopen([sysConst.JIM,'\Begin_Here_Generate_Traces.m'],'w');
+sysVar.fid = fopen([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],'w');
 for i=1:size(sysVar.line,1)
     fprintf(sysVar.fid,'%s\n',sysVar.line{i});
 end
@@ -43,9 +43,7 @@ additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if
 sysVar.defaultFolder = [fileparts(sysConst.JIM) '\Examples_v2_To_Run\']; %by default it will go to the example files
 
 % Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1
-sysVar.overlayColour1 = [1, 0, 0];
-sysVar.overlayColour2 = [0, 1, 0];
-sysVar.overlayColour3 = [0, 0, 1];
+sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
 
 %Don't Touch From Here
 
@@ -81,18 +79,18 @@ completeName = ['"',completeName,'" '];
 %% 2) Organise Image Stack into channels 
 imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 3; % Input the number of channels in the data
+imStackNumberOfChannels = 1; % Input the number of channels in the data
 
-imStackDisableMetadata = false ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
+imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
 imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
-imStackChannelsToTransform = '2 3';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
-imStackVerticalFlipChannel = '0 0';% For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
-imStackHorizontalFlipChannel = '1 0';% Same as vertical
-imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel
+imStackChannelsToTransform = '';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
+imStackVerticalFlipChannel = '1';% For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
+imStackHorizontalFlipChannel = '0';% Same as vertical
+imStackRotateChannel = '0';%rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel
 
 
 % Don't touch from here
@@ -151,10 +149,10 @@ disp('Organization completed');
 %% 3) Align Channels and Calculate Drifts
 alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
-alignStartFrame = 12;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 12;% 
+alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 5;% 
 
-alignMaxShift = 30.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 10; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
@@ -163,16 +161,19 @@ alignOutputStacks = false ;
 
 %Multi Channel Alignment from here
 %Parameters for Automatic Alignment
-alignMaxIntensities = '65000 65000 65000';% Set a threshold so that during channel to channel alignment agregates are ignored
-alignSNRCutoff = 0.20; % Set a minimum alignment SNR to throw warnings 
+alignMaxIntensities = '65000 65000';% Set a threshold so that during channel to channel alignment agregates are ignored
+alignSNRCutoff = 1; % Set a minimum alignment SNR to throw warnings 
 
 %Parameters for Manual Alignment
 alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
-alignXOffset = '-5 -5';
-alignYOffset = '-5 -5';
-alignRotationAngle = '-2 2';
-alignScalingFactor = '1 1';
+alignXOffset = '0';
+alignYOffset = '0';
+alignRotationAngle = '0';
+alignScalingFactor = '1';
 
+% Visualisation saturationg percentages
+displayMin = 0.05;
+displayMax = 0.95;
 
 %Don't touch from here
 
@@ -192,39 +193,49 @@ sysVar.returnVal = system(sysVar.cmd);
 
 if sysVar.returnVal == 0
     %view partial projection after
-    sysVar.imout = cell(3,1);
+    
+    sysVar.imout = im2double(imread([workingDir,'Alignment_Full_Projection_Before.tiff'],1));
     if imStackNumberOfChannels>1
-        for i=1:3
-            if i<= imStackNumberOfChannels
-            sysVar.imout{i} = im2double(imread([workingDir,'Alignment_Full_Projection_Before.tiff'],i));
-            sysVar.imout{i} = (sysVar.imout{i}-min(min(sysVar.imout{i})))./(prctile(reshape(sysVar.imout{i}.',1,[]),99.5)-min(min(sysVar.imout{i})));
-            else
-               sysVar.imout{i} = 0.*sysVar.imout{1};
+        sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
+        for i=1:imStackNumberOfChannels
+            sysVar.imout = im2double(imread([workingDir,'Alignment_Full_Projection_Before.tiff'],i));
+            sysVar.tosort = sort(sysVar.imout(:));
+            sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
+
+            for j=1:3
+                sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(i,j);
             end
         end 
-        
-        sysVar.combinedImage = cat(3, sysVar.overlayColour1(1).*sysVar.imout{1}+sysVar.overlayColour2(1).*sysVar.imout{2}+sysVar.overlayColour3(1).*sysVar.imout{3},sysVar.overlayColour1(2).*sysVar.imout{1}+sysVar.overlayColour2(2).*sysVar.imout{2}+sysVar.overlayColour3(2).*sysVar.imout{3},sysVar.overlayColour1(3).*sysVar.imout{1}+sysVar.overlayColour2(3).*sysVar.imout{2}+sysVar.overlayColour3(3).*sysVar.imout{3});
-        
-        figure('Name','Reference Frames Projection After')
-        imshow(sysVar.combinedImage);           
-    end
-   
-    for i=1:3
-        if i<= imStackNumberOfChannels
-        sysVar.imout{i}=im2double(imread([workingDir,'Alignment_Full_Projection_After.tiff'],i));
-        sysVar.imout{i} = (sysVar.imout{i}-min(min(sysVar.imout{i})))./(prctile(reshape(sysVar.imout{i}.',1,[]),99.5)-min(min(sysVar.imout{i})));
-        else
-           sysVar.imout{i} = 0.*sysVar.imout{1};
-        end
+    else
+        sysVar.tosort = sort(sysVar.imout(:));
+        sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
+        sysVar.combinedImage = sysVar.imout;
     end
     
+    figure('Name','Alignment Full Projection Before')
+    imshow(sysVar.combinedImage);           
+
+   
+    sysVar.imout = im2double(imread([workingDir,'Alignment_Full_Projection_After.tiff'],1));
     if imStackNumberOfChannels>1
-        sysVar.combinedImage = cat(3, sysVar.overlayColour1(1).*sysVar.imout{1}+sysVar.overlayColour2(1).*sysVar.imout{2}+sysVar.overlayColour3(1).*sysVar.imout{3},sysVar.overlayColour1(2).*sysVar.imout{1}+sysVar.overlayColour2(2).*sysVar.imout{2}+sysVar.overlayColour3(2).*sysVar.imout{3},sysVar.overlayColour1(3).*sysVar.imout{1}+sysVar.overlayColour2(3).*sysVar.imout{2}+sysVar.overlayColour3(3).*sysVar.imout{3});
+        sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
+        for i=1:imStackNumberOfChannels
+            sysVar.imout = im2double(imread([workingDir,'Alignment_Full_Projection_After.tiff'],i));
+            sysVar.tosort = sort(sysVar.imout(:));
+            sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
+
+            for j=1:3
+                sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(i,j);
+            end
+        end 
     else
-        sysVar.combinedImage = sysVar.imout{1};
+        sysVar.tosort = sort(sysVar.imout(:));
+        sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
+        sysVar.combinedImage = sysVar.imout;
     end
-    figure('Name','Complete Stack Projection After')
-    imshow(sysVar.combinedImage); 
+    
+    figure('Name','Alignment Full Projection After')
+    imshow(sysVar.combinedImage);
     
 end
 disp('Alignment completed');
@@ -232,11 +243,16 @@ disp('Alignment completed');
 %% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-detectionStartFrame = '1 -5 1'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '5 -1 5'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '25'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1 1 1';
+detectWeights = '1';
+
+% Visualisation saturationg percentages
+displayMin = 0.05;
+displayMax = 0.95;
+
 
 % Don't Touch From Here
 
@@ -256,37 +272,40 @@ end
 system(sysVar.cmd);
 
 figure
-sysVar.channel1Im = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
-sysVar.channel1Im = (sysVar.channel1Im-min(min(sysVar.channel1Im)))./(prctile(reshape(sysVar.channel1Im.',1,[]),99.5)-min(min(sysVar.channel1Im)));
-imshow(sysVar.channel1Im);
+sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
+tosort = sort(sysVar.imout(:));
+sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+imshow(sysVar.imout);
 disp('Average projection completed');
 
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 1.00; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 0.6; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectLeftEdge = 5;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-detectRightEdge = 5;% Excluded particles closer to the Right edge than this. 
-detectTopEdge = 5;% Excluded particles closer to the Top edge than this. 
-detectBottomEdge = 5;% Excluded particles closer to the Bottom edge than this. 
+detectLeftEdge = 10;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 10;% Excluded particles closer to the Right edge than this. 
+detectTopEdge = 10;% Excluded particles closer to the Top edge than this. 
+detectBottomEdge = 10;% Excluded particles closer to the Bottom edge than this. 
 
-detectMinCount = 0; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-detectMaxCount= 10000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-detectMinEccentricity = -0.10; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-detectMaxEccentricity = 1.10;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+detectMinEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
+detectMaxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
-detectMinLength = 0.00; % Minimum number of pixels for the major axis of the best fit ellipse
-detectMaxLength = 10000.00; % Maximum number of pixels for the major axis of the best fit ellipse
+detectMinLength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
+detectMaxLength = 10000; % Maximum number of pixels for the major axis of the best fit ellipse
 
-detectMaxDistFromLinear = 10000.00; % Maximum distance that a pixel can diviate from the major axis.
+detectMaxDistFromLinear = 10000; % Maximum distance that a pixel can diviate from the major axis.
 
-detectMinSeparation = -1000.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = -1000;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
-sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+% Visualisation saturationg percentages
+
+displayMin = 0.05; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 0.95; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 
 % Don't Touch From Here
 
@@ -295,15 +314,23 @@ system(sysVar.cmd)
 
 %Show detection results - Red Original Image -ROIs->White -
 % Green/Yellow->Excluded by filters
+sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
+tosort = sort(sysVar.imout(:));
+sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
+end
+sysVar.imout = im2double(imread([workingDir,'Detected_Regions.tif']));
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(2,j);
+end
+sysVar.imout = im2double(imread([workingDir,'Detected_Filtered_Regions.tif']));
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(3,j);
+end
+
 figure('Name','Detected Particles - Red Original Image - Blue to White Selected ROIs - Green to Yellow->Excluded by filters')
-sysVar.channel1Im = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
-sysVar.flatim = sort(reshape(sysVar.channel1Im,[],1),'descend');
-sysVar.fivepclen = round(0.05*length(sysVar.flatim));
-sysVar.channel1Im = sysVar.displayMax.*(sysVar.channel1Im-sysVar.flatim(end-sysVar.fivepclen))./(sysVar.flatim(sysVar.fivepclen)-sysVar.flatim(end-sysVar.fivepclen))+sysVar.displayMin;
-sysVar.channel1Im= min(max(sysVar.channel1Im,0),1);
-sysVar.channel2Im = im2double(imread([workingDir,'Detected_Regions.tif']));
-sysVar.channel3Im = im2double(imread([workingDir,'Detected_Filtered_Regions.tif']));
-sysVar.combinedImage = cat(3, sysVar.overlayColour1(1).*sysVar.channel1Im+sysVar.overlayColour2(1).*sysVar.channel2Im+sysVar.overlayColour3(1).*sysVar.channel3Im,sysVar.overlayColour1(2).*sysVar.channel1Im+sysVar.overlayColour2(2).*sysVar.channel2Im+sysVar.overlayColour3(2).*sysVar.channel3Im,sysVar.overlayColour1(3).*sysVar.channel1Im+sysVar.overlayColour2(3).*sysVar.channel2Im+sysVar.overlayColour3(3).*sysVar.channel3Im);
 imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
@@ -313,11 +340,11 @@ additionBackgroundDetect = false ;% enable the additional detection. Disable if 
 additionBackgroundUseMaxProjection = true ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 additionalBackgroundStartFrame = '1 1'; %first frame of the reference region for background detection
-additionalBackgroundEndFrame = '-1 -1';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundEndFrame = '-2';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 additionalBackgroundWeights = '1 1';
 
-additionBackgroundCutoff = 1.00; %Threshold for particles to be detected for background
+additionBackgroundCutoff = 1; %Threshold for particles to be detected for background
 
 %don't touch from here
 
@@ -333,22 +360,29 @@ if additionBackgroundDetect
     sysVar.cmd = [sysConst.JIM,'Detect_Particles',sysConst.fileEXE,' "',workingDir,'Background_Partial_Mean.tiff" "',workingDir,'Background_Detected" -BinarizeCutoff ', num2str(additionBackgroundCutoff)]; % Run the program Find_Particles.exe with the users values and write the output to the reults sysVar.file with the prefix Detected_
     system(sysVar.cmd);
 
-    figure('Name','Detected Particles - Red Original Image - Blue to White Selected ROIs - Green to Yellow->Excluded by filters')
-    sysVar.channel1Im = cast(imread([workingDir,'Background_Partial_Mean.tiff']),'double');
-    sysVar.flatim = sort(reshape(sysVar.channel1Im,[],1),'descend');
-    sysVar.fivepclen = round(0.05*length(sysVar.flatim));
-    sysVar.channel1Im = sysVar.displayMax.*(sysVar.channel1Im-sysVar.flatim(end-sysVar.fivepclen))./(sysVar.flatim(sysVar.fivepclen)-sysVar.flatim(end-sysVar.fivepclen))+sysVar.displayMin;
-    sysVar.channel1Im= min(max(sysVar.channel1Im,0),1);
-    sysVar.channel2Im = im2double(imread([workingDir,'Background_Detected_Regions.tif']));
-    sysVar.combinedImage = cat(3, sysVar.overlayColour1(1).*sysVar.channel1Im+sysVar.overlayColour2(1).*sysVar.channel2Im,sysVar.overlayColour1(2).*sysVar.channel1Im+sysVar.overlayColour2(2).*sysVar.channel2Im,sysVar.overlayColour1(3).*sysVar.channel1Im+sysVar.overlayColour2(3).*sysVar.channel2Im);
+    sysVar.imout = cast(imread([workingDir,'Background_Partial_Mean.tiff']),'double');
+    tosort = sort(sysVar.imout(:));
+    sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+    sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
+    for j=1:3
+        sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
+    end
+    sysVar.imout = im2double(imread([workingDir,'Background_Detected_Regions.tif']));
+    for j=1:3
+        sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(2,j);
+    end
+
+    figure('Name','Detected Particles - Red Original Image - Green to Yellow Selected Extra Backgrounds')
     imshow(sysVar.combinedImage)
+    disp('Finish detecting particles');
+    
 end
 
 
 %% 7) Expand Regions
-expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
-expandBackOuterDist = 20.00; % Maximum distance to dilate beyond the ROI to measure the local background
+expandForegroundDist = 4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+expandBackInnerDist = 4.1; % Minimum distance to dilate beyond the ROI to measure the local background
+expandBackOuterDist = 20; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -365,16 +399,23 @@ end
 
 system(sysVar.cmd) 
 
+sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
+tosort = sort(sysVar.imout(:));
+sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
+end
+sysVar.imout = im2double(imread([workingDir,'Expanded_ROIs.tif']));
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(2,j);
+end
+sysVar.imout = im2double(imread([workingDir,'Expanded_Background_Regions.tif']));
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(3,j);
+end
 
 figure('Name','Detected Particles - Red Original Image - Green ROIs - Blue Background Regions')
-
-sysVar.imout{1} = im2double(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']));
-
-sysVar.imout{1} = sysVar.displayMax.*(sysVar.imout{1}-min(min(sysVar.imout{1})))./(prctile(reshape(sysVar.imout{1}.',1,[]),99.5)-min(min(sysVar.imout{1})))+sysVar.displayMin;
-sysVar.imout{1} = min(max(sysVar.imout{1},0),1);
-sysVar.imout{2} = im2double(imread([workingDir,'Expanded_ROIs.tif']));
-sysVar.imout{3} = im2double(imread([workingDir,'Expanded_Background_Regions.tif']));
-sysVar.combinedImage = cat(3, sysVar.overlayColour1(1).*sysVar.imout{1}+sysVar.overlayColour2(1).*sysVar.imout{2}+sysVar.overlayColour3(1).*sysVar.imout{3},sysVar.overlayColour1(2).*sysVar.imout{1}+sysVar.overlayColour2(2).*sysVar.imout{2}+sysVar.overlayColour3(2).*sysVar.imout{3},sysVar.overlayColour1(3).*sysVar.imout{1}+sysVar.overlayColour2(3).*sysVar.imout{2}+sysVar.overlayColour3(3).*sysVar.imout{3});
 imshow(sysVar.combinedImage);
 
 disp('Finished Expanding ROIs');
@@ -384,13 +425,12 @@ traceVerboseOutput = false ; % Create additional file with additional statistics
 
 %don't touch from here
 for j = 1:imStackNumberOfChannels
-    sysVar.cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Alignment_Channel_',num2str(j),'.csv'];
+    sysVar.cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Alignment_Channel_',num2str(j),'.csv"'];
     if traceVerboseOutput
         sysVar.cmd = [sysVar.cmd,' -Verbose'];
     end  
     system(sysVar.cmd);    
 end
-
 
 sysConst.falsetrue = ['false';'true '];
 sysConst.variableString = ['Date, ', datestr(datetime('today'))...
@@ -462,8 +502,8 @@ montage.timeUnits = 'Frames'; % Unit to use for x axis
 
 %don't touch from here
 for toCollapse = 1
-if ~exist([workingDir 'Examples\'], 'dir')
-    mkdir([workingDir 'Examples\'])%make a subfolder with that name
+if ~exist([workingDir 'Examples' filesep], 'dir')
+    mkdir([workingDir 'Examples' filesep])%make a subfolder with that name
 end
 
 sysVar.measures = csvread([workingDir,'Detected_Filtered_Measurements.csv'],1);
@@ -542,12 +582,12 @@ movegui(sysVar.fig);
 set(findobj(gcf,'type','axes'),'FontName','Myriad Pro','FontSize',9, 'LineWidth', 1.5);
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
-savefig(sysVar.fig,[workingDir 'Examples\' 'Example_Page_' num2str(montage.pageNumber)],'compact');
+savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 end
 %% 10)Extract Individual Trace and montage
-montage.traceNo = 9;
+montage.traceNo = 80;
 montage.start = 3;
-montage.end = 28;
+montage.end = 48;
 montage.delta = 5;
 montage.average = 5;
 
@@ -555,14 +595,14 @@ montage.outputParticleImageStack = true;% Create a Tiff stack of the ROI of the 
 
 % Don't touch from here
 
-sysVar.cmd = [sysConst.JIM,'Isolate_Particle',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Examples\Example" ',sysVar.allChannelNames,' -Start ',num2str(montage.start),' -End ',num2str(montage.end),' -Particle ',num2str(montage.traceNo),' -Delta ',num2str(montage.delta),' -Average ',num2str(montage.average)];
+sysVar.cmd = [sysConst.JIM,'Isolate_Particle',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Detected_Filtered_Measurements.csv" "',workingDir,'Examples',filesep,'Example" ',sysVar.allChannelNames,' -Start ',num2str(montage.start),' -End ',num2str(montage.end),' -Particle ',num2str(montage.traceNo),' -Delta ',num2str(montage.delta),' -Average ',num2str(montage.average)];
 if montage.outputParticleImageStack
     sysVar.cmd = [sysVar.cmd ' -outputImageStack'];
 end
 
 system(sysVar.cmd);   
     
-sysVar.channel1Im = imread([workingDir,'Examples\Example_Trace_' num2str(montage.traceNo) '_Range_' num2str(montage.start) '_' num2str(montage.delta) '_' num2str(montage.end) '_montage.tiff']);
+sysVar.channel1Im = imread([workingDir,'Examples' filesep 'Example_Trace_' num2str(montage.traceNo) '_Range_' num2str(montage.start) '_' num2str(montage.delta) '_' num2str(montage.end) '_montage.tiff']);
 figure('Name',['Particle ' num2str(montage.traceNo) ' montage']);
 imshow(sysVar.channel1Im,'Border','tight','InitialMagnification',200);    
 
@@ -611,9 +651,9 @@ hold off
 set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
 sysVar.fig.PaperPositionMode   = 'auto';
 
-print([workingDir 'Examples\Example_Trace_' num2str(montage.traceNo)], '-dpng', '-r600');
-print([workingDir 'Examples\Example_Trace_' num2str(montage.traceNo)], '-depsc', '-r600');
-savefig(sysVar.fig,[workingDir 'Examples\Example_Trace_' num2str(montage.traceNo)],'compact');
+print([workingDir 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)], '-dpng', '-r600');
+print([workingDir 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)], '-depsc', '-r600');
+savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)],'compact');
 
 
 %% Continue from here for batch processing
@@ -766,7 +806,7 @@ parfor i=1:sysConst.NumberOfFiles
     % 3.8) Calculate amplitude for each frame for each channel
     
     for j = 1:imStackNumberOfChannels
-        cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Alignment_Channel_',num2str(j),'.csv'];
+        cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Alignment_Channel_',num2str(j),'.csv"'];
         if traceVerboseOutput
             cmd = [sysVar.cmd,' -Verbose'];
         end  
@@ -792,9 +832,9 @@ disp('Batch Process Completed');
 sysVar.outputFolder = uigetdir(); 
 sysVar.outputFolder = [sysVar.outputFolder,filesep];
 
-sysVar.outputFile = [arrayfun(@(x)[x.folder,'\',x.name],dir([sysVar.fileName '**\*_Fluorescent_Intensities.csv']),'UniformOutput',false);arrayfun(@(x)[x.folder,'\',x.name],dir([sysVar.fileName '**\*_Fluorescent_Backgrounds.csv']),'UniformOutput',false)];
+sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false)];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
-
+%%
 for i=1:length(sysVar.outputFile)
     sysVar.fileNameIn = sysVar.outputFile{i};
     sysVar.fileNameIn = extractAfter(sysVar.fileNameIn,length(sysVar.fileName));
@@ -807,4 +847,3 @@ for i=1:length(sysVar.outputFile)
     copyfile(sysVar.outputFile{i},sysVar.fileNameIn,'f');
 end
 disp('Traces Extracted');
-
