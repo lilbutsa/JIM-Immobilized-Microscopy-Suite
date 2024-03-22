@@ -26,7 +26,7 @@ for i=1:size(sysVar.line,1)
     fprintf(sysVar.fid,'%s\n',sysVar.line{i});
 end
 fclose(sysVar.fid);
-matlab.desktop.editor.openAndGoToLine([sysConst.JIM,'\Begin_Here_Generate_Traces.m'],24);
+matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
 additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
@@ -40,7 +40,7 @@ additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if
 
 % Default directory for input file selector e.g.
 %sysVar.defaultFolder = 'G:\My_Jim';
-sysVar.defaultFolder = [fileparts(sysConst.JIM) '\Examples_v2_To_Run\']; %by default it will go to the example files
+sysVar.defaultFolder = [fileparts(sysConst.JIM) filesep 'Examples_To_Run' filesep]; %by default it will go to the example files
 
 % Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1
 sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
@@ -152,7 +152,7 @@ alignIterations = 1; % Number of times to iterate drift correction calculations 
 alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
 alignEndFrame = 5;% 
 
-alignMaxShift = 10; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 10.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
@@ -162,7 +162,7 @@ alignOutputStacks = false ;
 %Multi Channel Alignment from here
 %Parameters for Automatic Alignment
 alignMaxIntensities = '65000 65000';% Set a threshold so that during channel to channel alignment agregates are ignored
-alignSNRCutoff = 1; % Set a minimum alignment SNR to throw warnings 
+alignSNRCutoff = 1.00; % Set a minimum alignment SNR to throw warnings 
 
 %Parameters for Manual Alignment
 alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
@@ -281,7 +281,7 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 0.6; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 0.60; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
 detectLeftEdge = 10;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
@@ -292,15 +292,15 @@ detectBottomEdge = 10;% Excluded particles closer to the Bottom edge than this.
 detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-detectMinEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-detectMaxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+detectMinEccentricity = -0.10; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
+detectMaxEccentricity = 1.10;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
-detectMinLength = 0; % Minimum number of pixels for the major axis of the best fit ellipse
-detectMaxLength = 10000; % Maximum number of pixels for the major axis of the best fit ellipse
+detectMinLength = 0.00; % Minimum number of pixels for the major axis of the best fit ellipse
+detectMaxLength = 10000.00; % Maximum number of pixels for the major axis of the best fit ellipse
 
-detectMaxDistFromLinear = 10000; % Maximum distance that a pixel can diviate from the major axis.
+detectMaxDistFromLinear = 10000.00; % Maximum distance that a pixel can diviate from the major axis.
 
-detectMinSeparation = -1000;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = -1000.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
 % Visualisation saturationg percentages
 
@@ -340,11 +340,11 @@ additionBackgroundDetect = false ;% enable the additional detection. Disable if 
 additionBackgroundUseMaxProjection = true ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 additionalBackgroundStartFrame = '1 1'; %first frame of the reference region for background detection
-additionalBackgroundEndFrame = '-2';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundEndFrame = '-1 -1';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 additionalBackgroundWeights = '1 1';
 
-additionBackgroundCutoff = 1; %Threshold for particles to be detected for background
+additionBackgroundCutoff = 1.00; %Threshold for particles to be detected for background
 
 %don't touch from here
 
@@ -380,9 +380,9 @@ end
 
 
 %% 7) Expand Regions
-expandForegroundDist = 4.1; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 4.1; % Minimum distance to dilate beyond the ROI to measure the local background
-expandBackOuterDist = 20; % Maximum distance to dilate beyond the ROI to measure the local background
+expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
+expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
+expandBackOuterDist = 20.00; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
