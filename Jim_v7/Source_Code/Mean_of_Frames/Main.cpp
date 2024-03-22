@@ -203,7 +203,9 @@ int main(int argc, char *argv[])
 
 	if(normalize)BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, imageHeight, imageDepth).write1dImage(Combinedmeanimage);
 	else BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, imageHeight, 32).write1dImage(Combinedmeanimage);
-			
+		
+
+	for (int i = 0; i < numInputFiles; i++)delete vcinput[i];
 	//system("PAUSE");
 	return 0;
 }

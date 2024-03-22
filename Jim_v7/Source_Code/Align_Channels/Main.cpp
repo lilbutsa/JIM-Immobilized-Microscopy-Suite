@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 	try {
 		if (numInputFiles == 1) {
 			vector<float> outputImage, finalmeanimage;
-			//std::string outputFilename = fileBase + "_Combined_Drift.csv";
+			std::cout << "There are " << vcinput[0]->numOfFrames << " Frames\n";
 			driftCorrect(vcinput, alignments, start, end, iterations, maxShift, fileBase, outputAligned, outputImage, fileBase);
 
 		}
@@ -161,6 +161,11 @@ int main(int argc, char *argv[])
 			writeChannelAlignment(fileBase, alignments, vcinput[0]->imageWidth, vcinput[0]->imageHeight);
 		}
 		else alignMultiChannel(vcinput, start, end, iterations, maxShift, fileBase, outputAligned, maxIntensities, SNRCutoff, skipIndependentDrifts);
+	
+		for (int i = 0; i < numInputFiles; i++) {
+			delete vcinput[i];
+		}
+	
 	}
 	catch (const std::invalid_argument & e) {
 		std::cout << "Error During Drift Correction\n";

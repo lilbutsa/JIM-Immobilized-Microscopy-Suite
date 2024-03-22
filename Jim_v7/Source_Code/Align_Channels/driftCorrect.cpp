@@ -162,6 +162,7 @@ void driftCorrect(vector<BLTiffIO::TiffInput*> is, vector< vector<float>> alignm
 				ippsDivC_32f_I((Ipp32f)(Ipp32f)(end - start + 1), vAfterP.data(), imagePoints);
 				AfterPartial.write1dImage(vAfterP);
 
+				if (outputstack != NULL && bOutputStack)delete outputstack;
 		}
 
 	}

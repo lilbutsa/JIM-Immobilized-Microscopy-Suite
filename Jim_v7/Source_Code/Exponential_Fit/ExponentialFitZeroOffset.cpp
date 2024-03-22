@@ -124,7 +124,6 @@ int fitExpZeroOffset(vector<double>& xdata, vector<double>& ydata, vector<double
 		/* if function does not complete successful then print error message */
 		printf("| error in dtrnlsp_delete\n");
 		/* and exit */
-		system("PAUSE");
 		return 1;
 	}
 

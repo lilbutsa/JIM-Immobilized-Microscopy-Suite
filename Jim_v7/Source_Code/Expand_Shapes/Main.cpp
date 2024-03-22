@@ -5,6 +5,7 @@
 #include "BLTiffIO.h"
 #include "BLCSVIO.h"
 #include "ipp.h"
+#include <math.h>
 
 using namespace std;
 

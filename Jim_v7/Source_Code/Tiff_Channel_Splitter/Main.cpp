@@ -3,6 +3,9 @@
 #include <vector>
 #include "BLTiffIO.h"
 #include <algorithm>
+#include <filesystem>
+#include <math.h>
+#include <stdint.h>
 
 using namespace std;
 
@@ -25,6 +28,7 @@ int main(int argc, char* argv[])
 		std::cout << "-DisableBigTiff Write out images as regular tiff format regardless of input. WARNING OUTPUT FILES OVER 4GB WILL CRASH.\n";
 		std::cout << "-DisableMetadata Ignore OME metadata. Use if stack has been altered but meta data has not.\n";
 		std::cout << "-Transform [Channels to transform] [Vertical Flip each channel (0 = no, 1 = yes)] [Horizontal Flip each channel (0 = no, 1 = yes)] [Rotate each channel clockwise (0, 90, 180 or 270)]\n";
+		std::cout << "-DetectMultipleFiles Automatically detect all Tiff files in the same folder as the main file.\n";
 		return 0;
 	}
 
@@ -34,6 +38,7 @@ int main(int argc, char* argv[])
 	int numOfChan = 2;
 	bool bmetadata = true;
 	bool bBigTiff = false;
+	bool bDetectMultifiles = false;
 	vector< vector<int>> tranformations;
 	int startFrame = 1, endFrame = -1, startFramein, endFramein;
 
@@ -51,11 +56,24 @@ int main(int argc, char* argv[])
 			bmetadata = false;
 		}
 
-
-		vector<string> inputfiles(numInputFiles);
-		for (int i = 0; i < numInputFiles; i++) {
-			inputfiles[i] = argv[i + 2];
+		for (int i = 1; i < argc; i++)if (std::string(argv[i]) == "-DetectMultipleFiles") {
+			std::cout << "Detecting Multiple Files :\n";
+			bDetectMultifiles = true;
 		}
+
+		vector<string> inputfiles;
+		if (bDetectMultifiles) {
+			std::string path = std::filesystem::path(argv[2]).parent_path().generic_string();
+			for (const auto& entry : std::filesystem::directory_iterator(path)) {
+				std::string myExt = entry.path().extension().generic_string();
+				if (myExt.find("tif") != std::string::npos || myExt.find("Tif") != std::string::npos || myExt.find("TIF") != std::string::npos) {
+					inputfiles.push_back(entry.path().generic_string());
+					std::cout << entry.path().generic_string() << "\n";
+				}
+			}
+			numInputFiles = inputfiles.size();
+		} else for (int i = 0; i < numInputFiles; i++)inputfiles.push_back(argv[i + 2]);
+
 		vis.resize(numInputFiles);
 		
 		for (int i = 0; i < numInputFiles; i++) {
@@ -180,6 +198,7 @@ int main(int argc, char* argv[])
 
 				output->write2dImage(image);
 			}
+			delete output;
 		}
 
 	}
@@ -236,16 +255,23 @@ int main(int argc, char* argv[])
 
 				vis[fileNumber]->read2dImage(imageNumber, image);
 
-				//std::cout << imageNumber<<" "<<image.size()<< "\n";
-
 				if (vertFlip)vertFlipImage(image);
 				if (horFlip)horzFlipImage(image);
 				if (rotate != 0)rotateImage(image, rotate);
 				
 				output->write2dImage(image);
+
+				//std::cout << imageNumber << " " << vis[fileNumber]->numOfFrames << " " << j << " " << fileNumber << "\n";
 			}
+			delete output;
 		}
 	}
+
+	for (int i = 0; i < numInputFiles; i++) {
+		delete vis[i];
+	}
+
+
 
 	return 0;
 

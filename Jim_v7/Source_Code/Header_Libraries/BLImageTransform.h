@@ -485,7 +485,6 @@ inline void imageTransform_32f::transform(std::vector<float>& inputImage, std::v
 
 	deltaX = -deltaX;// -0.5;
 	deltaY = -deltaY;// -0.5;
-	angle = angle;
 
 	quad[0][0] = (3.0*imageWidth - 1) / 2.0 + scale*cornerdist*cos(PI - cornerangle + angle) + deltaX;
 	quad[0][1] = (3.0*imageHeight - 1) / 2.0 - scale* cornerdist*sin(PI - cornerangle + angle) + deltaY;
@@ -503,7 +502,7 @@ inline void imageTransform_32f::transform(std::vector<float>& inputImage, std::v
 
 	ippiWarpAffineGetSize(wrappedRoi, wrappedRoi, ipp32f, coeffs, ippLinear, direction, borderType, &specSize, &initSize);
 
-	pSpec = (IppiWarpSpec*)ippsMalloc_8u(specSize);
+	pSpec = (IppiWarpSpec*)ippsMalloc_8u(2*specSize);
 
 	ippiWarpAffineLinearInit(wrappedRoi, wrappedRoi, ipp32f, coeffs, direction, 1, borderType, &boarder, 0, pSpec);
 	ippiWarpGetBufferSize(pSpec, wrappedRoi, &bufSize);

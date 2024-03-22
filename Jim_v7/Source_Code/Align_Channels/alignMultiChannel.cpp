@@ -31,8 +31,8 @@ void alignMultiChannel(vector<BLTiffIO::TiffInput*> is, uint32_t start, uint32_t
 		for (int i = 0; i < numOfChan; i++) {
 			std::cout << "Calculating initial drift for Channel " << i + 1 << "\n";
 			//adjustedOutputFilename = fileBase + "_Channel_" + to_string(i + 1) + "_Drift.csv";
-			//driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, "", false, meanimage[i], "");
-			driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, fileBase + "Troubleshooting" + to_string(i + 1), true, meanimage[i], "");
+			driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, "", false, meanimage[i], "");
+			//driftCorrect({ is[i] }, { {} }, start, end, iterations, maxShift, fileBase + "Troubleshooting" + to_string(i + 1), true, meanimage[i], "");
 
 		}
 	}

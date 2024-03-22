@@ -99,6 +99,7 @@ int main(int argc, char* argv[])
 				cout << "Outputting Image Stack\n";
 			}
 		}
+
 	}
 	catch (const std::invalid_argument & e) {
 		std::cout << "Error Inputting Parameters\n";
@@ -224,7 +225,7 @@ int main(int argc, char* argv[])
 
 		}
 
-
+		if (bOutputImageStack && tiffout != NULL) delete tiffout;
 	}
 
 
@@ -296,5 +297,8 @@ int main(int argc, char* argv[])
 	}
 	*/
 	//system("PAUSE");
+
+
+	for (int i = 0; i < numInputFiles; i++)delete vcinput[i];
 	return 0;
 }
