@@ -51,6 +51,12 @@ sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
 sysConst.fileEXE = '"';
 if ismac
     sysConst.JIM = ['"',fileparts(sysConst.JIM),'/c++_Base_Programs/Mac/'];
+    source = dir([sysConst.JIM,'/*']);
+    for j=1:length(source)
+        cmd = ['chmod +x "',sysConst.JIM,source(j).name,'"'];
+        system(cmd);
+    end
+    
 elseif ispc
     sysConst.JIM = ['"',fileparts(sysConst.JIM),'\c++_Base_Programs\Windows\'];
     sysConst.fileEXE = '.exe"';
@@ -518,12 +524,13 @@ for j=1:imStackNumberOfChannels
 end
 
 sysVar.traces1=sysVar.allTraces{1};
-sysVar.fact(1) = ceil(log10(max(max(sysVar.traces1))))-3;
+sysVar.fact(1) = ceil(log10(max(max(sysVar.traces1))))-2;
 
 if imStackNumberOfChannels>1
     sysVar.traces2=sysVar.allTraces{2};
-    sysVar.fact(2) = ceil(log10(max(max(sysVar.traces2))))-3;
+    sysVar.fact(2) = ceil(log10(max(max(sysVar.traces2))))-2;
 end
+
 
 sysVar.opts.Colors= get(groot,'defaultAxesColorOrder');sysVar.opts.width= 17.78;sysVar.opts.height= 22.86;sysVar.opts.fontType= 'Myriad Pro';sysVar.opts.fontSize= 9;
 sysVar.fig = figure; sysVar.fig.Units= 'centimeters';sysVar.fig.Position(3)= sysVar.opts.width;sysVar.fig.Position(4)= sysVar.opts.height;
@@ -548,7 +555,7 @@ for i=1:28
             yyaxis left
         end
         if i==13
-             ylabel(['Channel 1 Intensity (10^{',num2str(sysVar.fact(1)),'} a.u.)'])
+             ylabel(['Channel 1 Intensity (x10^{',num2str(sysVar.fact(1)),'} a.u.)'],'FontWeight','bold','FontSize',14)
         end
 
         plot(montage.timeaxis,sysVar.traces1(i+28*(montage.pageNumber-1),:)./(10.^sysVar.fact(1)),'LineWidth',2)
@@ -557,7 +564,7 @@ for i=1:28
         if imStackNumberOfChannels>1
             yyaxis right
             if i==16
-                ylabel(['Channel 2 Intensity (10^{',num2str(sysVar.fact(2)),'} a.u.)'])
+                ylabel(['Channel 2 Intensity (x10^{',num2str(sysVar.fact(2)),'} a.u.)'],'FontWeight','bold','FontSize',14)
             end
             plot(montage.timeaxis,sysVar.traces2(i+28*(montage.pageNumber-1),:)./(10.^sysVar.fact(2)),'LineWidth',2)
 
@@ -578,8 +585,9 @@ for i=1:28
         hold off
     end
 end
+h = annotation('textbox',[0.5,0.08,0,0],'string',['Time (',montage.timeUnits,')'],'FontSize',14,'EdgeColor',"none",'FitBoxToText',true,'HorizontalAlignment','center','FontWeight','bold');
 movegui(sysVar.fig);
-set(findobj(gcf,'type','axes'),'FontName','Myriad Pro','FontSize',9, 'LineWidth', 1.5);
+%set(findobj(gcf,'type','axes'),'FontName','Myriad Pro','FontSize',9,'LineWidth', 1.5);
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
 savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');

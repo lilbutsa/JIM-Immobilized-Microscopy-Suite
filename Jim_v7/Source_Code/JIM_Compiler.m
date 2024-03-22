@@ -17,11 +17,11 @@ for i=1:size(programNames,2)
     end
     
     source = dir([inputBase,programNames{i},'\',programNames{i},'\*.cpp']);
-    for j=1:size(source,1)
+    for j=1:length(source)
         copyfile([inputBase,programNames{i},'\',programNames{i},'\',source(j).name],[outputBase,'\Source_Code\',programNames{i},'\',source(j).name],'f');       
     end
     source = dir([inputBase,programNames{i},'\',programNames{i},'\*.hpp']);
-    for j=1:size(source,1)
+    for j=1:length(source)
         copyfile([inputBase,programNames{i},'\',programNames{i},'\',source(j).name],[outputBase,'\Source_Code\',programNames{i},'\',source(j).name],'f');       
     end
 end
@@ -31,13 +31,13 @@ if exist([outputBase,'Source_Code\Header_Libraries\'])==0
 end
 
 source = dir([inputBase,'\Header_Libraries\*.h']);
-for j=1:size(source,1)
+for j=1:length(source)
     copyfile([inputBase,'\Header_Libraries\',source(j).name],[outputBase,'\Source_Code\Header_Libraries\',source(j).name],'f');       
 end
 
 
 %% Mac section
-base = '';
+base = '/Users/james/Documents/GitHub/JIM-Immobilized-Microscopy-Suite/Jim_v7/';
 
 IPPROOT = '/opt/intel/compilers_and_libraries_2020.2.258/mac/ipp';
 IPPFILES = [' ',IPPROOT,'/lib/libippcore.a ',IPPROOT,'/lib/libippvm.a ', IPPROOT,'/lib/libipps.a ',IPPROOT,'/lib/libipps.a ',IPPROOT,'/lib/libippi.a ',IPPROOT,'/lib/libippcc.a ',IPPROOT,'/lib/libippcv.a '];
@@ -51,9 +51,9 @@ for i=1:size(programNames,2)
     disp(['compiling = ',num2str(i)]);
     allFiles = '';
     
-    source = dir([base,'/Source_Code/',programNames{i},'/*.cpp']);
-    for j=1:size(source,1)
-        allFiles = [base,'/Source_Code/',programNames{i},'/',source(j).name,'" '];
+    source = dir([base,'Source_Code/',programNames{i},'/*.cpp']);
+    for j=1:length(source)
+        allFiles = [allFiles,'"',base,'Source_Code/',programNames{i},'/',source(j).name,'" '];
     end
     
     if mklrequired(i)
@@ -64,7 +64,7 @@ for i=1:size(programNames,2)
         mklincludein = '';
     end
     
-    cmd = ['clang++',allFiles,IPPFILES,mklfilesin,ALLIPPINCLUDE,mklincludein,' -I "',base,'/Source_Code/Header_Libraries/" -std=c++17 -Os -stdlib=libc++ -lpthread -lm -ldl ',' -o"',base,'/c++_Base_Programs/Mac/',programNames{i},'"'];
+    cmd = ['clang++ ',allFiles,IPPFILES,mklfilesin,ALLIPPINCLUDE,mklincludein,' -I "',base,'Source_Code/Header_Libraries/" -std=c++17 -Os -stdlib=libc++ -lpthread -lm -ldl ',' -o "',base,'c++_Base_Programs/Mac/',programNames{i},'"'];
     system(cmd);
 
 end
