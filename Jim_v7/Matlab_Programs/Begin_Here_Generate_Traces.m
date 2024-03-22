@@ -50,12 +50,13 @@ sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
 
 sysConst.fileEXE = '"';
 if ismac
-    sysConst.JIM = ['"',fileparts(sysConst.JIM),'/c++_Base_Programs/Mac/'];
+    sysConst.JIM = [fileparts(sysConst.JIM),'/c++_Base_Programs/Mac/'];
     source = dir([sysConst.JIM,'/*']);
     for j=1:length(source)
         cmd = ['chmod +x "',sysConst.JIM,source(j).name,'"'];
         system(cmd);
     end
+    sysConst.JIM = ['"',sysConst.JIM];
     
 elseif ispc
     sysConst.JIM = ['"',fileparts(sysConst.JIM),'\c++_Base_Programs\Windows\'];
