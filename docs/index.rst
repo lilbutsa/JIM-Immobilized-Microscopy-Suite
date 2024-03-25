@@ -20,7 +20,7 @@ Contents
    begin_here_generate_traces
    output_file_formats
    Jimbob
-   tut_1_single_channel
+   tut_1\tut_1_single_channel
    tut_2_multi_channel
    tut_3_photobleaching
 
