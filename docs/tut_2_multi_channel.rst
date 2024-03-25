@@ -41,9 +41,6 @@ There is no ".ome" on the end of the tif file so we can set
 
 **Additional Extensions to Remove** = 0.
 
-The data is all contained in a single file so we can set 
-
-**Multiple Files Per Image Stack** = false;
 
 This section also automatically finds the Jim_Programs folder by assuming that the Generate_Multi_Channel_Traces file is in the Jim distribution file. If you want to move the Generate_Multi_Channel_Traces file to another location, you will need to manually change the JIM variable to the pathname for the Jim_Programs folder.
 
@@ -56,6 +53,10 @@ Note that if you are rerunning this analysis, this section may give you a warnin
 ====================
 
 This section splits and orientates a multi-channel tiff stack into individual files for each channel to make it easier for downstream processing.
+
+The data is all contained in a single file so we can set 
+
+**Multiple Files Per Image Stack** = false;
 
 Set numberOfChannels equal to the number of channels that you have in your file. In this case:
 

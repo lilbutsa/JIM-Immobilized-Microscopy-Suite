@@ -45,7 +45,6 @@ This section also automatically finds the Jim_Programs folder by assuming that t
 
 There is no ".ome" on the end of the tif file so we can set **Additional Extensions to Remove** to 0.
 
-The data is all contained in a single file so we can set **Multiple Files Per Image Stack** to false;
 
 Running this section will create a folder in the same as the tiff stack with the same name as the tiff stack that the results of all analysis will be saved in. In this case a file called *Tutorial_1_Jim_Test_Array* will be created in the *Examples_To_Run\\1_Jim_Test_Array\\* folder.
 
@@ -57,6 +56,8 @@ Note that if you are rerunning this analysis, this section may give you a warnin
 This section combines multi-file tiffs into a single big-tiff and splits a multi-channel tiff stack into individual files for each channel to make it easier for downstream processing.
 
 As this example is a single file single channel dataset, it just checks the order of files (using ome metadata if it exists) and copies the file to the anlysis folder in the correct order.
+
+The data is all contained in a single file so we can set **Multiple Files Per Image Stack** to false;
 
 This is single channel data so set **Number of Channels** to 1. We know it is in order so we can **Disable Metadata**. We want to use the entire dataset so we set **Stack Start Frame** to 1 and **Stack End Frame** to -1.
 
