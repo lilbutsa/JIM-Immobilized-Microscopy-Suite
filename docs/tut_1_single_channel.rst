@@ -87,7 +87,7 @@ In this example, all particles are present at the start and are reasonably brigh
 
 After running this section, two images should open showing a before and after of the mean of the entire stack for alignment. These should look like:
 
-.. image:: tut_1_Before_After_Drift_Correction.png
+.. image:: tut_1/tut_1_Before_After_Drift_Correction.png
   :width: 600
   :alt: Before and After Drift Correction
 
@@ -101,7 +101,7 @@ The columns of particles in this dataset are evenly spaced, this can lead to an 
 
 Running this section should generate the file *Alignment_Channel_1_Aligned_Stack.tiff* in the analysis folder. Opening this file and examining it, the columns of particles can be seen to jump around erratically. Limiting Max Shift to a value less than the width of columns (for example 10), forces the drift correction to only align on the correct column.
 
-.. image:: tut_1_Max_Shift_Artifact.png
+.. image:: tut_1/tut_1_Max_Shift_Artifact.png
   :width: 600
   :alt: Max Shift Artifact
 
@@ -116,7 +116,7 @@ Obviously this example is artificial, but similiar artifacts can be observed in 
 -------------------------------------------------------
 This dataset is artificially generated, so the measured drift values can be compared to the exact drift values for each frame to calculate the accuracy of JIM alignment.  Running the Drift Correction section generates the file *Alignment_Channel_1.csv* in the analysis folder which can be opened with microsoft excel or similar and should look like:
 
-.. image:: Tut_1_Alignment_Channel_1.PNG
+.. image:: tut_1/Tut_1_Alignment_Channel_1.PNG
   :width: 300
   :alt: Drift Correction Values
 
@@ -126,7 +126,7 @@ Ensure that this excel file is closed before you rerun the alignment program oth
 
 In this file each row corresponds to the drift measured in each frame for the x and y direction. To compare this to the actual drift of the image stack, there is an excel file in the data folder called *1_Drift_Accuracy_Calculator.xls*. Pasting the measured drifts into the first two columns of this file will calculate the error in drift alignment:
 
-.. image:: Tut_1_Drift_Accuracy.PNG
+.. image:: tut_1/Tut_1_Drift_Accuracy.PNG
   :width: 600
   :alt: Drift Correction Accuracy
 
@@ -151,7 +151,7 @@ This can be demonstrated by running this section multiple times with different d
 
 Then change the **Detection End Frames** variable to 5, 25 and 50. The results should appear as shown
 
-.. image:: tut_1_Detection_End_Frame.png
+.. image:: tut_1/tut_1_Detection_End_Frame.png
   :width: 600
   :alt: Detection End Frame Analysis
 
@@ -174,7 +174,7 @@ JIM also provide the option to create an image using the max projection rather t
 
 These parameters will calculate the max projection of the entire dataset (negative numbers for **Detection End Frames** go from the end of the stack with -1 as the last frame):
 
-.. image:: tut_1_Detection_Max_Projection.png
+.. image:: tut_1/tut_1_Detection_Max_Projection.png
   :width: 300
   :alt: Full stack max projection
 
@@ -229,7 +229,7 @@ We then want to run the detect particles section with a range of cutoff values. 
 Normally it is good practice to start with a low value where the background is being fully detected (**cutoff** = 0.3  for this example). We then steadily increase the cutoff value until the point where minimal background is detected but all particles are still detected. In this example it occurs around **cutoff** = 0.6. If the cutoff value were pushed too high, then the ability to detect particles becomes reduced, for example with a **cutoff** = 1.5. 
 
 
-.. image:: tut_1_Detection_cutoff.png
+.. image:: tut_1/tut_1_Detection_cutoff.png
   :width: 600
   :alt: Detection cutoffs
 
@@ -260,7 +260,7 @@ Next we want to exclude everything that is too small or too large, as they tend 
 
 This gives a detection image of:
 
-.. image:: tut_1_Detection_filters.png
+.. image:: tut_1/tut_1_Detection_filters.png
   :width: 300
   :alt: Detection Filters
 
@@ -295,7 +295,7 @@ Details of these parameters can be found `here<https://jim-immobilized-microscop
 
 Running this section gives:
 
-.. image:: tut_1_Expanded.png
+.. image:: tut_1/tut_1_Expanded.png
   :width: 300
   :alt: Exanded Regions
 
@@ -308,7 +308,7 @@ These default values work for the vast majority of cases. The key points to chec
 The final step of generating traces outputs a table of the intensity of each particle over time. Drift is accounted for over the entire image stack and background noise is subtracted from the intensity of each detected region. Each detected region is considered to be a particle and the intensity, measured in arbitrary units, of that particle is tracked over time, measured in frames. 
 Running this section creates the file Channel_1_Flourescent_Intensities.csv in the analysis folder. Opening this in microsoft excel (or similar) will show a table like this:
 
-.. image:: tut_1_Excel_Traces.png
+.. image:: tut_1/tut_1_Excel_Traces.png
   :width: 600
   :alt: Traces Opened In Excel
 
@@ -317,7 +317,7 @@ In this data, each row corresponds to individual analysed particles where each c
 
 Where we can see by eye that this particle had an intensity of around 2500 and disappears in the 35st frame.
 
-.. image:: tut_1_Excel_Traces_Plot.png
+.. image:: tut_1/tut_1_Excel_Traces_Plot.png
   :width: 300
   :alt: Traces Opened In Excel
  
@@ -331,7 +331,7 @@ Running this section also saves all the variables that have been used to generat
 
 Running the next section will display two figures. The first is an image showing the particle number for each detected region. This makes it easy to connect which trace corresponds to which particle. For reference, this image is called Detected_Filtered_Region_Numbers.tiff in the results folder and was actually generated by the detect particles section. It should look like this:
 
-.. image:: tut_1_Positions_Image.png
+.. image:: tut_1/tut_1_Positions_Image.png
   :width: 600
   :alt: Position Numbers
 
@@ -339,7 +339,7 @@ Running the next section will display two figures. The first is an image showing
 The second figure should display a page of traces where the particle intensity is plotted against the frame number. The variable pageNumber dictates which page of results are displayed. For example, setting this variable to pageNumber = 1 will print traces 1 to 36, 
 The figure may look different when JIM is run across different program but the underlying plots should look similar to:
 
-.. image:: tut_1_Traces_Page_1.png
+.. image:: tut_1/tut_1_Traces_Page_1.png
   :width: 600
   :alt: Traces Page 1
 
@@ -353,7 +353,7 @@ In reality, it is going to be near impossible to step fit the top three rows of 
 
 Changing the page number shows that as you move down the image, the signal to noise of traces increases as expected. For example, page two looks like:
 
-.. image:: tut_1_Traces_Page_2.png
+.. image:: tut_1/tut_1_Traces_Page_2.png
   :width: 600
   :alt: Traces Page 2
 
@@ -374,6 +374,6 @@ Final Parameters
 The final parameters used for this tutorial can be loaded from the file *Tutorial_1_Final_Parameters.csv* in the dataset folder. The parameters are :
 
 .. csv-table:: Final Tutorial 1 Parameters
-   :file: Tutorial_1_Final_Parameters.csv
+   :file: tut_1/Tutorial_1_Final_Parameters.csv
    :widths: 30, 30
    :header-rows: 0
