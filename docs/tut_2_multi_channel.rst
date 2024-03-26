@@ -15,7 +15,7 @@ The data also contains three channels: The array in Channel 1 starts off bright 
 All channels have a directional drift downward at a rate of 1 pixel a frame and have a large jump at the 16th frame to simulate a stage drift over time which could happen during long imaging sessions. Through this tutorial, we will learn how JIM can deal with all of these challenges.
 Below we a montage of the dataset to give a visual idea of what the data looks like. However, it is far more informative to open the data in ImageJ.
 
-.. image:: tut_2_Montage.png
+.. image:: tut_2/tut_2_Montage.png
   :width: 600
   :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif
 
@@ -86,7 +86,7 @@ and we want to Rotate Channel 3 by 180 degrees and leave Channel 2 alone:
 
 After running this section, three tiff stacks should be created in the analysis folder,Raw_Image_Stack_Channel_1, 2 and 3, corresponding to the three channels, which should be correctly orientated, although not precisely aligned: 
 
-.. image:: tut_2_Montage_Transformed.png
+.. image:: tut_2/tut_2_Montage_Transformed.png
   :width: 600
   :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif after Transformation
 
@@ -125,7 +125,7 @@ The values of the other four manual alignment parameters are ignored when manual
 
 Running this section will give an initial and final alignment image of:
 
-.. image:: tut_2_Before_After_Drift_Correction.png
+.. image:: tut_2/tut_2_Before_After_Drift_Correction.png
   :width: 600
   :alt: Tutorial_2_MultiChannel_Multishape.tif before and after alignment
 
@@ -133,7 +133,7 @@ Running this section will give an initial and final alignment image of:
 
 We can also see the result of alignment by enabling the outputting the aligned stacks and viewing the resulting files:
 
-.. image:: tut_2_Montage_Aligned.png
+.. image:: tut_2/tut_2_Montage_Aligned.png
   :width: 600
   :alt: Montage of Tutorial_2_MultiChannel_Multishape.tif after Alignment
 
@@ -147,7 +147,7 @@ Just as in Tutorial 1, this example is artificial data so we can calculate the a
 
 The alignment between channels can be found in the file *Alignment_Channel_To_Channel_Alignment.csv* in the analysis folder:
 
-.. image:: tut_2_Channel_to_channel_excel.png
+.. image:: tut_2/tut_2_Channel_to_channel_excel.png
   :width: 600
   :alt: Channel to Channel alignment Values
 
@@ -178,7 +178,7 @@ Comparing these values, we see that all values are within half a pixel. Regions 
 To calculate the accuracy of the drift correction, drifts from the file *Alignment_Channel_1.csv* in the analysis folder need to be copied into the first two columns of the file *2_Drift_Accuracy_Calculator.xls* in the data file.
 This should then give:
 
-.. image:: Tut_2_Drift_Accuracy.PNG
+.. image:: tut_2/Tut_2_Drift_Accuracy.PNG
   :width: 600
   :alt: Drift Accuracy calculations
 
@@ -415,7 +415,7 @@ Details of these parameters can be found `here<https://jim-immobilized-microscop
 
 Running this section gives:
 
-.. image:: tut_2_Expanded.PNG
+.. image:: tut_2/tut_2_Expanded.PNG
   :width: 300
   :alt: Exanded Regions
 
@@ -447,14 +447,14 @@ Running this section also generate a file that saves all the variables used to g
 
 Just as with Generate_Single_Channel_Traces we can view the traces that we’ve just generated in this section. Running the next section will display two figures. The first image shows the particle location and numbers for each detected region.  This makes it easy to correlate which trace corresponds to which particle. The first figure should look like this:
 
-.. image:: Tut_2_Numbers.PNG
+.. image:: tut_2/Tut_2_Numbers.PNG
   :width: 600
   :alt: Particle Numbers
 
 
 The second figure displays a page containing an array traces. The variable pageNumber dictates which page of traces to display. For example, setting this variable to pageNumber = 1 will print traces 1 to 36 which should look like:
 
-.. image:: tut_2_Example_Page_1.png
+.. image:: tut_2/tut_2_Example_Page_1.png
   :width: 600
   :alt: Montage of Traces
 
@@ -464,7 +464,7 @@ The second figure displays a page containing an array traces. The variable pageN
 10) Export Trace
 ================
 
-.. image:: tut_2_Trace_9_Extraction.png
+.. image:: tut_2/tut_2_Trace_9_Extraction.png
   :width: 600
   :alt: Montage of Traces
 *The extracted trace for Particle 9. The montage of the images of the particle throughout the experiment is shown below the trace. Each row of the montage corresponds to Channels 1,2 and 3 respectively. Each column, is the mean of the 5 images in the corresponding range in the plot above.*
@@ -478,6 +478,6 @@ Final Parameters
 The final parameters used for this tutorial can be loaded from the file *Tutorial_2_Final_Parameters.csv* in the dataset folder. The parameters are :
 
 .. csv-table:: Final Tutorial 2 Parameters
-   :file: Tutorial_2_Final_Parameters.csv
+   :file: tut_2/Tutorial_2_Final_Parameters.csv
    :widths: 30, 30
    :header-rows: 0
