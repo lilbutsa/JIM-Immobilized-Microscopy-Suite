@@ -14,7 +14,7 @@ There are two versions of this example data - with and without noise. Without no
 
 Users are strongly encouraged to open the dataset file with a program like ImageJ to get a feel for what the data looks like.
 
-.. image:: Tut_1_montage.png
+.. image:: tut_1/Tut_1_montage.png
   :width: 600
   :alt: Montage of Tutorial_1_Jim_Test_Array.tif
 
