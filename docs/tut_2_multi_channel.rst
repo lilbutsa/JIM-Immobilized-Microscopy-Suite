@@ -311,131 +311,212 @@ Make sure you rerun the alignment with the original parameters before continuing
 4) Make Sub-Average
 ===================
 
-This section determines which portion of each channel’s image stack is used for detecting features for analysis. In this section, a range of frames from each stack can be selected (e.g. from frame 1-10 for Channel 1 and frame 20-30 for Channel 2) that make up the subaverage window. The larger the window, the more sensitive detection is for long-lived dim particles, but less sensitive it is for short-lived particles. This section creates a single image that combines the subaverage windows which is then used for detection. The particle positions detected from this image are then used across all channels (after being transformed to align to that channel) so that the same trace represents the same particle location in each channel. Traces for a detected position are generated for all channels across all frames in the image even if there is no fluorescent signal in that channel however in that case the trace will just show noise fluctuating around zero intensity. 
+This section determines which portion of each channel’s image stack is used for detecting features for analysis. In this section, a range of frames from each stack can be selected (e.g. Frames 1-5 for Channels 1 and 3 and Frame 25-30 for Channel 2) that make up the subaverage window. The larger the window, the more sensitive detection is for long-lived dim particles, but less sensitive it is for short-lived particles. This section creates a single image that combines the subaverage windows which is then used for detection. The particle positions detected from this image are then used across all channels (after being transformed to align to that channel) so that the same trace represents the same particle location in each channel. Traces for a detected position are generated for all channels across all frames in the image even if there is no fluorescent signal in that channel however in that case the trace will just show noise fluctuating around zero intensity. 
 
-In this example we are detecting using both channels, so an object with signal in both channels is more likely to be detected than something that is only present in one channel, however, in most cases detection is robust enough that even particles that only exist in one channel will be detected. It is possible to detect using only one channel by setting the start and end frames of the unwanted channel to zero.
+In this example we are detecting using all channels, so an object with signal in all channels is more likely to be detected than something that is only present in one channel, however, in most cases detection is robust enough that even particles that only exist in one channel will be detected. It is possible to detect using only one channel by setting the start and end frames of the unwanted channel to zero.
 
-This section has three parameters:
-useMaxProjection - determines whether the mean or the max of the window is used. Typically using the mean (useMaxProjection = false) is preferable as it averages the noisy background makes detection much easier, however, using the max projection is better if the data contains bright short-lived states. When the max projection is selected, the max for each channel is determined independently, with the final detection image given by the average of these maximum projections. 
+We want to detect using the mean rather than max so we set:
 
-detectionStartFrame - the list of start frames for each channel in order. Each channel value should be separated by a space. For Matlab, you need to enclose the list with single quotation marks, for Mathematica and Python you need double quote marks and for ImageJ you need none.
-For example, to select from frame 1-10 for Channel 1 and frame 20-30 for Channel 2; you would write:
-in Matlab: detectionStartFrame = ‘1 20’;
-in Python and Mathematica: detectionStartFrame = “1 20”;
-in ImageJ: detectionStartFrame : 1 20
+**useMaxProjection** = false
 
-detectionEndFrame is the list of end frames for each channel in order. For the same example:
-In Matlab: detectionEndFrame = ‘10 30’;
-In Python and Mathematica: detectionEndFrame = “10 30”;
-In ImageJ: detectionEndFrame : 10 30
-We chose these parameters because they were the regions of the two channels where the best signal to noise exists (the start of Channel 1 and the end of Channel 2). Running this section with these parameters yields:
+We want to take from the first frame for Channels 1 and 3 and we want to take from the 5th last frame for Channel 2 so we set:
+
+**detectionStartFrame** = '1 -5 1'
+
+Similarly, we want to take through to the 5th frame for Channels 1 and 3 and through to the last frame for Channel 2:
+
+**detectionEndFrame** = '5 -1 5'
+
+Finally, all channels are approximately the same intensity so we can weight all channels the same:
+
+**detectWeights** = '1 1 1'
 
 The produced image revealed the particles with excellent signal to noise and to allow  accurate detection of particles of different shapes.
-Note that if you set the detectionstartFrame parameter for a channel to 0 or negative, it will be set to one . Similarly, if the end value is larger than the number of frames in the image stack then the end value will automatically be set to the last frame of the image stack of that channel.
+
 The easiest way to exclude a channel is to set the end frame to 0. In this case, channel will not contribute to the detection. 
 
 
 5) Detect Particles
 ===================
 
-The detect particles section of Generate_Multi_Channel_Traces is the same as for Generate_Single_Channel_Traces from Tutorial 1. The program has two parts. The first part is effectively a threshold which detects local increases in intensity above the surrounding background to define the mask as the ‘detected regions’. The second part filters these detected regions based on size and shape and other properties to isolate the desired particles.
+The detect particles program has two parts. The first part is effectively a threshold which detects local increases in intensity above the surrounding background to define the mask as the ‘detected regions’. The second part filters these detected regions based on size and shape and other properties to isolate the desired particles.
 
 To determine the correct value to use for the cutoff we first want to turn all of the filters off. 
 To do all this set:
-left = 0
-right = 0
-top = 0
-bottom = 0
-minCount = -1
-maxCount = 10000
-minEccentricity = -0.1; 
-maxEccentricity = 1.1;
-minLength = 0;
-maxLength = 10000
-maxDistFromLinear = 10000
+
+**Min. dist. from left edge** = 0
+
+**Min. dist. from right edge** = 0
+
+**Min. dist. from top edge** = 0
+
+**Min. dist. from bottom edge** = 0
+
+**Min. pixel count** = -1
+
+**Max. pixel count** =10000000
+
+**Min. eccentricity** = -0.1
+
+**Max. eccentricity** = 1.1
+
+**Min. length** = 0
+
+**Max. length** = 10000000
+
+**Max. dist. from linear** = 10000000
+
+**Min. separation** = -1;
 
 In Matlab, you should adjust the display min and max to get good contrast on the detection image. In this case set:
-displayMin = 0; 
-displayMax = 2;
+displayMin = 0.05; 
+displayMax = 0.95;
 
 We then want to increase the cutoff until we are still detecting all particles with only a small amount of background. This occurs around when 
-Cutoff = 0.4
+
+**detectionCutoff**= 0.2
+
 Which looks like:
 
-It is standard practice to exclude particles near the edge of the image, as a lot of cameras are prone to artifacts on their extreme edges. The left, right, top and bottom parameters can be set to the number of pixels on each respective edge to ignore (typically 25 is ample). In this case, the data has been generated quite close to the edge so we will overlook this to avoid throwing out our data. However, to demonstrate these filters in action, we can exclude some of the noise on the right, bottom and top regions of the image by setting:
-left = 0;
-right = 30;
-top = 20;
-bottom = 12;
+.. image:: tut_2/Tut_2_Detect_Threshold.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
+
+It is important to exclude particles near the edge of the image, to make sure you are not including particles that drift off the edge of the field of view during the experiment. A lot of microscopes are prone to artifacts and abberations on their extreme edges, so excluding these particles can also help improve the average quality of data. The left, right, top and bottom parameters can be set to the number of pixels on each respective edge to ignore (typically 25 is ample). In this case, the data has been generated quite close to the edge so we will overlook this to avoid throwing out our data. However, to demonstrate these filters in action, we can exclude some of the noise on the right, bottom and top regions of the image by setting:
+
+**Min. dist. from left edge** = 10
+
+**Min. dist. from right edge** = 10
+
+**Min. dist. from top edge** = 10
+
+**Min. dist. from bottom edge** = 10
 
 Which then produces the image:
 
-Note that all Blue to Pink coloured particles are selected while green to yellow particles are excluded. Using the image above, the rubbish around the edge of the image has been excluded and appears green.  
+.. image:: tut_2/Tut_2_Detect_Edges.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
+
+Note that all Blue to Pink coloured particles are selected while green to yellow particles are excluded. Using the image above, the rubbish at the bottom of the image has been excluded and appears green.  
 
 The next factor to consider in refining the selection is that some background particles are much smaller than our actual regions of interest. As a result we can set a minimum number of pixels that a region of interest needs to contain in order to be selected as a particle for downstream analysis. To do this we set:
-minCount = 15
+
+**Min. pixel count** = 10
+
 Which generates the image:
 
-This has excluded the dimmest particle (second row, first column, turning green), but further cleaned up  every particle that appears as  background so on the whole it’s a net benefit. 
-Having isolated all of the particles of interest, we can now impose additional filters to only select the particles that we are interested in.  
+.. image:: tut_2/Tut_2_Detect_MinCount.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
+
+This has excluded the non-specifically detected background. Having isolated all of the particles of interest, we can now impose additional filters to only select the particles that we are interested in.  
 
 For example, if we are only interested in reasonably small particles then we can introduce a maximum number of pixels that a region needs to be smaller then. To do this we can set:
-maxCount = 50 to yield the following image
+
+**Max. pixel count** = 50 
+
+which yields the following image:
+
+.. image:: tut_2/Tut_2_Detect_MaxCount.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
 
 Notice that the small particles in the top left corner are selected (coloured blue to pink) while all larger particles that have been excluded appearing  green to yellow.
 
-We could also filter particles based on how round (or long) the object is. To explore this filter selection, we first want to remove the maximum region pixel count filter restriction by setting maxCount = 100000. 
+We could also filter particles based on how round (or long) the object is. To explore this filter selection, we first want to remove the maximum region pixel count filter restriction by setting Max. Count = 100000. 
 
 The main measure of roundness is eccentricity of the best fit ellipse onto the particle. Eccentricity of the best fit ellipse goes from zero to one where zero represents a perfect circle through to one being a line. Use the Minimum to exclude round objects and use the maximum to exclude long, thin objects.
+
 For example setting:
-minEccentricity = -0.1
-maxEccentricity = 0.3
+
+**Min. eccentricity** = -0.1
+
+**Max. eccentricity** = 0.3
+
 Running with this setting should select for circular objects:
+
+.. image:: tut_2/Tut_2_Detect_lowEccen.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
 
 Circles or diffracted spots of different size (the second row) are selected as expected. Note that it is possible for random shapes that have symmetry (like the bottom right corner T shaped particles) to also be selected.
 
 Alternatively we can select for long, thin objects by having a minimum eccentricity by setting:
-minEccentricity = 0.55
-maxEccentricity = 1.1
+
+**Min. eccentricity** = 0.55
+
+**Max. eccentricity** = 1.1
+
 Which select all the tubes and gives 
+
+.. image:: tut_2/Tut_2_Detect_highEccen.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
 
 We can apply a minimum absolute length (in pixels) of each region if we are concerned with the absolute length of particles rather than its relative length to width
 First, turn eccentricity filters off by setting:
 
-minEccentricity = -0.1
-maxEccentricity = 1.1
+**Min. eccentricity** = -0.1
+
+**Max. eccentricity** = 1.1
 
 Then set a minimum length of particles to 10 pixels by setting:
 
-minlength = 10
+**Min. length** = 10
 
 Which gives the detection image of:
 
+.. image:: tut_2/Tut_2_Detect_minLength.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
+
 Note that the large circle (second row right) and the thick filaments (fourth row right) are selected at the same time by this filter but were excluded when using the eccentricity filters above.
 
-Finally, if we are dealing with filaments, it is often helpful to set a maximum distance from a straight line fit that makes  filaments more refined by rejecting filaments that have irregular shape (such as branching) .
+When dealing with filaments, it is often helpful to set a maximum distance from a straight line fit that makes  filaments more refined by rejecting filaments that have irregular shape (such as branching).
 For example setting:
-minLength = 0;
-maxDistFromLinear = 3;
+
+**Min. length** = 10
+
+**Max. dist. from linear** = 3;
+
 Displays the following image:
+
+.. image:: tut_2/Tut_2_Detect_minDist.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
 
 Note that both thick filaments (4th row right) and filaments with extrusions (5th row right) have been excluded by applying this filter.
 
 A detailed explanation of these filter parameters can be found in the Detect_Particles.exe, but hopefully this section provides sufficient explanation to fulfil the majority of analytical needs.
 
 For the rest of this section we will run with only basic filters. That is:
-cutoff = 0.4
-left = 0;
-right = 30;
-top = 20;
-bottom = 12;
-minCount = 15
-maxCount = 10000
-minEccentricity = -0.1; 
-maxEccentricity = 1.1;
-minLength = 0;
-maxLength = 10000
-maxDistFromLinear = 10000
+
+**detectionCutoff**= 0.2
+
+**Min. dist. from left edge** = 10
+
+**Min. dist. from right edge** = 10
+
+**Min. dist. from top edge** = 10
+
+**Min. dist. from bottom edge** = 10
+
+**Min. pixel count** = 10
+
+**Max. pixel count** =10000000
+
+**Min. eccentricity** = -0.1
+
+**Max. eccentricity** = 1.1
+
+**Min. length** = 0
+
+**Max. length** = 10000000
+
+**Max. dist. from linear** = 10000000
+
+**Min. separation** = -1;
 
 So we can get traces for all the particles in our example.
 
