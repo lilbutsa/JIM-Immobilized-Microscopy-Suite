@@ -206,57 +206,101 @@ If we try to use the first frame in the image as the initial mean we will run in
  
 Which gives an initial alignment image of 
 
+.. image:: tut_2/tut_2_misalign_first_frame.PNG
+  :width: 600
+  :alt: Misaligned using first frame
+Note that the first frame for Channel 2 is just noise. As a result it will align to a random position in the image which will ultimately give a nonsense alignment for Channel 2 (In this case max angle =  -1.46 max scale = 0.9982  x offset = -9.8 y offset = -11.8). 
 
-Note that the green channel (Channel 2) is just noise. As a result it will align to a random position in the image which will ultimately give a nonsense alignment (In this case max angle =  0.57 max scale = 0.9982  x offset = -62 y offset = -14). There are sanity checks in the channel alignment program. As it has failed these, the output from the alignment program will indicate the following dialogue indicating that the alignment has failed:
+In reality, very little signal is required to properly align channels. It could be achieved using the the second frame, where Channel 2 has a virtually undetectable signal. To do this set:
 
-When an alignment fails, the program assumes that the two channels are already aligned and just calculates final drifts for the stack. This is not the case in our example and so the final output displays a misaligned image:
+**alignStartFrame** = 2
+ 
+**alignEndFrame** = 2
 
-In reality, very little signal is required to properly align channels. It could be achieved using the first two frames, where Channel 2 (green) has a virtually undetectable signal. To do this set:
-iterations = 1 
-alignStartFrame = 1 
-alignEndFrame = 2
-manualAlignment = false; 
-This displays the following initial alignment image::
+Despite the second frame of Channel 2 have very low signal:
 
-Despite the inability to see strong signal in Channel 2 (green), it was still sufficient to give the correct alignment (max angle =  -2.8 max scale = 0.9957  x offset = -5.4 y offset = -6.4 versus actual of max angle =-2.87 max scale = 1  x offset = -5 y offset = -5) and displays the aligned merged image:
+.. image:: tut_2/tut_2_misalign_second_frame_raw.PNG
+  :width: 600
+  :alt: Second frame of Channel 2
+
+JIM was still able to align the channels with a pixel (max angle =  -1.56 max scale = 0.9975  x offset = -4.9 y offset = -5.6) and displays the aligned merged image:
+
+.. image:: tut_2/tut_2_misalign_second_frame.PNG
+  :width: 600
+  :alt: Alignment of image stacks using the second frame
 
 It is also worth noting that if you manually align the channels then you only require signal in one channel to accurately drift correct. This can be shown by running the parameters:
-iterations = 1;
-alignStartFrame = 1;
-alignEndFrame = 1;
-manualAlignment = true; 
-rotationAngle = -2.86;
-scalingFactor = 1;
-xoffset = -5;
-yoffset = -5;
+
+**iterations** = 1
+
+**alignStartFrame** = 1
+
+**alignEndFrame** = 1
+
+**manualAlignment** = true
+ 
+**rotationAngle** = -2 2
+
+**scalingFactor** = 1 1
+
+**XOffset** = -5 -5
+
+**YOffset** = -5 -5
+
 Which gives the final image:
 
+.. image:: tut_2/tut_2_misalign_manual_alignment.PNG
+  :width: 600
+  :alt: Manual Channel Alignment
 
-Blurry Initial Alignment Image
+
+*Blurry Initial Alignment Image*
+
 If the sample has a large amount of drift (like this sample has), using a large number of frames will cause the initial partial mean projection used for alignment  to be smeary. This can lead to all further alignments to be less accurate.. For example, set:
 iterations = 1 
 alignStartFrame = 1 
 alignEndFrame = 15
 manualAlignment = false;  
-This gives an initial partial mean image:
+The initial alignment reference image is shown in the file *Alignment_Reference_Frames_Before.tiff*. This demonstrated the large amount of blur observed:
 
-The smear from the image above meant that Channel 1 (red) and Channel 2 (green) are going to align to random parts of their respective smears. This changes what the transform is between the two aligned images, and most importantly it is no longer the correct transformation between the channels. As a result, the output alignment is wrong (y offset = -11.1 where it should be -5) and the final images end up being misaligned:
+.. image:: tut_2/tut_2_misalign_blurry_reference_frames.PNG
+  :width: 600
+  :alt: Blurry Reference image
+
+The smear in the alignment image meant that each channel is going to align to random parts of their respective smears. This changes what the transform is between the two aligned images, and most importantly it is no longer the correct transformation between the channels. As a result, the output alignment is wrong (y offset = -11.2 where it should be -5) and the final images end up being misaligned:
+
+.. image:: tut_2/tut_2_misalign_blurry_alignment.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
 
 In summary, the number of frames used for the initial mean should be kept to as few frames as possible while the chosen frames should contain sufficient signal to properly align.
-Jumps in Field of View
+
+*Jumps in Field of View*
+
 Misalignment can occur if you choose frames for the initial partial mean containing a jump where the field of view moves significantly between two frames (for example when the microscope stage has been bumped). In this case, the initial mean image will essentially have two copies of each feature in the image, one from averaging frames before the jump and the second copy from averaging frames after the jump. When the alignment runs, some frames will align to the pattern from before the jump and some will align to after the jump. The net result is that the end aligned image will appear to have ghosted duplicates of particles in it. We can observe this with our example as it contains a jump between the 16th and 17th frame. Setting:
 
-iterations = 1
- 
 alignStartFrame = 14; 
-alignEndFrame = 19; 
+
+alignEndFrame = 17; 
+
 manualAlignment = false; 
+
 Gives an initial mean image of 
+
+.. image:: tut_2/tut_2_misalign_jump_reference_frames.PNG
+  :width: 600
+  :alt: Jump in Reference image
 
 Notice that there is a duplicate of each particle diagonally from each other. The magenta line links one pair of particles.The end result is that some particles align to one set of images and some align to the other giving a final alignment picture of:
 
-The detected image transform will ultimately only be correct for one of the particle sets (which is yellow) while the other set is misaligned, appearing as red and green colours.
+.. image:: tut_2/tut_2_misalign_jump_alignment.PNG
+  :width: 600
+  :alt: Misalignment from blurry Reference image
+
+The detected image transform will ultimately only be correct for one of the particle sets (which is white) while the other set is misaligned, appearing as different colours.
 We recommend looking at the raw image to identify jump and avoid choosing an initial mean region where a jump occurs to avoid this misalignment problem. In principle, one frame may be chosen for alignment if the signal is strong enough. 
+
+Make sure you rerun the alignment with the original parameters before continuing!
 
 
 4) Make Sub-Average

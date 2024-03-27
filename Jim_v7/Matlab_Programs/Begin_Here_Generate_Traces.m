@@ -856,3 +856,4 @@ for i=1:length(sysVar.outputFile)
     copyfile(sysVar.outputFile{i},sysVar.fileNameIn,'f');
 end
 disp('Traces Extracted');
+
