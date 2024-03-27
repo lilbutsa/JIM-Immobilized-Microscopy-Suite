@@ -188,7 +188,7 @@ Calculating the drift in this data is much easier than the first tutorial as the
 (Optional) Potential pitfalls of Channel Alignment
 --------------------------------------------------
 
-*Insufficient Signal in all channels for alignment*
+**Insufficient Signal in all channels for alignment**
 
 If we try to use the first frame in the image as the initial mean we will run into problems as the image in Channel 2 is just noise. To see this, set:
 
@@ -254,13 +254,18 @@ Which gives the final image:
   :alt: Manual Channel Alignment
 
 
-*Blurry Initial Alignment Image*
+**Blurry Initial Alignment Image**
 
 If the sample has a large amount of drift (like this sample has), using a large number of frames will cause the initial partial mean projection used for alignment  to be smeary. This can lead to all further alignments to be less accurate.. For example, set:
+
 iterations = 1 
+
 alignStartFrame = 1 
+
 alignEndFrame = 15
+
 manualAlignment = false;  
+
 The initial alignment reference image is shown in the file *Alignment_Reference_Frames_Before.tiff*. This demonstrated the large amount of blur observed:
 
 .. image:: tut_2/tut_2_misalign_blurry_reference_frames.PNG
@@ -275,7 +280,7 @@ The smear in the alignment image meant that each channel is going to align to ra
 
 In summary, the number of frames used for the initial mean should be kept to as few frames as possible while the chosen frames should contain sufficient signal to properly align.
 
-*Jumps in Field of View*
+**Jumps in Field of View**
 
 Misalignment can occur if you choose frames for the initial partial mean containing a jump where the field of view moves significantly between two frames (for example when the microscope stage has been bumped). In this case, the initial mean image will essentially have two copies of each feature in the image, one from averaging frames before the jump and the second copy from averaging frames after the jump. When the alignment runs, some frames will align to the pattern from before the jump and some will align to after the jump. The net result is that the end aligned image will appear to have ghosted duplicates of particles in it. We can observe this with our example as it contains a jump between the 16th and 17th frame. Setting:
 
