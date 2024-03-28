@@ -545,8 +545,8 @@ Details of these parameters can be found `here <https://jim-immobilized-microsco
 
 Running this section gives:
 
-.. image:: tut_2/tut_2_Expanded.PNG
-  :width: 300
+.. image:: tut_2/Tut_2_Expanded.PNG
+  :width: 600
   :alt: Exanded Regions
 
 *Expanded shapes for each region. The detection image is shown in red, the expanded detect regions are in green and the background regions are shown in blue. The combination of red and green gives yellow, showing that the fluorescence for each particle is well contained within each green region.*
