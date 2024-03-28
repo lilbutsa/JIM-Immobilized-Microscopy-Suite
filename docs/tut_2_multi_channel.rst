@@ -557,12 +557,7 @@ These default values work for the vast majority of cases. The key points to chec
 ===================
 
 The final step of generating traces produces a table for each channel containing the intensity of each particle over time. Drift is accounted for over the entire image stack and the background intensity is subtracted from the intensity of each detected region. Each detected region has its total intensity measured in each frame, over time. 
-Running this section creates the files Channel_1_Flourescent_Intensities.csv and Channel_2_Flourescent_Intensities.csv in the Jim_2_Channel_Example folder. Opening Channel_1_Flourescent_Intensities.csv in Microsoft Excel (or similar) will show the fluorescent intensities for Channel 1:
-
-
-Similarly, opening Channel_2_Flourescent_Intensities.csv shows the fluorescent intensities for Channel 2:
-
-Each row in Channel_1_Flourescent_Intensities.csv corresponds to the same particle in the same row as Channel_2_Flourescent_Intensities.csv. 
+Running this section creates the files Channel_1_Flourescent_Intensities.csv, Channel_2_Flourescent_Intensities.csv and Channel_3_Flourescent_Intensities.csv in the Jim_2_Channel_Example folder. Each row in Channel_1_Flourescent_Intensities.csv corresponds to the same particle in the same row as Channel_2_Flourescent_Intensities.csv. 
 
 If we want information about any particle, we can open the file Detected_Filtered_Measurements.csv which gives information on the shape and position of each particle. It looks like:
 
