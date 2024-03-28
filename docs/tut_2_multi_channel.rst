@@ -541,7 +541,7 @@ The typical values used are:
 
 **backOuterDist** = 20;
 
-Details of these parameters can be found `here<https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/begin_here_generate_traces.html#expand-regions>`_.
+Details of these parameters can be found `here <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/begin_here_generate_traces.html#expand-regions>`_ .
 
 Running this section gives:
 
