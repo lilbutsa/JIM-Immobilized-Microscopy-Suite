@@ -577,7 +577,7 @@ Just as with Generate_Single_Channel_Traces we can view the traces that we’ve 
   :alt: Particle Numbers
 
 
-The second figure displays a page containing an array traces. The variable pageNumber dictates which page of traces to display. For example, setting this variable to pageNumber = 1 will print traces 1 to 36 which should look like:
+The second figure displays a page containing an array traces. The variable pageNumber dictates which page of traces to display. For example, setting this variable to pageNumber = 1 will print traces 1 to 28 which should look like:
 
 .. image:: tut_2/tut_2_Example_Page_1.png
   :width: 600

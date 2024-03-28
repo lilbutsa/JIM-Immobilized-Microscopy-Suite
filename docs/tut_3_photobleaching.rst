@@ -226,9 +226,26 @@ Setting pageNumber = 1 and running this section will show an image with the numb
 
 And the traces for the first 28 particles:
 
-Note that the majority of traces are displaying the characteristic step as expected. There are also a fair few particles (1,2,25 etc) that remain bright for the entire experiment, suggesting that we should have imaged more frames (or in this case had larger example files...).
+.. image:: tut_3/tut_3_Example_Page_1.png
+  :width: 600
+  :alt: Expanded Regions
 
-10) Detect files for batch
+Note that the majority of traces are displaying the characteristic step as expected. There are also a fair few particles (1,7,16,19 etc) that remain bright for the entire experiment, suggesting that we should have imaged more frames (or in this case had larger example files...).
+
+10) Extract Trace
+-----------------
+
+We can extract a trace to visualise the raw data underlying each trace. For example, extracting trace 18 using the settings:
+
+
+
+yeilds:
+
+.. image:: tut_3/tut_3_Example_Trace_18.png
+  :width: 600
+  :alt: Expanded Regions
+
+11) Detect files for batch
 -------------------------
 
 This section detects all the files that we want to analyse with the same parameters.There are two ways that the files can be arranged. All folders that contain images can be placed into a master folder. When this is the case set filesInSubFolders = true. 
@@ -240,7 +257,7 @@ filesInSubFolders = false
 And run the section, then select the master folder: \Example_Data\Tutorial_3_Single_Molecule_Photobleaching\
 The three files should be detected.
 
-11) Batch Analyse
+12) Batch Analyse
 ----------------
 
 In the case where some of the files in the folder have already been analysed, the parameter overwritePreviouslyAnalysed can be set to false to avoid reanalysing image stacks that already have traces.
