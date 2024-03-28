@@ -10,50 +10,100 @@ This experiment can be used to calculate conversion factors which can be used in
 Typical Experimental Procedure
 Note: Use the exact same buffer for this experiment that you want to use for future binding experiments. If you are planning on using anti-bleaching agents (PCA/PCD, Glucose oxidase, Trollox etc) make sure you use them in this experiment as well so that measured values are consistent between experiments.
   
-Clean a coverslip by sonication in ethanol, followed by water then 1M NaOH then water for 15 minutes each or any other preferred cleaning method. 
-Glow discharge the coverslip using a plasma cleaner. 
-Place the coverslip into a coverslip holder (such as a Chamlide chamber) that prevents liquid from running off the edge of the slide
-Add 100 - 1000 ul of the fluorescently labelled molecule at a low concentration (10 pM for charged sticky proteins, 100 pM for Normal proteins up to 4 nM may be needed) 
-Leave to bind for a minute.
-Wash with several volumes of wash buffer to remove unbound molecules.
-Wash buffer is then discarded and replaced with fresh wash buffer to keep molecules hydrated. 
-Image coverslip on the microscope. Molecules density should be as high as possible while still being clearly distinct from each other so their fluorescence intensities do not overlap.
-A photobleaching image stack is then collected by exposing a field of view with the same laser power setting used during the actual experiment but at higher exposure (typically 100-500 ms or higher). The exposure just needs to be long enough to see individual molecules (good signal to noise ratio).
-Image enough frames such that approximately 90% of fluorophores would be bleached. If this is less than 20 frames then decrease exposure time. If this is more than 300 frames, then increase the exposure.
-Image multiple fields (5-10) to measure variability within the sample and consistency of analysis.
+- Clean a coverslip by sonication in ethanol, followed by water then 1M NaOH then water for 15 minutes each or any other preferred cleaning method. 
+
+- Glow discharge the coverslip using a plasma cleaner. 
+
+- Place the coverslip into a coverslip holder (such as a Chamlide chamber) that prevents liquid from running off the edge of the slide
+
+- Add 100 - 1000 ul of the fluorescently labelled molecule at a low concentration (10 pM for charged sticky proteins, 100 pM for Normal proteins up to 4 nM may be needed) 
+
+- Leave to bind for a minute.
+
+- Wash with several volumes of wash buffer to remove unbound molecules.
+
+- Wash buffer is then discarded and replaced with fresh wash buffer to keep molecules hydrated. 
+
+- Image coverslip on the microscope. Molecules density should be as high as possible while still being clearly distinct from each other so their fluorescence intensities do not overlap.
+
+- A photobleaching image stack is then collected by exposing a field of view with the same laser power setting used during the actual experiment but at higher exposure (typically 100-500 ms or higher). The exposure just needs to be long enough to see individual molecules (good signal to noise ratio).
+
+- Image enough frames such that approximately 90% of fluorophores would be bleached. If this is less than 20 frames then decrease exposure time. If this is more than 300 frames, then increase the exposure.
+
+- Image multiple fields (5-10) to measure variability within the sample and consistency of analysis.
 
 Analysing Using JIM
 ===================
 
-A folder containing 3 examples fields of view from a single molecule photobleaching experiment can be found in the folder “Example_Data\Tutorial_3_Single_Molecule_Photobleaching”. These files are labelled Photobleaching_Example_1.tif, Photobleaching_Example_2.tif and Photobleaching_Example_3.tif. 
+A folder containing 3 examples fields of view from a single molecule photobleaching experiment can be found in the folder “Examples_To_Run\3_Photobleaching”. These files are labelled Photobleaching_Example_1.tif, Photobleaching_Example_2.tif and Photobleaching_Example_3.tif. 
 
 Opening any of these files (for our example Photobleaching_Example_1.tif) will show a number of single molecules that bleaching over time:
 
+.. image:: tut_3/tut_3_montage.jpg
+  :width: 600
+  :alt: Photobleaching Montage
 
 It should be noted that this is a very minimal example. For each image stack, the field of view has been cut down to 500x500 pixels and every second frame has been taken in order to minimize file sizes. In a normal experiment, we would collect more fields of view (~10) each with a larger image size (1000-2000 pixels squared) and more frames (~100-200 frames) which will increase the quality of all fits dramatically.
 
 Further, the quality of experiment here is pretty poor. The density of particles in this example is pretty low, and the autofocus is quite shaky (particles go in and out of focus a bit). This should be a representation of the lowest quality data that is required for this kind of analysis.
-Generating Single Channel Traces
-Similarly to Tutorial 1, the first step in analysing single molecule photobleaching experiments is to convert the image stacks into traces. To do this, run the Generate_Single_Channel_Traces script. This tutorial will go through the running of this script but will do so reasonably concisely. More details can be found in Tutorial 1. The key difference here is that we will also use the last two sections of the script to batch analyse all three fields of view.
+
+Generating Traces
+=================
+
+As with every dataset analysed by JIM, the first step in analysing single molecule photobleaching experiments is to convert the image stacks into traces. To do this, run the Begin_Here_Generate_Traces script. This tutorial will go through the running of this script but will do so reasonably concisely. More details can be found in Tutorial 1. The key difference here is that we will also use the last two sections of the script to batch analyse all three fields of view.
+
+0) Import Parameters
+--------------------
+
+The parameters used for generating traces in this tutorial can be loaded by running this section and selecting the file *Examples_To_Run\3_Photobleaching\\Tutorial_3_Final_Parameters.csv*
+
+The final parameters for generating traces in this tutorial are also in a table `here <https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/tut_3_photobleaching.html#final-parameters>`_
+
 
 1) Select Input File and Create a Folder for Results
 ----------------------------------------------------
-Run this section and select Photobleaching_Example_1.tif. This will create the analysis folder Example_Data\Tutorial_3_Single_Molecule_Photobleaching\Photobleaching_Example_1
 
-2) Drift Correct
+Run this section, set : 
+
+**Additional Extensions to Remove** = 0 
+
+and select *Photobleaching_Example_1.tif*. 
+
+This will create the analysis folder Example_Data\Tutorial_3_Single_Molecule_Photobleaching\Photobleaching_Example_1'
+
+2) Organise Channels
+--------------------
+
+The data is all contained in a single file so we can set **Multiple Files Per Image Stack** to false;
+
+This is single channel data so set **Number of Channels** to 1. We know it is in order so we can **Disable Metadata**. We want to use the entire dataset so we set **Stack Start Frame** to 1 and **Stack End Frame** to -1.
+
+We don't need to orientate the data at all so we can leave **Channels to Transform** empty. When this is the case, the last three parameters (**Vertical Flip**,**Horizontal Flip** and **Rotate**) are not used so can be set to anything.
+
+
+3) Drift Correct
 ----------------
-Run drift correction with 3 iterations and aligning to the first 5 frames of the image stack (where all particles are present, by using the parameters:
 
-iterations = 3
-alignStartFrame = 1
-alignEndFrame = 5
+Run drift correction with 1 iterations and aligning to the first 5 frames of the image stack (where all particles are present), by using the parameters:
 
-Which should generate a before Drift Correction Image of:
+**Iterations** = 1
 
-And an after Drift Correction image of:
+**alignStartFrame** = 1
+
+**alignEndFrame** = 5
+
+**maxShift** = 10
+
+Which should generate an after Drift Correction image of:
+
+.. image:: tut_3/tut_3_drift_after.PNG
+  :width: 600
+  :alt: After Drift Correction
+
+There is very minimal drift in this experiment. Opening *Alignment_Channel_1.csv* we see that the calculated drifts are all less than a pixel, so drift correction isn't technically needed here.
 
 
-3) Make a Sub-Average of the Image Stack for Detection
+4) Make a Sub-Average of the Image Stack for Detection
 ------------------------------------------------------
 
 We want to detect particles using the part of the image stack where the vast majority of the particles are present. This optimal range is typically from 1 through to when around 10% of the particles have bleached (this value is actually measured quantitatively in the Fitting Bleaching Times section) but in most cases an approximate value is reasonably robust. 
@@ -62,39 +112,86 @@ In the extremes, making this value too large will cause a decrease in the detect
 
 For this example, we are going to use the first 5 frames by setting:
 
-useMaxProjection = false
-detectionStartFrame = 1
-detectionEndFrame = 5
+**useMaxProjection** = false
+
+**detectionStartFrame** = 1
+
+**detectionEndFrame** = 5
+
+**channelWeights** = 1
 
 Which should give the Sub-average to use for detection image of:
 
-4) Detect Particles
+.. image:: tut_3/tut_3_image_for_detection.PNG
+  :width: 600
+  :alt: Image for Detection
+
+5) Detect Particles
 -------------------
 
-For this data set, a cutoff of 1.7 selects all of the particles in the detection image and only a small amount of background. With displayMin = -2 and displayMax = 10 to gives strong contrast in the detection image and and all filters turned off gives:
+For this data set, a cutoff of 1.7 selects all of the particles in the detection image and only a small amount of background :
 
-We can then filter out all particles within 10 pixels of the edge (left, right, top and bottom = 10), all particles with less than 10 pixels to eliminate background spikes (minCount = 10) and all particles with an eccentricity above 0.4 or pixel count above 100 to get rid of clumps of particles (maxEccentricity = 0.4 and maxCount = 100). 
+.. image:: tut_3/tut_3_initial_detection.PNG
+  :width: 600
+  :alt: Initial Thresholding
+
+We can then filter out all particles within 10 pixels of the edge (left, right, top and bottom = 10), all particles with less than 10 pixels to eliminate background spikes (minCount = 10) and all particles with an eccentricity above 0.4 or pixel count above 100 to get rid of clumps of particles (maxEccentricity = 0.4 and maxCount = 100). We also want to exclude particles that are too close to each other where the flourescence from one particle could spill over into the others region by setting minSeparation = 5. 
 
 In summary, the detection parameters should be:
 
-cutoff=1.7
-left = 10
-right = 10
-top = 10
-bottom = 10
-minCount = 10
-maxCount=100
-minEccentricity = -0.1
-maxEccentricity = 0.4  
-minLength = 0
-maxLength = 100000
-maxDistFromLinear = 100000
+**Min. dist. from left edge** = 10
+
+**Min. dist. from right edge** = 10
+
+**Min. dist. from top edge** = 10
+
+**Min. dist. from bottom edge** = 10
+
+**Min. pixel count** = 10**
+
+**Max. pixel count** =100
+
+**Min. eccentricity** = -0.1
+
+**Max. eccentricity** = 0.4
+
+**Min. length** = 0
+
+**Max. length** = 10000000
+
+**Max. dist. from linear** = 10000000
+
+**Min. separation** = 5;
 
 Which should give:
 
-Note that the white (detected) spots all look reasonable, and that the yellow excluded spots are either close to the edge, two particles that have been detected as one, or are small background guff.
+.. image:: tut_3/tut_3_final_detection.PNG
+  :width: 600
+  :alt: After Filtering
 
-5) Expand Regions
+Note that the white (detected) spots all look reasonable, and that the yellow excluded spots are either close to the edge, too close to each other, two particles that have been detected as one, or are small background guff.
+
+6) Additional Background
+------------------------
+
+This section is used to cut around particles that appear after the first 5 frames when calculating background regions. To do this, we want to use a max projection so it doesn't matter when particles come in, or if they are only present for a short period of time. We also want to look across the entire image stack (start frame = 1, end frame =-1). Finally, a threshold of 2 seems to detect all particles.
+
+To summerise, set:
+
+**Detect Additional Background** = true
+
+**Use Max Projection** = true
+
+**Start Frame** = 1
+
+**End Frame** = -1
+
+**Weights** = 1 
+
+**Threshold Cutoff** = 2
+
+
+7) Expand Regions
 -----------------
 
 The default parameters are fine for this section:
@@ -104,23 +201,31 @@ backOuterDist = 20
 
 Which gives:
 
+.. image:: tut_3/tut_3_Expansion.PNG
+  :width: 600
+  :alt: Expanded Regions
+
 Note that the fluorescent signal (yellow) is neatly contained within the foreground region (green) showing that these parameters are good for this data.
-6) Calculate Traces
+
+8) Calculate Traces
+-------------------
+
 Running this section will calculate the traces for each region that can be found in the file:
-\Example_Data\Tutorial_3_Single_Molecule_Photobleaching\Photobleaching_Example_1\Channel_1_Fluorescent_Intensities.csv and save a summary of the parameters used in the file: \Example_Data\Tutorial_3_Single_Molecule_Photobleaching\Photobleaching_Example_1\Trace_Generation_Variables.csv. 
-
-When this is opened in excel this should look like:
+*\Examples_To_Run\3_Photobleaching\Photobleaching_Example_1\Channel_1_Fluorescent_Intensities.csv*. It will also save a summary of the parameters used in the file: *\Examples_To_Run\3_Photobleaching\Photobleaching_Example_1\Trace_Generation_Variables.csv*. 
 
 
-7) View Traces
+9) View Traces
 --------------
 
 Setting pageNumber = 1 and running this section will show an image with the number of each particle:
 
-And the traces for the first 36 particles:
+And the traces for the first 28 particles:
 
 Note that the majority of traces are displaying the characteristic step as expected. There are also a fair few particles (1,2,25 etc) that remain bright for the entire experiment, suggesting that we should have imaged more frames (or in this case had larger example files...).
-8) Detect files for batch
+
+10) Detect files for batch
+-------------------------
+
 This section detects all the files that we want to analyse with the same parameters.There are two ways that the files can be arranged. All folders that contain images can be placed into a master folder. When this is the case set filesInSubFolders = true. 
 
 Alternatively, all image files can be directly placed into a master folder. This is the case for the example photobleaching files where Photobleaching_Example_1.tif, Photobleaching_Example_2.tif and Photobleaching_Example_3.tif are all in the same master folder (\Example_Data\Tutorial_3_Single_Molecule_Photobleaching\). Set:
@@ -130,7 +235,7 @@ filesInSubFolders = false
 And run the section, then select the master folder: \Example_Data\Tutorial_3_Single_Molecule_Photobleaching\
 The three files should be detected.
 
-9) Batch Analyse
+11) Batch Analyse
 ----------------
 
 In the case where some of the files in the folder have already been analysed, the parameter overwritePreviouslyAnalysed can be set to false to avoid reanalysing image stacks that already have traces.
@@ -144,8 +249,10 @@ Once complete, there should be an analysis folder for each of the photobleaching
 
 Now that we have generated traces for our image stacks we can analyse the traces using Photobleaching analysis (the Single_Molecule_Photobleaching script).
 
+
 Single-Molecule Photobleaching Analysis of Traces
 =================================================
+
 1) Select Input Folder
 ----------------------
 Similar to the batch processing for generating single-channel traces, this section detects all the files that we want to perform single-molecule photobleaching analysis on.
