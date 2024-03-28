@@ -190,6 +190,11 @@ To summerise, set:
 
 **Threshold Cutoff** = 2
 
+Which should generate the image :
+
+.. image:: tut_3/tut_3_addition_detection.PNG
+  :width: 600
+  :alt: After Filtering
 
 7) Expand Regions
 -----------------
