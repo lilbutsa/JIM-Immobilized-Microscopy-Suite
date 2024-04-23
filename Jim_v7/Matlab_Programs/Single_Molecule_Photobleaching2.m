@@ -1,23 +1,23 @@
 %%
 clear
 %% 1) Select Input Folder
-filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 [JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 fileEXE = '"';
 fileSep = '';
 if ismac
-    JIM = ['"',fileparts(JIM),'/Jim_Programs_Mac/'];
+    JIM = ['"',fileparts(JIM),'/c++_Base_Programs/Mac/'];
     fileSep = '/';
 elseif ispc
-    JIM = ['"',fileparts(JIM),'\Jim_Programs\'];
+    JIM = ['"',fileparts(JIM),'\c++_Base_Programs\Windows\'];
     fileEXE = '.exe"';
     fileSep = '\';
 else
     disp('Platform not supported')
 end
 
-fileName = uigetdir(); % open the dialog box to select the folder for batch files
+fileName = uigetdir('G:\My_Jim\SLO_Output','Select Folder Containing All Traces'); % open the dialog box to select the folder for batch files
 fileName=[fileName,fileSep]; 
 
 allFolders = arrayfun(@(x)[fileName,x.name],dir(fileName),'UniformOutput',false); % find everything in the input folder
@@ -42,30 +42,11 @@ disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %% 2) Stepfit Traces
 stepfitIterations = 10000;
 
-useMatlabChangePoint = false;
-
-
 parfor i=1:NumberOfFiles
     disp(['Step Fitting Experiment ',num2str(i),' - ',channel1{i}]);
-    if useMatlabChangePoint
-        traces=csvread(channel1{i},1);
-        onemean = mean(traces')';
-        steps = arrayfun(@(x) findchangepts(traces(x,:), 'Statistic', 'mean','MaxNumChanges',1),1:size(traces,1),'UniformOutput',false)';
-        steps(cellfun('isempty',steps)) = {2};
-        steps = cell2mat(steps);
-        normedtraces = cell2mat(arrayfun(@(x)(traces(x,:)-min(traces(x,:)))/(max(traces(x,:))-min(traces(x,:))),1:size(traces,1),'UniformOutput',false)');
-        steps2 = arrayfun(@(x) size(findchangepts(normedtraces(x,:),'MinThreshold', 1, 'Statistic', 'mean'),2),1:size(traces,1))';
-        means1 = arrayfun(@(x) mean(traces(x,1:steps(x)-1)),1:size(steps2,1))';
-        means2 = arrayfun(@(x) mean(traces(x,steps(x):end)),1:size(steps2,1))';
-        toout = cat(2,onemean,steps2>0,steps,means1,means2,steps2>1,steps2>1);
-        fid = fopen([fileparts(channel1{fileToCheck}) '\Stepfit_Single_Step_Fits.csv'],'w'); 
-        fprintf(fid,'%s\n','No step mean,One or more Step Probability,Step Position, Initial Mean, Final Mean, Probability of more initial steps, Probability of more final steps');
-        fclose(fid);
-        dlmwrite([fileparts(channel1{fileToCheck}) fileSep 'Stepfit_Single_Step_Fits.csv'],toout,'-append');       
-    else
-        cmd = [JIM,'Change_Point_Analysis',fileEXE,' "',channel1{i},'" "',fileparts(channel1{i}),fileSep,'Stepfit" -FitSingleSteps -Iterations ',num2str(stepfitIterations)];
-        system(cmd);
-    end
+    cmd = [JIM,'Change_Point_Analysis',fileEXE,' "',channel1{i},'" "',fileparts(channel1{i}),fileSep,'Stepfit" -FitSingleSteps -Iterations ',num2str(stepfitIterations)];
+    system(cmd);
+
 end
 disp('Step fitting completed');
 
@@ -122,8 +103,7 @@ disp('Step fitting completed');
     
 %% 4) Filter All Files for Single Steps
 
-allResults = zeros(NumberOfFiles+3,19);
-
+allResults = zeros(NumberOfFiles+3,21);
     
 for fileNo = 1:NumberOfFiles
 
@@ -167,369 +147,475 @@ for fileNo = 1:NumberOfFiles
 end
 
 allResults(end,1) = sum(allResults(1:NumberOfFiles,1));
+allResults(end-2,1) = mean(allResults(1:NumberOfFiles,1));
+allResults(end-1,1) = std(allResults(1:NumberOfFiles,1));
+
 allResults(end,2) = sum(allResults(1:NumberOfFiles,2));
+allResults(end-2,2) = mean(allResults(1:NumberOfFiles,2));
+allResults(end-1,2) = std(allResults(1:NumberOfFiles,2));
+
 allResults(end,19) = sum(allResults(1:NumberOfFiles,19));
 
-%% 5) Fit Bleach Times
-
-    expYMinPercent = 0;
-    expYMaxPercent = 0.75;
-    
-    
     photobleachFile = [fileName 'Compiled_Photobleaching_Analysis' fileSep];
     if ~exist(photobleachFile, 'dir')
         mkdir(photobleachFile)%make a subfolder with that name
     end
-    
-    
-    
-    fileout = [photobleachFile 'Bleaching_Survival_Curves.csv'];
-    filein = [photobleachFile 'Bleaching_Survival_Curves'];    
-    fid = fopen(fileout,'w'); 
-    fprintf(fid,'%s\n','Each First Line is the frame number, Each Second Line is Number of Unbleached Particles after that number of Frames');
-    fclose(fid);
-    
-    fid2 = fopen([photobleachFile 'Bleaching_File_Names.csv'],'w'); 
-    fprintf(fid2,'%s\n','File Names used for photobleaching analysis' );
 
-    allBleachingX = [];
+%% 5) Fit Bleach Times
+
+    YMinPercent = 0;
+    YMaxPercent = 95;
     
+
+
+allData = [];
+
 for fileNo = 1:NumberOfFiles    
-    display(fileNo);
-    fprintf(fid2,'%s\n',channel1{fileNo} );
+
     singleStepStepData = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Step_Fit.csv'],1,0); 
 
-    bleachingX = sort(singleStepStepData(:,4))';
-    bleachingY = size(bleachingX,2):-1:1;
+    dataIn = sort(singleStepStepData(:,4));
+    allData = [allData;dataIn];
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn>z)./length(dataIn),X);
+    Xin = X(Y<YMaxPercent & Y>YMinPercent);
+    Yin = Y(Y<YMaxPercent & Y>YMinPercent);
     
-    allBleachingX = [allBleachingX,bleachingX];
-    dlmwrite(fileout,bleachingX,'-append');   
-    dlmwrite(fileout,bleachingY,'-append');
-    
-end    
-    fclose(fid2);
-        
-    allBleachingX = sort(allBleachingX);
-    allBleachingY = size(allBleachingX,2):-1:1;
-    dlmwrite(fileout,allBleachingX,'-append');   
-    dlmwrite(fileout,allBleachingY,'-append');
-    
-    cmd = [JIM,'Exponential_Fit',fileEXE,' "',fileout,'" "',filein,'" -ymaxPercent ',num2str(expYMaxPercent),' -yminPercent ',num2str(expYMinPercent)];
-    system(cmd);
-    
-    bleachFits = csvread([filein,'_ExpFit.csv'],1,0);
-    
-    allResults(1:NumberOfFiles,3) = bleachFits(1:end-1,3);
-    allResults(end,3) = bleachFits(end,3);
-    allResults(1:NumberOfFiles,4) = log(2)./bleachFits(1:end-1,3);
-    allResults(end,4) = log(2)./bleachFits(end,3);
-    allResults(1:NumberOfFiles,5) = log(10/9)./bleachFits(1:end-1,3);
-    allResults(end,5) = log(10/9)./bleachFits(end,3);
+    by = @(b,bx)( b(1)*exp(-b(2)*bx)+b(3));             % Objective function
+    OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams = fminsearch(OLS, [100 1/mean(dataIn) 0], opts);
+    allResults(fileNo,3) = bestFitParams(2);
+    allResults(fileNo,4) = log(2)./bestFitParams(2);
+    allResults(fileNo,5) = log(10/9)./bestFitParams(2);
+end
 
-    
-    opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 4;opts.height= 3;opts.fontType= 'Myriad Pro';opts.fontSize= 7;
-    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
-    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 5);
-    axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro','FontSize', 7)
-    hold on
-    %title('Bleaching Rate','FontSize', 7)
-    xlabel('Frame','FontSize', 7)
-    ylabel('Remaining Particles (%)','FontSize', 7)
-    
-    %survival not normalized
-    toplot = allBleachingX;
-    x = 1:max(round(max(toplot)/20),1):max(toplot);
-    y = 100.*arrayfun(@(z) nnz(toplot>z),x)./length(toplot);
-    plot(x,y,'--*','LineWidth',0.5)
-    
-    
-    plot(1:max(allBleachingX),100.*(bleachFits(end,1)+bleachFits(end,2).*exp(-bleachFits(end,3).*[1:max(allBleachingX)]))./length(toplot),'LineWidth',2);
-    hold off
-    set(gca,'Layer','top')
-    leg = legend({'Data', 'Exp. Fit'},'Location','northeast','Box','off','FontSize', 7);
-    leg.ItemTokenSize = [10,30];
-    print([photobleachFile 'Bleaching_Rate'], '-dpng', '-r600');
-    print([photobleachFile 'Bleaching_Rate'], '-dsvg', '-r600'); 
+X = 1:max(allData);
+Y = arrayfun(@(z) 100.*nnz(allData>z)./length(allData),X);
+Xin = X(Y<YMaxPercent & Y>YMinPercent);
+Yin = Y(Y<YMaxPercent & Y>YMinPercent);
 
-    
-    
-    
-    
-    disp(['The pooled bleaching rate of ' num2str(bleachFits(end,3)) ' corresponds to a halflife of ' num2str(log(2)/bleachFits(end,3)) ...
-        ' and a 10% beaching frame of ' num2str(log(10/9)/bleachFits(end,3))]);
-    
+by = @(b,bx)( b(1)*exp(-b(2)*bx)+b(3));             % Objective function
+OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [100 1/mean(dataIn) 0], opts);
+allResults(end,3) = bestFitParams(2);
+allResults(end,4) = log(2)./bestFitParams(2);
+allResults(end,5) = log(10/9)./bestFitParams(2);
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+plot(X,Y,'LineWidth',2)
+plot(X,by(bestFitParams,X),'LineWidth',2)
+hold off
+set(gca,'Layer','top')
+xlabel('Frame','FontSize', 9)
+ylabel('Remaining Particles (%)','FontSize', 9)
+leg = legend({'Data', 'Exp. Fit'},'Location','northeast','Box','off','FontSize', 9);
+leg.ItemTokenSize = [10,30];
+print([photobleachFile 'Bleaching_Rate'], '-dpng', '-r600');
+print([photobleachFile 'Bleaching_Rate'], '-dsvg', '-r600'); 
+
+disp(['The pooled bleaching rate of ' num2str(allResults(end,3)) ' corresponds to a halflife of ' num2str(allResults(end,4)) ...
+        ' and a 10% beaching frame of ' num2str(allResults(end,5))]);
+
+  
 %% 6) Fit Step Heights
 
-    gausYMinPercent = 0;
-    gausYMaxPercent = 0.9;
+    YMinPercent = 0;
+    YMaxPercent = 95;
     
-    
-    fileout = [photobleachFile 'Step_Heights.csv'];
-    filein = [photobleachFile 'Step_Heights'];    
-    fid = fopen(fileout,'w'); 
-    fprintf(fid,'%s\n','Each Line is the step height from a single experiment');
-    fclose(fid);
-    
-    
-    fileout2 = [photobleachFile 'Step_Heights_Logs.csv'];
-    filein2 = [photobleachFile 'Step_Heights_Logs'];
-    fid = fopen(fileout2,'w'); 
-    fprintf(fid,'%s\n','Each Line is the log of the step height from a single experiment');
-    fclose(fid);    
-    
-    allStepHeights = [];
-    
+ allData = [];
+
 for fileNo = 1:NumberOfFiles    
-    
+
     singleStepStepData = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Step_Fit.csv'],1,0); 
 
-    stepHeights = singleStepStepData(:,5)'-singleStepStepData(:,6)';
-    allStepHeights = [allStepHeights,stepHeights];
-    dlmwrite(fileout,stepHeights,'-append');   
-    dlmwrite(fileout2,log(stepHeights),'-append'); 
-end    
-        
+    dataIn = sort(singleStepStepData(:,5)-singleStepStepData(:,6));
+    
+    
+    allData = [allData;dataIn];
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn<z)./length(dataIn),X);
+    Xin = X(Y<YMaxPercent & Y>YMinPercent);
+    Yin = Y(Y<YMaxPercent & Y>YMinPercent);
+    
+    by = @(b,bx)(100.*normcdf(bx,b(1),b(2)));             % Objective function
+    OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams = fminsearch(OLS, [mean(dataIn) std(dataIn)], opts);
+    allResults(fileNo,6) = bestFitParams(1);
+    allResults(fileNo,7) = bestFitParams(2);
+    allResults(fileNo,8) = mean(dataIn);
+    allResults(fileNo,9) = std(dataIn);
+    allResults(fileNo,10) = median(dataIn);
+    
+    by2 = @(b,bx)(100.*normcdf(log(bx),b(1),b(2)));                % Objective function
+    OLS = @(b) sum((by2(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams2 = fminsearch(OLS, [log(median(dataIn)) sqrt(log(var(dataIn)))], opts);
+    allResults(fileNo,11) = exp(bestFitParams2(1)+(bestFitParams2(2)^2)./2);
+    allResults(fileNo,12) = sqrt((exp(bestFitParams2(2)^2)-1)*exp(2*bestFitParams2(1)+bestFitParams2(2)^2));
 
-    dlmwrite(fileout,allStepHeights,'-append');
-    dlmwrite(fileout2,log(allStepHeights),'-append'); 
-    
-    cmd = [JIM,'Gaussian_Fit',fileEXE,' "',fileout,'" "',filein,'" -ymaxPercent ',num2str(gausYMaxPercent),' -yminPercent ',num2str(gausYMinPercent)];
-    system(cmd);
-    
-    cmd = [JIM,'Gaussian_Fit',fileEXE,' "',fileout2,'" "',filein2,'" -ymaxPercent ',num2str(gausYMaxPercent),' -yminPercent ',num2str(gausYMinPercent)];
-    system(cmd);
-    
-    cmd = [JIM,'Make_Histogram',fileEXE,' "',fileout,'" "',filein,'"'];
-    system(cmd);    
+end
+
+X = 1:max(allData);
+Y = arrayfun(@(z) 100.*nnz(allData<z)./length(allData),X);
+Xin = X(Y<YMaxPercent & Y>YMinPercent);
+Yin = Y(Y<YMaxPercent & Y>YMinPercent);
 
 
-    bleachFits = csvread([filein,'_GaussFit.csv'],1,0);
-    logfits = csvread([filein2,'_GaussFit.csv'],1,0);
-    hists = csvread([filein,'_Histograms.csv'],1,0);
+OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [mean(allData) std(allData)], opts);
+allResults(end,6) = bestFitParams(1);
+allResults(end,7) = bestFitParams(2);
+allResults(end,8) = mean(allData);
+allResults(end,9) = std(allData);
+allResults(end,10) = median(allData);
 
-    singleMolIntMode = zeros(size(hists,1)/2,1);
-    for i=1:2:size(hists,1)
-        [~,pos] = max(hists(i+1,:));
-        singleMolIntMode((i+1)/2) = hists(i,pos);
-    end
+OLS = @(b) sum((by2(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams2 = fminsearch(OLS, [log(median(dataIn)) sqrt(log(var(dataIn)))], opts);
+allResults(end,11) = exp(bestFitParams2(1)+(bestFitParams2(2)^2)./2);
+allResults(end,12) = sqrt((exp(bestFitParams2(2)^2)-1)*exp(2*bestFitParams2(1)+bestFitParams2(2)^2));
 
-    allResults(1:NumberOfFiles,6:10) = bleachFits(1:end-1,:);
-    allResults(end,6:10) = bleachFits(end,:);    
-    allResults(1:NumberOfFiles,11) = singleMolIntMode(1:end-1,:);
-    allResults(end,11) = singleMolIntMode(end,:);
-    
-    allResults(1:NumberOfFiles,12:13) = exp(logfits(1:end-1,1:2));
-    allResults(end,12:13) = exp(logfits(end,1:2));
-    
-    allStepHeights = sort(allStepHeights);
-    
-    opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
-    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
-    set(fig.Children, 'FontName','Times', 'FontSize', 9);
-    hold on
-    title('Step Height Distribution')
-    xlabel('Step Height')
-    ylabel('Probability (PDF)')
-    plot(hists(end-1,:),hists(end,:))
-    plot(1:max(allStepHeights),1/(sqrt(2.*3.1415926.*bleachFits(end,2).^2)).*exp(-(([1:max(allStepHeights)]-bleachFits(end,1)).^2)./(2.*bleachFits(end,2).^2)))
-    plot(1:max(allStepHeights),1./((1:max(allStepHeights)).*sqrt(2.*3.1415926.*logfits(end,2).^2)).*exp(-((log((1:max(allStepHeights)))-logfits(end,1)).^2)./(2.*logfits(end,2).^2)))
-    xlim([0 allStepHeights(round(0.99.*size(allStepHeights,2)))])
-    leg = legend('Experiment','Gaussian','Log Norm','FontSize', 9,'Box','off');
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+xlabel('Step Height','FontSize', 9)
+ylabel('Probability (PDF)','FontSize', 9)
+histogram(allData(allData< max(X(Y<99))),50,'Normalization','pdf','HandleVisibility','off')
+plot(X,normpdf(X,bestFitParams(1),bestFitParams(2)),'LineWidth',2)
+plot(X,1./X.*normpdf(log(X),bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+xlim([0 max(X(Y<99))])
+leg = legend({'Gaussian','Log Norm'},'Location','northeast','Box','off','FontSize', 9);
+leg.ItemTokenSize = [10,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Step_Height_Distribution'], '-dpng', '-r600');
+print([photobleachFile 'Step_Height_Distribution'], '-dsvg', '-r600'); 
+%% 6) Pre-Step Signal Distribution
 
-    leg.ItemTokenSize = [10,30];
-    hold off
-    set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
-    fig.PaperPositionMode   = 'auto';
-    print([photobleachFile 'Step_Height_Distribution'], '-dpng', '-r600')
+    YMinPercent = 0;
+    YMaxPercent = 95;
     
+ allData = [];
+
+for fileNo = 1:NumberOfFiles    
+
+    traces = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Traces.csv'],1,0); 
+    singleStepStepData = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Step_Fit.csv'],1,0);
+    %dataIn = arrayfun(@(z)traces(z,1:singleStepStepData(z,4))',1:size(traces,1),'UniformOutput',false);
+    dataIn = arrayfun(@(z)traces(z,1:min(5,singleStepStepData(z,4)))',1:size(traces,1),'UniformOutput',false);
+    dataIn = sort(cat(1,dataIn{:}));
+    
+    allData = [allData;dataIn];
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn<z)./length(dataIn),X);
+    Xin = X(Y<YMaxPercent & Y>YMinPercent);
+    Yin = Y(Y<YMaxPercent & Y>YMinPercent);
+    
+    by = @(b,bx)(100.*normcdf(bx,b(1),b(2)));             % Objective function
+    OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams = fminsearch(OLS, [mean(dataIn) std(dataIn)], opts);
+    allResults(fileNo,6) = bestFitParams(1);
+    allResults(fileNo,7) = bestFitParams(2);
+    allResults(fileNo,8) = mean(X);
+    allResults(fileNo,9) = std(X);
+    allResults(fileNo,10) = median(X);
+    
+    by2 = @(b,bx)(100.*normcdf(log(bx),b(1),b(2)));                % Objective function
+    OLS = @(b) sum((by2(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams2 = fminsearch(OLS, [log(median(dataIn)) sqrt(log(var(dataIn)))], opts);
+    allResults(fileNo,11) = exp(bestFitParams2(1)+(bestFitParams2(2)^2)./2);
+    allResults(fileNo,12) = sqrt((exp(bestFitParams2(2)^2)-1)*exp(2*bestFitParams2(1)+bestFitParams2(2)^2));
+
+    
+end
+
+X = 1:max(allData);
+Y = arrayfun(@(z) 100.*nnz(allData<z)./length(allData),X);
+Xin = X(Y<YMaxPercent & Y>YMinPercent);
+Yin = Y(Y<YMaxPercent & Y>YMinPercent);
+
+
+OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [mean(allData) std(allData)], opts);
+allResults(end,6) = bestFitParams(1);
+allResults(end,7) = bestFitParams(2);
+allResults(end,8) = mean(X);
+allResults(end,9) = std(X);
+allResults(end,10) = median(X);
+
+OLS = @(b) sum((by2(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams2 = fminsearch(OLS, [log(median(dataIn)) sqrt(log(var(dataIn)))], opts);
+allResults(end,11) = exp(bestFitParams2(1)+(bestFitParams2(2)^2)./2);
+allResults(end,12) = sqrt((exp(bestFitParams2(2)^2)-1)*exp(2*bestFitParams2(1)+bestFitParams2(2)^2));
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+xlabel('Pre-Step Intensity','FontSize', 9)
+ylabel('Probability (PDF)','FontSize', 9)
+histogram(allData,'Normalization','pdf','HandleVisibility','off')
+plot(X,normpdf(X,bestFitParams(1),bestFitParams(2)),'LineWidth',2)
+plot(X,1./X.*normpdf(log(X),bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+xlim([0 max(X(Y<99))])
+leg = legend({'Gaussian','Log Norm'},'Location','northeast','Box','off','FontSize', 9);
+leg.ItemTokenSize = [10,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'PreStep_Intensities_Distribution'], '-dpng', '-r600');
+print([photobleachFile 'PreStep_Intensities_Distribution'], '-dsvg', '-r600'); 
+%%
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+xlabel('Pre-Step Intensity','FontSize', 9)
+ylabel('Probability (PDF)','FontSize', 9)
+histogram(allData,'Normalization','pdf','HandleVisibility','off')
+plot(X,normpdf(X,bestFitParams(1),bestFitParams(2)),'LineWidth',2)
+plot(X,1./X.*normpdf(log(X),bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+xlim([0 max(X(Y<99))])
+leg = legend({'Gaussian','Log Norm'},'Location','northeast','Box','off','FontSize', 9);
+leg.ItemTokenSize = [10,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'PreStep_Intensities_Distribution'], '-dpng', '-r600');
+print([photobleachFile 'PreStep_Intensities_Distribution'], '-dsvg', '-r600'); 
+
+%% 6) Pre-Step Noise Distribution
+
+    YMinPercent = 0;
+    YMaxPercent = 95;
+    
+ allData = [];
+
+for fileNo = 1:NumberOfFiles    
+
+    traces = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Traces.csv'],1,0); 
+    singleStepStepData = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Step_Fit.csv'],1,0);
+    dataIn = arrayfun(@(z)(traces(z,1:singleStepStepData(z,4)-1)'-singleStepStepData(z,5))./sqrt(singleStepStepData(z,5)),1:size(traces,1),'UniformOutput',false);
+    %dataIn = arrayfun(@(z)traces(z,singleStepStepData(z,4)+1:end)'-singleStepStepData(z,6),1:size(traces,1),'UniformOutput',false);
+
+    dataIn = sort(cat(1,dataIn{:}));
+    
+    allData = [allData;dataIn];
+    X = min(dataIn):max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn<z)./length(dataIn),X);
+    Xin = X(Y<YMaxPercent & Y>YMinPercent);
+    Yin = Y(Y<YMaxPercent & Y>YMinPercent);
+    
+    by = @(b,bx)(100.*normcdf(bx,b(1),b(2)));             % Objective function
+    OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams = fminsearch(OLS, [mean(dataIn) std(dataIn)], opts);
+    %ADD SAVING THESE
+
+end
+
+X = min(allData):max(allData);
+Y = arrayfun(@(z) 100.*nnz(allData<z)./length(allData),X);
+Xin = X(Y<YMaxPercent & Y>YMinPercent);
+Yin = Y(Y<YMaxPercent & Y>YMinPercent);
+
+
+OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [mean(allData) std(allData)], opts);
+%AND SAVE THESE
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+xlabel('(Int.-\mu) / \mu^{1/2} ','FontSize', 9)
+ylabel('Probability (PDF)','FontSize', 9)
+histogram(allData,'Normalization','pdf','HandleVisibility','off')
+plot(X,normpdf(X,bestFitParams(1),bestFitParams(2)),'LineWidth',2)
+%xlim([min(X(Y>1)) max(X(Y<99))])
+xlim([-60 60]) % CHANGE THIS BACK
+leg = legend({'Gaussian'},'Location','northeast','Box','off','FontSize', 9);
+leg.ItemTokenSize = [10,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Prestep_Noise_Distribution'], '-dpng', '-r600');
+print([photobleachFile 'Prestep_Noise_Distribution'], '-dsvg', '-r600'); 
+
+
 %% 7) Find Signal to Noise
 
-    allSNR = [];
-    fileout = [photobleachFile 'Signal_to_Noise.csv'];
-    filein = [photobleachFile 'Signal_to_Noise'];
-    
-    fid = fopen(fileout,'w'); 
-    fprintf(fid,'%s\n','Each Line is the step height divided my the std. dev. of the residual from a single experiment');
-    fclose(fid);
-    
+    allData = [];
+
     for fileNo = 1:NumberOfFiles    
     singleStepStepData = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Step_Fit.csv'],1,0); 
-    SNR = (singleStepStepData(:,5)'-singleStepStepData(:,6)')./(singleStepStepData(:,8)');
-    allSNR = [allSNR,SNR];
-    dlmwrite(fileout,SNR,'-append');
-    allResults(fileNo,14) = mean(SNR);
-     
+    dataIn = (singleStepStepData(:,5)'-singleStepStepData(:,6)')./(singleStepStepData(:,8)');
+    allData = [allData dataIn];
+    allResults(fileNo,13) = mean(dataIn); 
     end 
-    dlmwrite(fileout,allSNR,'-append');
     
-    allResults(end,14) = mean(allSNR);
-    
-    
-    cmd = [JIM,'Make_Histogram',fileEXE,' "',fileout,'" "',filein,'"'];
-    system(cmd);
-    
-    hists = csvread([filein,'_Histograms.csv'],1,0);
-    
-    allSNR = sort(allSNR);
+    allResults(end,13) = mean(allData);
+    allData = sort(allData);
     
     opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
     fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
     set(fig.Children, 'FontName','Times', 'FontSize', 9);
     hold on
-    title('Signal to Noise Distribution')
+    %title('Signal to Noise Distribution')
     xlabel('Step Height/Residual Std. Dev.')
     ylabel('Probability (PDF)')
-    plot(hists(end-1,:),hists(end,:))
+    histogram(allData,'Normalization','pdf')
     hold off
-    xlim([0 allSNR(round(0.99.*size(allSNR,2)))])
+    xlim([0 allData(round(0.99.*size(allData,2)))])
     set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
     fig.PaperPositionMode   = 'auto';
     print([photobleachFile 'Signal_to_Noise'], '-dpng', '-r600')
 
-        
- %%
-     opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 16;opts.height= 12;opts.fontType= 'Times';opts.fontSize= 9;
-    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
-    set(fig.Children, 'FontName','Times', 'FontSize', 9);
-    for i=1:4
-        subplot(2,2,i)
-        hold on
-        title('Signal to Noise Distribution')
-        xlabel('Step Height/Residual Std. Dev.')
-        ylabel('Probability (PDF)')
-        plot(hists(end-1,:),hists(end,:))
-        hold off
-        xlim([0 allSNR(round(0.99.*size(allSNR,2)))])
-        set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
-    end
-    fig.PaperPositionMode   = 'auto';
-   % print([photobleachFile 'Signal_to_Noise'], '-dpng', '-r600')
-    
-%% 8) Initial Particle Intensity Distribution
-    
-    fileout = [photobleachFile 'Initial_Intensities.csv'];
-    filein = [photobleachFile 'Initial_Intensities'];    
-    fid = fopen(fileout,'w'); 
-    fprintf(fid,'%s\n','Each Line is the Initial Intensity of each particle from a single experiment');
-    fclose(fid);
+%% 8) Initial Particle Intensity Distribution using normal distribution
 
-    allInitialInt = [];
-    for i=1:NumberOfFiles
-        traces=csvread(channel1{i},1);
-        initialint = traces(:,1)'./singleMolIntMode(i);
-        allInitialInt = [allInitialInt traces(:,1)'./singleMolIntMode(end)];
-        dlmwrite(fileout,initialint,'-append');
-        
+allData = [];
+for fileNo=1:NumberOfFiles
+    traces=csvread(channel1{fileNo},1);
+
+    dataIn = traces(:,1);
+    allData = [allData;dataIn];
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn<z)./length(dataIn),X);
+
+    by = @(b,bx)(abs(b(1)).*normcdf(bx,1.*bestFitParams(1),sqrt(1).*bestFitParams(2))...
+        + abs(b(2)).*normcdf(bx,2.*bestFitParams(1),sqrt(2).*bestFitParams(2))...
+        + abs(b(3)).*normcdf(bx,3.*bestFitParams(1),sqrt(3).*bestFitParams(2))...
+        + abs(b(4)).*normcdf(bx,4.*bestFitParams(1),sqrt(4).*bestFitParams(2))...
+    );   
+    OLS = @(b) sum((by(b,X) - Y).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    initialNumbers = abs(fminsearch(OLS, [100 0 0 0], opts));
+
+    for i = 1:4
+        allResults(fileNo,17+i) = initialNumbers(i);
     end
 
-    dlmwrite(fileout,allInitialInt,'-append');  
+end
+    
+X = 1:max(allData);
+Y = arrayfun(@(z) 100.*nnz(allData<z)./length(allData),X);
 
-    cmd = [JIM,'Make_Histogram',fileEXE,' "',fileout,'" "',filein,'"'];
-    system(cmd);
-    
-    hists = csvread([filein,'_Histograms.csv'],1,0);
-    
-    for i=1:NumberOfFiles
-        allResults(i,15) = sum(hists(2*i,hists(2*i-1,:)<0.5))./sum(hists(2*i,:));
-        allResults(i,16) = sum(hists(2*i,hists(2*i-1,:)>=0.5 & hists(2*i-1,:)<1.5))./sum(hists(2*i,:));
-        allResults(i,17) = sum(hists(2*i,hists(2*i-1,:)>=1.5 & hists(2*i-1,:)<2.5))./sum(hists(2*i,:));
-        allResults(i,18) = sum(hists(2*i,hists(2*i-1,:)>=2.5))./sum(hists(2*i,:));
+OLS = @(b) sum((by(b,X) - Y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+initialNumbers = abs(fminsearch(OLS, [100 0 0 0], opts));
+    for i = 1:4
+        allResults(end,13+i) = initialNumbers(i);
     end
     
-    allResults(end,15) = sum(hists(end,hists(end-1,:)<0.5))./sum(hists(end,:));
-    allResults(end,16) = sum(hists(end,hists(end-1,:)>=0.5 & hists(end-1,:)<1.5))./sum(hists(end,:));
-    allResults(end,17) = sum(hists(end,hists(end-1,:)>=1.5 & hists(end-1,:)<2.5))./sum(hists(end,:));
-    allResults(end,18) = sum(hists(end,hists(end-1,:)>=2.5))./sum(hists(end,:)); 
-    
-    allInitialInt = sort(allInitialInt);
-    
-    opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
-    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
-    set(fig.Children, 'FontName','Times', 'FontSize', 9);
-    hold on
-    title('Particle Intensity Distribution')
-    xlabel('Particle Intensities (# Molecules)')
-    ylabel('Probability (PDF)')
-    plot(hists(end-1,:),hists(end,:))
-    xlim([-1 allInitialInt(round(0.99.*size(allInitialInt,2)))])
-    hold off
-    set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
-    fig.PaperPositionMode   = 'auto';
-    print([photobleachFile 'All_Particle_Intensities'], '-dpng', '-r600')
-    %% no normalization
-     
-    fileout = [photobleachFile 'Initial_Intensities_no_normalization.csv'];
-    filein = [photobleachFile 'Initial_Intensities_no_normalization'];    
-    fid = fopen(fileout,'w'); 
-    fprintf(fid,'%s\n','Each Line is the Initial Intensity of each particle from a single experiment');
-    fclose(fid);
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+xlabel('Initial Intensities','FontSize', 9)
+ylabel('Probability (PDF)','FontSize', 9)
+histogram(allData,'Normalization','pdf','HandleVisibility','off')
+plot(X,initialNumbers(1)./100.*normpdf(X,1.*bestFitParams(1),sqrt(1).*bestFitParams(2)),'LineWidth',2)
+plot(X,initialNumbers(2)./100.*normpdf(X,2.*bestFitParams(1),sqrt(2).*bestFitParams(2)),'LineWidth',2)
+plot(X,initialNumbers(3)./100.*normpdf(X,3.*bestFitParams(1),sqrt(3).*bestFitParams(2)),'LineWidth',2)
+plot(X,initialNumbers(4)./100.*normpdf(X,4.*bestFitParams(1),sqrt(4).*bestFitParams(2)),'LineWidth',2)
+xlim([0 max(X(Y<99))])
+leg = legend({'Monomer','Dimer','Trimer','Tetramer'},'Location','northeast','Box','off','FontSize', 9);
+leg.ItemTokenSize = [10,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Labelling_Number_normal'], '-dpng', '-r600');
+print([photobleachFile 'Labelling_Number_normal'], '-dsvg', '-r600'); 
+disp(['Using normal Distribution Fit Gives ' num2str(initialNumbers(1)) '% monomer, '...
+     num2str(initialNumbers(2)) '% dimer, '  num2str(initialNumbers(3)) '% trimer, and '  num2str(initialNumbers(4)) '% Tetramer ']);
+%% 8) Initial Particle Intensity Distribution using log normal distribution
 
-    allInitialInt = [];
-    for i=1:NumberOfFiles
-        traces=csvread(channel1{i},1);
-        initialint = traces(:,1)'./singleMolIntMode(i);
-        allInitialInt = [allInitialInt traces(:,1)'];
-        dlmwrite(fileout,initialint,'-append');
-        
+allData = [];
+for fileNo=1:NumberOfFiles
+    traces=csvread(channel1{fileNo},1);
+
+    dataIn = traces(:,1);
+    allData = [allData;dataIn];
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn<z)./length(dataIn),X);
+
+    by2 = @(b,bx)(abs(b(1)).*normcdf(log(bx),log(1)+bestFitParams2(1),bestFitParams2(2))...
+        + abs(b(2)).*normcdf(log(bx),log(2)+bestFitParams2(1),bestFitParams2(2))...
+        + abs(b(3)).*normcdf(log(bx),log(3)+bestFitParams2(1),bestFitParams2(2))...
+        + abs(b(4)).*normcdf(log(bx),log(4)+bestFitParams2(1),bestFitParams2(2))...
+    );   
+    OLS = @(b) sum((by2(b,X) - Y).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    initialNumbers = abs(fminsearch(OLS, [100 0 0 0], opts));
+
+    for i = 1:4
+        allResults(fileNo,13+i) = initialNumbers(i);
     end
 
-    dlmwrite(fileout,allInitialInt,'-append');  
-
-    cmd = [JIM,'Make_Histogram',fileEXE,' "',fileout,'" "',filein,'"'];
-    system(cmd);
+end
     
-    hists = csvread([filein,'_Histograms.csv'],1,0);
-    
-    allInitialInt = sort(allInitialInt);
-    
-    opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
-    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
-    set(fig.Children, 'FontName','Times', 'FontSize', 9);
-    hold on
-    title('Particle Intensity Distribution')
-    xlabel('Particle Intensities (# Molecules)')
-    ylabel('Probability (PDF)')
-    plot(hists(end-1,:),hists(end,:))
-    xlim([-1 allInitialInt(round(0.99.*size(allInitialInt,2)))])
-    hold off
-    set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
-    fig.PaperPositionMode   = 'auto';
-    print([photobleachFile 'All_Particle_Intensities'], '-dpng', '-r600') 
- %% overlaid
-     
-     
-     opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
-    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
-    set(fig.Children, 'FontName','Times', 'FontSize', 9);
-    hold on
-    title('Particle Intensity Distribution')
-    xlabel('Particle Intensities (# Molecules)')
-    ylabel('Probability (PDF)')
-    hists = csvread([photobleachFile 'Step_Heights_Histograms.csv'],1,0);
-    plot(hists(end-1,:),hists(end,:))
-    hists = csvread([photobleachFile 'Initial_Intensities_Histograms.csv'],1,0);
-    plot(hists(end-1,:),hists(end,:))
-    xlim([-1 allInitialInt(round(0.99.*size(allInitialInt,2)))])
-    hold off
-    set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
-    fig.PaperPositionMode   = 'auto';
-    print([photobleachFile 'All_Particle_Intensities'], '-dpng', '-r600') 
-%% 9) Create Combined Figure and Table
+X = 1:max(allData);
+Y = arrayfun(@(z) 100.*nnz(allData<z)./length(allData),X);
 
-    fig = figure;
-    img1 = imread([photobleachFile 'Bleaching_Rate.png']);
-    img2 = imread([photobleachFile 'Step_Height_Distribution.png']);
-    img3 = imread([photobleachFile 'Signal_to_Noise.png']);
-    img4 = imread([photobleachFile 'All_Particle_Intensities.png']);
-
-    montage({img1,img2,img3,img4},'BorderSize',[10 100],'BackgroundColor','white','ThumbnailSize',[]);
-    text(50,100,'A','FontSize',24) 
-    text(2100,100,'B','FontSize',24) 
-    text(50,1500,'C','FontSize',24)
-    text(2100,1500,'D','FontSize',24)
-    set(gca,'LooseInset',max(get(gca,'TightInset'), 0));
-    fig.PaperPositionMode   = 'auto';
-    print([photobleachFile 'Combined_Figure'], '-dpng', '-r600')
+OLS = @(b) sum((by2(b,X) - Y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+initialNumbers = abs(fminsearch(OLS, [100 0 0 0], opts));
+    for i = 1:4
+        allResults(end,13+i) = initialNumbers(i);
+    end
+    
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+xlabel('Initial Intensities','FontSize', 9)
+ylabel('Probability (PDF)','FontSize', 9)
+histogram(allData,'Normalization','pdf','HandleVisibility','off')
+plot(X,initialNumbers(1)./100./X.*normpdf(log(X),log(1)+bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+plot(X,initialNumbers(2)./100./X.*normpdf(log(X),log(2)+bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+plot(X,initialNumbers(3)./100./X.*normpdf(log(X),log(3)+bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+plot(X,initialNumbers(4)./100./X.*normpdf(log(X),log(4)+bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+xlim([0 max(X(Y<99))])
+leg = legend({'Monomer','Dimer','Trimer','Tetramer'},'Location','northeast','Box','off','FontSize', 9);
+leg.ItemTokenSize = [10,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Labelling_Number_lognormal'], '-dpng', '-r600');
+print([photobleachFile 'Labelling_Number_lognormal'], '-dsvg', '-r600');     
+    
+disp(['Using Log-Normal Distribution Fit Gives ' num2str(initialNumbers(1)) '% monomer, '...
+     num2str(initialNumbers(2)) '% dimer, '  num2str(initialNumbers(3)) '% trimer, and '  num2str(initialNumbers(4)) '% Tetramer ']);
+ 
+ 
  %%   
     for i=1:18
         allResults(NumberOfFiles+1,i) = mean(allResults(1:NumberOfFiles,i));

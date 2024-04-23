@@ -190,8 +190,11 @@ public class PMJ_Window {
             String fileName = myMetadata.getFileName();
 
             System.out.println(fileName);
-            fileName = folderName+"\\"+fileName.substring(0, fileName.length() - 8)+"\\";
+            fileName = folderName+File.separator+fileName.substring(0, fileName.length() - 8)+File.separator;
             System.out.println(fileName);
+
+            Files.createDirectories(Paths.get(fileName));
+
             return  fileName;
         } catch (java.io.IOException e1) {
             return "";
@@ -822,7 +825,7 @@ public class PMJ_Window {
                 }
 
                 plot2 = new Plot("Survival Curve Mean = "+IJ.d2s(1/expFit[2],2)+" Observed = "+IJ.d2s(100-100*Math.exp(-1.0*expFit[2]*(totFrameNum-1)),0)+"%"
-                        +" Count = "+IJ.d2s(expFit[1],0)+" Offset = "+IJ.d2s(expFit[0],0), "Time ("+timePerFrameUnits+")", "Remaining Particles");
+                        +" Count = "+IJ.d2s(expFit[1],0)+" Offset = "+IJ.d2s(expFit[0],0)+" Raw Steps Count = "+survivalCurve.length+" All Particles = "+totPartNum, "Time ("+timePerFrameUnits+")", "Remaining Particles");
                 plot2.setFrameSize(400, 250);
                 PlotWindow.noGridLines = true;
                 plot2.setAxisLabelFont(Font.BOLD, 40);
@@ -841,7 +844,7 @@ public class PMJ_Window {
                 plot2.draw();
                 plot2.show();
                 if(saveTraces) new FileSaver(plot2.getImagePlus()).saveAsPng(getFolderName()+"Stepfit_Survival_Mean_"+IJ.d2s(1/expFit[2],2)+"_Observed_"+IJ.d2s(100-100*Math.exp(-1.0*expFit[2]*(totFrameNum-1)),0)+"%_Count_"
-                        +IJ.d2s(expFit[1],0)+"_Offset_"+IJ.d2s(expFit[0],0)+".png");
+                        +IJ.d2s(expFit[1],0)+"_Offset_"+IJ.d2s(expFit[0],0)+"_Raw_Steps_Count_"+survivalCurve.length+"_All_Particles_"+totPartNum+".png");
 
 
                 //Step Height Histogram
