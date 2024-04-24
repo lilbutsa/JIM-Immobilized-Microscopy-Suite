@@ -250,6 +250,7 @@ disp('Alignment completed');
 %% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
+detectionPercent = true; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
 detectionStartFrame = '1'; %first frame of the reference region for detection for each channel
 detectionEndFrame = '25'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
@@ -274,6 +275,10 @@ end
 sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Image_For_Detection"',sysVar.allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
 if detectUsingMaxProjection
     sysVar.cmd = [sysVar.cmd,' -MaxProjection'];
+end
+
+if detectionPercent
+    sysVar.cmd = [sysVar.cmd,' -Percent'];
 end
 
 system(sysVar.cmd);
