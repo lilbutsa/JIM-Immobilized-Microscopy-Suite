@@ -1,7 +1,7 @@
 %%
 clear
 %% 1) Select Input Folder
-filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 [JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
 fileEXE = '"';
@@ -17,7 +17,7 @@ else
     disp('Platform not supported')
 end
 
-fileName = uigetdir('G:\My_Jim\PFO_Single_Label_Photobleaching_Output','Select Folder Containing All Traces'); % open the dialog box to select the folder for batch files
+fileName = uigetdir('G:\My_Jim\SLO_Output','Select Folder Containing All Traces'); % open the dialog box to select the folder for batch files
 fileName=[fileName,fileSep]; 
 
 allFolders = arrayfun(@(x)[fileName,x.name],dir(fileName),'UniformOutput',false); % find everything in the input folder
@@ -49,6 +49,16 @@ parfor i=1:NumberOfFiles
 
 end
 disp('Step fitting completed');
+%% Detect Laser Intensities
+uniqueInts = [2 4 6 8 10 15 20 25 30 40 50 75 100];
+laserInts = zeros(NumberOfFiles,1);
+for i=1:NumberOfFiles
+   for j= uniqueInts
+       if contains(channel1{i},['_' num2str(j) 'mW_']) 
+           laserInts(i) = j;
+       end
+   end
+end
 
 %% 3) View Single Step Filters
     fileToCheck = 1;
@@ -103,7 +113,9 @@ disp('Step fitting completed');
     
 %% 4) Filter All Files for Single Steps
 
-allResults = zeros(NumberOfFiles+3,21);
+allResults = zeros(NumberOfFiles,21);
+allSingleStepTraces = cell(NumberOfFiles,1);
+allSingleStepData = cell(NumberOfFiles,1);
     
 for fileNo = 1:NumberOfFiles
 
@@ -116,9 +128,12 @@ for fileNo = 1:NumberOfFiles
     singleStepStepData = stepsdata(singleStepTraceQ,:);
     multiStepStepData = stepsdata(~singleStepTraceQ,:);
     
-    allResults(fileNo,1) = size(traces,1);
-    allResults(fileNo,2) = size(singleStepStepData,1);
-    allResults(fileNo,19) = nnz(stepsdata(:,7)>0.999);
+    allSingleStepTraces{fileNo} = singleStepTraces;
+    allSingleStepData{fileNo} = singleStepStepData;
+    
+    allResults(fileNo,1) = size(traces,1);%Numberof Particles
+    allResults(fileNo,2) = size(singleStepStepData,1);%Number of single steps
+    allResults(fileNo,3) = nnz(abs(stepsdata(:,6)) > 0.75 .* stepsdata(:,5)); % no step
 
     fileout = [fileparts(channel1{fileNo}) fileSep 'Single_Step_Traces.csv'];   
     fid = fopen(fileout,'w'); 
@@ -146,33 +161,143 @@ for fileNo = 1:NumberOfFiles
     
 end
 
-allResults(end,1) = sum(allResults(1:NumberOfFiles,1));
-allResults(end-2,1) = mean(allResults(1:NumberOfFiles,1));
-allResults(end-1,1) = std(allResults(1:NumberOfFiles,1));
+photobleachFile = [fileName 'Compiled_Photobleaching_Analysis' fileSep];
+if ~exist(photobleachFile, 'dir')
+    mkdir(photobleachFile)%make a subfolder with that name
+end
+%% Particles detected per laser power
 
-allResults(end,2) = sum(allResults(1:NumberOfFiles,2));
-allResults(end,19) = sum(allResults(1:NumberOfFiles,19));
+figure
+scatter(laserInts,allResults(:,1))
 
-    photobleachFile = [fileName 'Compiled_Photobleaching_Analysis' fileSep];
-    if ~exist(photobleachFile, 'dir')
-        mkdir(photobleachFile)%make a subfolder with that name
-    end
+%%
+toplot = arrayfun(@(z) mean(allResults(laserInts==z,1)),uniqueInts);
+toplot2 = arrayfun(@(z) std(allResults(laserInts==z,1)),uniqueInts);
 
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+scatter(uniqueInts,toplot)
+errorbar(uniqueInts,toplot,toplot2,'LineStyle','none','Color',[0 0 0],'CapSize',3)
+
+ylim([0 1.1*max(toplot+toplot2)])
+hold off
+xlabel('Laser Int. (mW)')
+ylabel('Particles per FOV')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Number_Of_Particles'], '-dpng', '-r600');
+print([photobleachFile 'Number_Of_Particles'], '-depsc', '-r600');
+%% SIngle Steps
+figure
+scatter(laserInts,allResults(:,2))
+%% Single Step Percentage
+figure
+scatter(laserInts,100.*allResults(:,2)./allResults(:,1))
+ylim([0 100])
+%%
+toplot = arrayfun(@(z) mean(100.*allResults(laserInts==z,2)./allResults(laserInts==z,1)),uniqueInts);
+toplot2 = arrayfun(@(z) std(100.*allResults(laserInts==z,2)./allResults(laserInts==z,1)),uniqueInts);
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+scatter(uniqueInts,toplot)
+errorbar(uniqueInts,toplot,toplot2,'LineStyle','none','Color',[0 0 0],'CapSize',3)
+
+ylim([0 100])
+hold off
+xlabel('Laser Int. (mW)')
+ylabel('Percent of Single Steps')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Single_Step_Percentage'], '-dpng', '-r600');
+print([photobleachFile 'Single_Step_Percentage'], '-depsc', '-r600');
+
+%% No Steps
+figure
+scatter(laserInts,allResults(:,3))
+%%
+toplot = arrayfun(@(z) mean(100.*allResults(laserInts==z,3)./allResults(laserInts==z,1)),uniqueInts);
+toplot2 = arrayfun(@(z) std(100.*allResults(laserInts==z,3)./allResults(laserInts==z,1)),uniqueInts);
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+scatter(uniqueInts,toplot)
+errorbar(uniqueInts,toplot,toplot2,'LineStyle','none','Color',[0 0 0],'CapSize',3)
+
+ylim([0 1.1*max(toplot)])
+hold off
+xlabel('Laser Int. (mW)')
+ylabel('No Steps (%)')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'No_Step_Percentage'], '-dpng', '-r600');
+print([photobleachFile 'No_Step_Percentage'], '-depsc', '-r600');
+
+
+%% Plot Bleaching Distributions
+
+YMinPercent = 0;
+YMaxPercent = 95;
+    
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'log','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+
+for fileNo = 1:length(uniqueInts)    
+
+    dataIn = cell2mat(allSingleStepData(laserInts==uniqueInts(fileNo)));
+    
+    dataIn = sort(dataIn(:,4));
+
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn>z)./length(dataIn),X);
+
+    ax.ColorOrderIndex = fileNo;
+    plot(X,Y,'LineWidth',2)
+
+end
+xlim([0 200])
+ylim([5 100])
+hold off
+xlabel('Frames')
+ylabel('Remaining Particles (%)')
+leg = legend(arrayfun(@(x)[num2str(x),' mW'],uniqueInts,'UniformOutput',false),'Location','eastoutside','Box','off','FontSize', 9);
+
+leg.ItemTokenSize = [15,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Log_Bleaching_Survival_Curve'], '-dpng', '-r600');
+print([photobleachFile 'Log_Bleaching_Survival_Curve'], '-depsc', '-r600');
 %% 5) Fit Bleach Times
 
-    YMinPercent = 0;
-    YMaxPercent = 95;
+YMinPercent = 0;
+YMaxPercent = 95;
+
+for fileNo = 1:NumberOfFiles   
+
+    dataIn = allSingleStepData{fileNo};
     
-
-
-allData = [];
-
-for fileNo = 1:NumberOfFiles    
-
-    singleStepStepData = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Step_Fit.csv'],1,0); 
-
-    dataIn = sort(singleStepStepData(:,4));
-    allData = [allData;dataIn];
+    dataIn = sort(dataIn(:,4));
+    
     X = 1:max(dataIn);
     Y = arrayfun(@(z) 100.*nnz(dataIn>z)./length(dataIn),X);
     Xin = X(Y<YMaxPercent & Y>YMinPercent);
@@ -182,60 +307,84 @@ for fileNo = 1:NumberOfFiles
     OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
     opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
     bestFitParams = fminsearch(OLS, [100 1/mean(dataIn) 0], opts);
-    allResults(fileNo,3) = bestFitParams(2);
-    allResults(fileNo,4) = log(2)./bestFitParams(2);
-    allResults(fileNo,5) = log(10/9)./bestFitParams(2);
+    allResults(fileNo,4) = bestFitParams(2);
+    allResults(fileNo,5) = log(2)./bestFitParams(2);
+    allResults(fileNo,6) = log(10/9)./bestFitParams(2);
+    
 end
+%% Bleach Rate Versus Laser Int
+figure
+scatter(laserInts,allResults(:,4))
+%%
+toplot = arrayfun(@(z) mean(allResults(laserInts==z,4)),uniqueInts);
+toplot2 = arrayfun(@(z) std(allResults(laserInts==z,4)),uniqueInts);
 
-X = 1:max(allData);
-Y = arrayfun(@(z) 100.*nnz(allData>z)./length(allData),X);
-Xin = X(Y<YMaxPercent & Y>YMinPercent);
-Yin = Y(Y<YMaxPercent & Y>YMinPercent);
-
-by = @(b,bx)( b(1)*exp(-b(2)*bx)+b(3));             % Objective function
-OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
-opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
-bestFitParams = fminsearch(OLS, [100 1/mean(dataIn) 0], opts);
-allResults(end,3) = bestFitParams(2);
-allResults(end,4) = log(2)./bestFitParams(2);
-allResults(end,5) = log(10/9)./bestFitParams(2);
+x = uniqueInts(uniqueInts<90);
+y = toplot(uniqueInts<90);
+bleachRateFit = (dot(x,y).*max(size(x))-sum(x).*sum(y))/(max(size(x)).*dot(x,x)-sum(x).*sum(x));
 
 opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
-fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
-set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'log', 'YScale', 'log','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+plot([1 max(uniqueInts)],bleachRateFit.*[1 max(uniqueInts)],'LineWidth',1.5)
+scatter(uniqueInts,toplot,10,[0 0 0],'filled')
+errorbar(uniqueInts,toplot,toplot2,'LineStyle','none','Color',[0 0 0],'CapSize',3)
+
+xlim([1 100])
+ylim([0.001 1.1*max(toplot)])
+hold off
+xlabel('Laser Int. (mW)')
+ylabel('Bleach Rate (1/frames)')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Log_Bleach_Rate_Vs_Laser'], '-dpng', '-r600');
+print([photobleachFile 'Log_Bleach_Rate_Vs_Laser'], '-depsc', '-r600');
+%%
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 5.7;opts.height= 4.3;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
 axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
 hold on
 ax = gca;
-plot(X,Y,'LineWidth',2)
-plot(X,by(bestFitParams,X),'LineWidth',2)
+plot([1 max(uniqueInts)],bleachRateFit.*[1 max(uniqueInts)],'LineWidth',1.5)
+scatter(uniqueInts,toplot,10,[0 0 0],'filled')
+errorbar(uniqueInts,toplot,toplot2,'LineStyle','none','Color',[0 0 0],'CapSize',3)
+
+xlim([1 100])
+ylim([0 1.1*max(toplot)])
 hold off
-set(gca,'Layer','top')
-xlabel('Frame','FontSize', 9)
-ylabel('Remaining Particles (%)','FontSize', 9)
-leg = legend({'Data', 'Exp. Fit'},'Location','northeast','Box','off','FontSize', 9);
-leg.ItemTokenSize = [10,30];
-print([photobleachFile 'Bleaching_Rate'], '-dpng', '-r600');
-print([photobleachFile 'Bleaching_Rate'], '-dsvg', '-r600'); 
+xlabel('Laser Int. (mW)')
+ylabel('Bleach Rate (1/frames)')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Bleach_Rate_Vs_Laser'], '-dpng', '-r600');
+print([photobleachFile 'Bleach_Rate_Vs_Laser'], '-depsc', '-r600');
 
-disp(['The pooled bleaching rate of ' num2str(allResults(end,3)) ' corresponds to a halflife of ' num2str(allResults(end,4)) ...
-        ' and a 10% beaching frame of ' num2str(allResults(end,5))]);
+disp(['The pooled bleaching rate of ' num2str(bleachRateFit) ' per frame per mW' ]);
 
-  
 %% 6) Fit Step Heights
 
+allfits = zeros(length(uniqueInts) ,3);
     YMinPercent = 0;
-    YMaxPercent = 95;
-    
- allData = [];
+    YMaxPercent = 99;
+     figure('Name','Step_Heights')
+    set(gcf, 'Position', [100, 100, 1000, 800])
+    axes('XScale', 'linear', 'YScale', 'linear','LineWidth',2, 'FontName','Times')
+    ax = gca;   
 
-for fileNo = 1:NumberOfFiles    
+for fileNo = 1:length(uniqueInts)    
 
-    singleStepStepData = csvread([fileparts(channel1{fileNo}) fileSep 'Single_Step_Step_Fit.csv'],1,0); 
+    dataIn = cell2mat(allSingleStepData(laserInts==uniqueInts(fileNo)));
 
-    dataIn = sort(singleStepStepData(:,5)-singleStepStepData(:,6));
-    
-    
-    allData = [allData;dataIn];
+
+    dataIn = sort(dataIn(:,5)-dataIn(:,6));
+    %dataIn = dataIn./mean(dataIn);
+    %X = 0:0.05:10;
     X = 1:max(dataIn);
     Y = arrayfun(@(z) 100.*nnz(dataIn<z)./length(dataIn),X);
     Xin = X(Y<YMaxPercent & Y>YMinPercent);
@@ -245,21 +394,109 @@ for fileNo = 1:NumberOfFiles
     OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
     opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
     bestFitParams = fminsearch(OLS, [mean(dataIn) std(dataIn)], opts);
-    allResults(fileNo,6) = bestFitParams(1);
-    allResults(fileNo,7) = bestFitParams(2);
-    allResults(fileNo,8) = mean(dataIn);
-    allResults(fileNo,9) = std(dataIn);
-    allResults(fileNo,10) = median(dataIn);
     
     by2 = @(b,bx)(100.*normcdf(log(bx),b(1),b(2)));                % Objective function
     OLS = @(b) sum((by2(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
     opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
     bestFitParams2 = fminsearch(OLS, [log(median(dataIn)) sqrt(log(var(dataIn)))], opts);
-    allResults(fileNo,11) = exp(bestFitParams2(1)+(bestFitParams2(2)^2)./2);
-    allResults(fileNo,12) = sqrt((exp(bestFitParams2(2)^2)-1)*exp(2*bestFitParams2(1)+bestFitParams2(2)^2));
+    
+    middleThird = @(z)(z(length(z)/3+1:2*length(z)/3));
+    by3 = @(b,bx)(middleThird(100.*conv([zeros(1,length(bx)) normcdf(log(bx),b(1),b(2)) (1+zeros(1,length(bx)))],normpdf(bx,max(bx)/2,b(3)),'same')));
+    OLS = @(b) sum((by3(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams3 = fminsearch(OLS, [bestFitParams2(1) bestFitParams2(2) std(dataIn)/4], opts);
+    by4 = @(b,bx)(middleThird(conv([zeros(1,length(bx)) 1./bx.*normpdf(log(bx),b(1),b(2)) (zeros(1,length(bx)))],normpdf(bx,max(bx)/2,b(3)),'same')));
+allfits(fileNo,:) = bestFitParams3;
+    
+    subplot(4,4,fileNo)
+    hold on
+    ax = gca;
+    title([num2str(uniqueInts(fileNo)) ' mW'],'FontSize', 9)
+    xlabel('Step Height','FontSize', 9)
+    ylabel('Probability (PDF)','FontSize', 9)
+    histogram(dataIn(dataIn< max(X(Y<99))),50,'Normalization','pdf','HandleVisibility','off')
+    plot(X,normpdf(X,bestFitParams(1),bestFitParams(2)),'LineWidth',2)
+    plot(X,1./X.*normpdf(log(X),bestFitParams2(1),bestFitParams2(2)),'LineWidth',2)
+    plot(Xin,by4([bestFitParams3(1),bestFitParams3(2),bestFitParams3(3)],Xin),'LineWidth',2)
+    xlim([0 max(X(Y<99))])
+    %leg = legend({'Gaussian','Log Norm'},'Location','northeast','Box','off','FontSize', 9);
+    %leg.ItemTokenSize = [10,30];
+    hold off
+    set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+
+end 
+%% log normal mean
+figure
+scatter(uniqueInts,exp(allfits(:,1)+allfits(:,2).*allfits(:,2)./2))
+%%
+figure
+scatter(uniqueInts,sqrt((exp(allfits(:,2).*allfits(:,2))-1).*exp(2.*allfits(:,1)+allfits(:,2).*allfits(:,2))))
+%%
+figure
+scatter(uniqueInts,allfits(:,3))
+
+%%
+
+
+
+figure
+hold on
+plot(Xin,Yin)
+plot(Xin,by3([bestFitParams3(1),bestFitParams3(2),bestFitParams3(3)],Xin))
+%xlim([0 max(Xin)])
+hold off
+%%
+by4 = @(b,bx)(middleThird(conv([zeros(1,length(bx)) 1./bx.*normpdf(log(bx),b(1),b(2)) (zeros(1,length(bx)))],normpdf(bx,max(bx)/2,b(3)),'same')));
+
+by4 = @(b,bx)(1./bx.*normpdf(log(bx),b(1),b(2)));
+
+
+figure
+hold on
+    histogram(dataIn(dataIn< max(X(Y<99))),50,'Normalization','pdf','HandleVisibility','off')
+    plot(X,by4([bestFitParams3(1),bestFitParams3(2),bestFitParams3(3)],X),'LineWidth',2)
+    xlim([0 max(X(Y<99))])
+    %leg = legend({'Gaussian','Log Norm'},'Location','northeast','Box','off','FontSize', 9);
+    %leg.ItemTokenSize = [10,30];
+    hold off
+%% 6) Fit Step Heights
+
+    YMinPercent = 0;
+    YMaxPercent = 95;
+    
+
+for fileNo = 1:NumberOfFiles    
+
+    dataIn = allSingleStepData{fileNo}; 
+
+    dataIn = sort(dataIn(:,5)-dataIn(:,6));
+    
+    
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn<z)./length(dataIn),X);
+    Xin = X(Y<YMaxPercent & Y>YMinPercent);
+    Yin = Y(Y<YMaxPercent & Y>YMinPercent);
+    
+    by = @(b,bx)(100.*normcdf(bx,b(1),b(2)));             % Objective function
+    OLS = @(b) sum((by(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams = fminsearch(OLS, [mean(dataIn) std(dataIn)], opts);
+    allResults(fileNo,7) = bestFitParams(1);
+    allResults(fileNo,8) = bestFitParams(2);
+    allResults(fileNo,9) = mean(dataIn);
+    allResults(fileNo,10) = std(dataIn);
+    allResults(fileNo,11) = median(dataIn);
+    
+    by2 = @(b,bx)(100.*normcdf(log(bx),b(1),b(2)));                % Objective function
+    OLS = @(b) sum((by2(b,Xin) - Yin).^2);          % Ordinary Least Squares cost function
+    opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+    bestFitParams2 = fminsearch(OLS, [log(median(dataIn)) sqrt(log(var(dataIn)))], opts);
+    allResults(fileNo,12) = exp(bestFitParams2(1)+(bestFitParams2(2)^2)./2);
+    allResults(fileNo,13) = sqrt((exp(bestFitParams2(2)^2)-1)*exp(2*bestFitParams2(1)+bestFitParams2(2)^2));
 
 end
 
+%%
 X = 1:max(allData);
 Y = arrayfun(@(z) 100.*nnz(allData<z)./length(allData),X);
 Xin = X(Y<YMaxPercent & Y>YMinPercent);
@@ -454,7 +691,7 @@ ylabel('Probability (PDF)','FontSize', 9)
 histogram(allData,'Normalization','pdf','HandleVisibility','off')
 plot(X,normpdf(X,bestFitParams(1),bestFitParams(2)),'LineWidth',2)
 %xlim([min(X(Y>1)) max(X(Y<99))])
-xlim([-20 20]) % CHANGE THIS BACK
+xlim([-60 60]) % CHANGE THIS BACK
 leg = legend({'Gaussian'},'Location','northeast','Box','off','FontSize', 9);
 leg.ItemTokenSize = [10,30];
 hold off
