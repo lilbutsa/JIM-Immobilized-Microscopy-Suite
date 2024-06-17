@@ -29,7 +29,7 @@ fclose(sysVar.fid);
 matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
-additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
+additionalExtensionsToRemove = 1; %remove extra .ome from working folder name if you want to
 
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
 
@@ -88,13 +88,13 @@ imStackMultipleFiles = false ; % choose this if you're stack is split over multi
 
 imStackNumberOfChannels = 3; % Input the number of channels in the data
 
-imStackDisableMetadata = false ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
+imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
 imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
-imStackChannelsToTransform = '2 3';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
+imStackChannelsToTransform = '';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
 imStackVerticalFlipChannel = '0 0';% For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
 imStackHorizontalFlipChannel = '1 0';% Same as vertical
 imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel
@@ -156,8 +156,8 @@ disp('Organization completed');
 %% 3) Align Channels and Calculate Drifts
 alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
-alignStartFrame = 12;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 12;% 
+alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 1;% 
 
 alignMaxShift = 30.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -173,14 +173,14 @@ alignSNRCutoff = 0.1; % Set a minimum alignment SNR to throw warnings
 
 %Parameters for Manual Alignment
 alignManually = true ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
-alignXOffset = '-5 -5.2';
-alignYOffset = '-5.4 -4.6';
-alignRotationAngle = '-2 2';
+alignXOffset = '0 0';
+alignYOffset = '0 0';
+alignRotationAngle = '0 0';
 alignScalingFactor = '1 1';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
-displayMax = 0.95;
+displayMax = 0.99;
 
 %Don't touch from here
 
@@ -259,7 +259,7 @@ detectWeights = '1 0 0';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
-displayMax = 0.95;
+displayMax = 0.99;
 
 
 % Don't Touch From Here
@@ -353,12 +353,17 @@ additionBackgroundUseMaxProjection = false ; %Use a max projection rather than m
 
 additionBackgroundPercent = false;
 
-additionalBackgroundStartFrame = '0 1'; %first frame of the reference region for background detection
-additionalBackgroundEndFrame = '0 -1';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundStartFrame = '0 1 1'; %first frame of the reference region for background detection
+additionalBackgroundEndFrame = '0 -1 -1';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
-additionalBackgroundWeights = '0 1';
+additionalBackgroundWeights = '0 1 1';
 
 additionBackgroundCutoff = 2.5; %Threshold for particles to be detected for background
+
+% Visualisation saturationg percentages
+
+displayMin = 0.05; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 0.99; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 
 %don't touch from here
 
@@ -400,7 +405,7 @@ end
 %% 7) Expand Regions
 expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
 expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
-expandBackOuterDist = 10.00; % Maximum distance to dilate beyond the ROI to measure the local background
+expandBackOuterDist = 30.00; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -516,8 +521,8 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 9) View Traces
-montage.pageNumber =1; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
-montage.timePerFrame = 0.1;%Set to zero to just have frames
+montage.pageNumber =14; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'mins'; % Unit to use for x axis 
 
 %don't touch from here
@@ -607,11 +612,11 @@ print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)
 savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 end
 %% 10)Extract Individual Trace and montage
-montage.traceNo = 87;
-montage.start = 5;
-montage.end = 95;
-montage.delta = 10;
-montage.average = 9;
+montage.traceNo = 390;
+montage.start = 3;
+montage.end = 148;
+montage.delta = 5;
+montage.average = 5;
 
 montage.outputParticleImageStack = true;% Create a Tiff stack of the ROI of the particle
 
@@ -804,12 +809,12 @@ parfor i=1:sysConst.NumberOfFiles
     %background Detect
     if additionBackgroundDetect
 
-        cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
+        cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
         if additionBackgroundUseMaxProjection
             cmd = [cmd,' -MaxProjection'];
         end 
         if additionBackgroundPercent
-            sysVar.cmd = [sysVar.cmd,' -Percent'];
+            cmd = [cmd,' -Percent'];
         end
 
         system(cmd);
@@ -836,7 +841,7 @@ parfor i=1:sysConst.NumberOfFiles
     for j = 1:imStackNumberOfChannels
         cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Alignment_Channel_',num2str(j),'.csv"'];
         if traceVerboseOutput
-            cmd = [sysVar.cmd,' -Verbose'];
+            cmd = [cmd,' -Verbose'];
         end  
         system(cmd);    
     end
