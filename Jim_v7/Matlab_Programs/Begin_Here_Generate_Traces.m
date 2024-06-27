@@ -29,7 +29,7 @@ fclose(sysVar.fid);
 matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
-additionalExtensionsToRemove = 1; %remove extra .ome from working folder name if you want to
+additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
 
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
 
@@ -86,7 +86,7 @@ completeName = ['"',completeName,'" '];
 %% 2) Organise Image Stack into channels 
 imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 3; % Input the number of channels in the data
+imStackNumberOfChannels = 1; % Input the number of channels in the data
 
 imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
@@ -157,9 +157,9 @@ disp('Organization completed');
 alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
 alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 1;% 
+alignEndFrame = -1;% 
 
-alignMaxShift = 30.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 10.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
@@ -251,11 +251,11 @@ disp('Alignment completed');
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
-detectionStartFrame = '1 0 0'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '1 0 0'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '-1'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1 0 0';
+detectWeights = '1';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -347,7 +347,7 @@ imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
 %% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
-additionBackgroundDetect = true ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
+additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
 additionBackgroundUseMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
@@ -404,7 +404,7 @@ end
 
 %% 7) Expand Regions
 expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
+expandBackInnerDist = 2*4.10; % Minimum distance to dilate beyond the ROI to measure the local background
 expandBackOuterDist = 30.00; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -867,7 +867,7 @@ sysVar.outputFolder = [sysVar.outputFolder,filesep];
 
 sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false)];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
-%%
+
 for i=1:length(sysVar.outputFile)
     sysVar.fileNameIn = sysVar.outputFile{i};
     sysVar.fileNameIn = extractAfter(sysVar.fileNameIn,length(sysVar.fileName));
