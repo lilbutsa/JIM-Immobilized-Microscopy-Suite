@@ -29,7 +29,7 @@ fclose(sysVar.fid);
 matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
-additionalExtensionsToRemove = 1; %remove extra .ome from working folder name if you want to
+additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
 
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
 
@@ -86,7 +86,7 @@ completeName = ['"',completeName,'" '];
 %% 2) Organise Image Stack into channels 
 imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 3; % Input the number of channels in the data
+imStackNumberOfChannels = 1; % Input the number of channels in the data
 
 imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
@@ -101,7 +101,7 @@ imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the
 
 
 % Don't touch from here
-    
+ 
 sysVar.allChannelNames = ''; % make a list of all channels that need aligning (everything above channel 1)
 for j = 1:imStackNumberOfChannels
 sysVar.allChannelNames = [sysVar.allChannelNames,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif"'];
@@ -157,9 +157,9 @@ disp('Organization completed');
 alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
 alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 1;% 
+alignEndFrame = -1;% 
 
-alignMaxShift = 30.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 10.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
@@ -183,6 +183,19 @@ displayMin = 0.05;
 displayMax = 0.99;
 
 %Don't touch from here
+
+if (alignManually && (length(split(alignXOffset))<imStackNumberOfChannels-1 || length(split(alignYOffset))<imStackNumberOfChannels-1 || length(split(alignRotationAngle))<imStackNumberOfChannels-1 || length(split(alignScalingFactor))<imStackNumberOfChannels-1))
+        errordlg('alignXOffset, requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+    
+elseif length(split(detectionEndFrame))<imStackNumberOfChannels
+        errordlg('detectionEndFrame requires one value for each channel separated by a space. e.g. ''-1 -1'' for 2 channel data'); 
+    elseif length(split(detectWeights))<imStackNumberOfChannels
+        errordlg('detectWeights requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+    end
+
+    
+end
+
 
 sysVar.cmd = [sysConst.JIM,'Align_Channels',sysConst.fileEXE,' "',workingDir,'Alignment"',sysVar.allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(alignIterations),' -MaxShift ',num2str(alignMaxShift)];
 
@@ -251,11 +264,11 @@ disp('Alignment completed');
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
-detectionStartFrame = '1 0 0'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '1 0 0'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '-1'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1 0 0';
+detectWeights = '1';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -263,31 +276,38 @@ displayMax = 0.99;
 
 
 % Don't Touch From Here
+if length(split(detectionStartFrame))<imStackNumberOfChannels
+    errordlg('detectionStartFrame requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+elseif length(split(detectionEndFrame))<imStackNumberOfChannels
+    errordlg('detectionEndFrame requires one value for each channel separated by a space. e.g. ''-1 -1'' for 2 channel data'); 
+elseif length(split(detectWeights))<imStackNumberOfChannels
+    errordlg('detectWeights requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+else  
+    if ischar(detectionStartFrame)==false
+        detectionStartFrame = num2str(detectionStartFrame);
+    end
 
-if ischar(detectionStartFrame)==false
-    detectionStartFrame = num2str(detectionStartFrame);
+    if ischar(detectionEndFrame)==false
+        detectionEndFrame = num2str(detectionEndFrame);
+    end
+
+    sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Image_For_Detection"',sysVar.allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
+    if detectUsingMaxProjection
+        sysVar.cmd = [sysVar.cmd,' -MaxProjection'];
+    end
+
+    if detectPercent
+        sysVar.cmd = [sysVar.cmd,' -Percent'];
+    end
+
+    system(sysVar.cmd);
+
+    figure
+    sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
+    tosort = sort(sysVar.imout(:));
+    sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+    imshow(sysVar.imout);
 end
-
-if ischar(detectionEndFrame)==false
-    detectionEndFrame = num2str(detectionEndFrame);
-end
-
-sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Image_For_Detection"',sysVar.allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
-if detectUsingMaxProjection
-    sysVar.cmd = [sysVar.cmd,' -MaxProjection'];
-end
-
-if detectPercent
-    sysVar.cmd = [sysVar.cmd,' -Percent'];
-end
-
-system(sysVar.cmd);
-
-figure
-sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
-tosort = sort(sysVar.imout(:));
-sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
-imshow(sysVar.imout);
 disp('Average projection completed');
 
 %% 5) Detect Particles
@@ -347,7 +367,7 @@ imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
 %% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
-additionBackgroundDetect = true ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
+additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
 additionBackgroundUseMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
@@ -404,7 +424,7 @@ end
 
 %% 7) Expand Regions
 expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
+expandBackInnerDist = 2*4.10; % Minimum distance to dilate beyond the ROI to measure the local background
 expandBackOuterDist = 30.00; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -521,7 +541,7 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 9) View Traces
-montage.pageNumber =13; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber =14; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'mins'; % Unit to use for x axis 
 
@@ -612,9 +632,9 @@ print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)
 savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 end
 %% 10)Extract Individual Trace and montage
-montage.traceNo = 342;
+montage.traceNo = 390;
 montage.start = 3;
-montage.end = 48;
+montage.end = 148;
 montage.delta = 5;
 montage.average = 5;
 
@@ -809,12 +829,12 @@ parfor i=1:sysConst.NumberOfFiles
     %background Detect
     if additionBackgroundDetect
 
-        cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
+        cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
         if additionBackgroundUseMaxProjection
             cmd = [cmd,' -MaxProjection'];
         end 
         if additionBackgroundPercent
-            sysVar.cmd = [sysVar.cmd,' -Percent'];
+            cmd = [cmd,' -Percent'];
         end
 
         system(cmd);
@@ -841,7 +861,7 @@ parfor i=1:sysConst.NumberOfFiles
     for j = 1:imStackNumberOfChannels
         cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',workingDir,'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',workingDir,'Channel_',num2str(j),'" -Drift "',workingDir,'Alignment_Channel_',num2str(j),'.csv"'];
         if traceVerboseOutput
-            cmd = [sysVar.cmd,' -Verbose'];
+            cmd = [cmd,' -Verbose'];
         end  
         system(cmd);    
     end
@@ -867,7 +887,7 @@ sysVar.outputFolder = [sysVar.outputFolder,filesep];
 
 sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false)];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
-%%
+
 for i=1:length(sysVar.outputFile)
     sysVar.fileNameIn = sysVar.outputFile{i};
     sysVar.fileNameIn = extractAfter(sysVar.fileNameIn,length(sysVar.fileName));

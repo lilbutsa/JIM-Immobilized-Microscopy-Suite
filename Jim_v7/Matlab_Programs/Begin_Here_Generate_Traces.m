@@ -101,7 +101,7 @@ imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the
 
 
 % Don't touch from here
-    
+ 
 sysVar.allChannelNames = ''; % make a list of all channels that need aligning (everything above channel 1)
 for j = 1:imStackNumberOfChannels
 sysVar.allChannelNames = [sysVar.allChannelNames,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif"'];
@@ -184,6 +184,13 @@ displayMax = 0.99;
 
 %Don't touch from here
 
+if (alignManually && (length(split(alignXOffset))<imStackNumberOfChannels-1 || length(split(alignYOffset))<imStackNumberOfChannels-1 || length(split(alignRotationAngle))<imStackNumberOfChannels-1 || length(split(alignScalingFactor))<imStackNumberOfChannels-1))
+        errordlg('alignXOffset,alignYOffset,alignRotationAngle and alignScalingFactor each require one value for each channel that needs to be aligned to channel 1, separated by a space. e.g. ''5 -5'' for 3 channel data'); 
+elseif (~alignManually && length(split(alignMaxIntensities))<imStackNumberOfChannels)
+        errordlg('alignMaxIntensities requires one value for each channel separated by a space. e.g. ''65000 65000'' for 2 channel data'); 
+end
+
+
 sysVar.cmd = [sysConst.JIM,'Align_Channels',sysConst.fileEXE,' "',workingDir,'Alignment"',sysVar.allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(alignIterations),' -MaxShift ',num2str(alignMaxShift)];
 
 if alignManually
@@ -263,31 +270,38 @@ displayMax = 0.99;
 
 
 % Don't Touch From Here
+if length(split(detectionStartFrame))<imStackNumberOfChannels
+    errordlg('detectionStartFrame requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+elseif length(split(detectionEndFrame))<imStackNumberOfChannels
+    errordlg('detectionEndFrame requires one value for each channel separated by a space. e.g. ''-1 -1'' for 2 channel data'); 
+elseif length(split(detectWeights))<imStackNumberOfChannels
+    errordlg('detectWeights requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+else  
+    if ischar(detectionStartFrame)==false
+        detectionStartFrame = num2str(detectionStartFrame);
+    end
 
-if ischar(detectionStartFrame)==false
-    detectionStartFrame = num2str(detectionStartFrame);
+    if ischar(detectionEndFrame)==false
+        detectionEndFrame = num2str(detectionEndFrame);
+    end
+
+    sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Image_For_Detection"',sysVar.allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
+    if detectUsingMaxProjection
+        sysVar.cmd = [sysVar.cmd,' -MaxProjection'];
+    end
+
+    if detectPercent
+        sysVar.cmd = [sysVar.cmd,' -Percent'];
+    end
+
+    system(sysVar.cmd);
+
+    figure
+    sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
+    tosort = sort(sysVar.imout(:));
+    sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+    imshow(sysVar.imout);
 end
-
-if ischar(detectionEndFrame)==false
-    detectionEndFrame = num2str(detectionEndFrame);
-end
-
-sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Image_For_Detection"',sysVar.allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
-if detectUsingMaxProjection
-    sysVar.cmd = [sysVar.cmd,' -MaxProjection'];
-end
-
-if detectPercent
-    sysVar.cmd = [sysVar.cmd,' -Percent'];
-end
-
-system(sysVar.cmd);
-
-figure
-sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
-tosort = sort(sysVar.imout(:));
-sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
-imshow(sysVar.imout);
 disp('Average projection completed');
 
 %% 5) Detect Particles
@@ -404,7 +418,7 @@ end
 
 %% 7) Expand Regions
 expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 2*4.10; % Minimum distance to dilate beyond the ROI to measure the local background
+expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
 expandBackOuterDist = 30.00; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection

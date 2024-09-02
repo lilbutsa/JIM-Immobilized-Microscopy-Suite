@@ -41,14 +41,15 @@ NumberOfFiles=size(channel1,1);
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %% Detect Laser Intensities
 multipleLaserIntensities = true;
-laserIdentifier = 'mW_';
-uniqueInts = [2 4 6 8 10 15 20 25 30 40 50 75 100];
+beforelaserIdentifier = '\';
+afterlaserIdentifier = 'ms_';
+uniqueInts = [50];
 
 if multipleLaserIntensities
     laserInts = zeros(NumberOfFiles,1);
     for i=1:NumberOfFiles
        for j= uniqueInts
-           if contains(channel1{i},['_' num2str(j) laserIdentifier]) 
+           if contains(channel1{i},[beforelaserIdentifier num2str(j) afterlaserIdentifier]) 
                laserInts(i) = j;
            end
        end
@@ -57,7 +58,7 @@ end
 %% 2) Stepfit Traces
 stepfitIterations = 10000;
 
-parfor i=1:1%NumberOfFiles
+parfor i=1:NumberOfFiles
     disp(['Step Fitting Experiment ',num2str(i),' - ',channel1{i}]);
     cmd = [JIM,'Change_Point_Analysis',fileEXE,' "',channel1{i},'" "',fileparts(channel1{i}),fileSep,'Stepfit" -FitSingleSteps -Iterations ',num2str(stepfitIterations)];
     system(cmd);
@@ -66,12 +67,12 @@ end
 disp('Step fitting completed');
 
 %% 3) View Single Step Filters
-fileToCheck = 1;
+fileToCheck = 11;
 pageNumber = 1;
 
 minFirstStepProb = 0.05;
 maxSecondMeanFirstMeanRatio=0.25;
-maxMoreStepProb=0.999;
+maxMoreStepProb=1.01;
 
 
 traces=csvread(channel1{fileToCheck},1);
@@ -197,6 +198,9 @@ end
 %% Single Steps
 figure
 scatter(laserInts,allResults(:,2))
+%% Single Steps
+figure
+plot(allResults(:,2))
 %% Single Step Percentage
 figure
 scatter(laserInts,100.*allResults(:,2)./allResults(:,1))
@@ -214,7 +218,7 @@ ax = gca;
 scatter(uniqueInts,toplot)
 errorbar(uniqueInts,toplot,toplot2,'LineStyle','none','Color',[0 0 0],'CapSize',3)
 
-ylim([0 100])
+ylim([0 105])
 hold off
 xlabel('Laser Int. (mW)')
 ylabel('Percent of Single Steps')
@@ -226,7 +230,7 @@ print([photobleachFile 'Single_Step_Percentage'], '-depsc', '-r600');
 
 %% No Steps
 figure
-scatter(laserInts,allResults(:,3))
+scatter(laserInts,100.*allResults(:,2)./allResults(:,1))
 %%
 toplot = arrayfun(@(z) mean(100.*allResults(laserInts==z,3)./allResults(laserInts==z,1)),uniqueInts);
 toplot2 = arrayfun(@(z) std(100.*allResults(laserInts==z,3)./allResults(laserInts==z,1)),uniqueInts);
@@ -240,7 +244,7 @@ ax = gca;
 scatter(uniqueInts,toplot)
 errorbar(uniqueInts,toplot,toplot2,'LineStyle','none','Color',[0 0 0],'CapSize',3)
 
-ylim([0 1.1*max(toplot)])
+ylim([0 10])
 hold off
 xlabel('Laser Int. (mW)')
 ylabel('No Steps (%)')
@@ -276,7 +280,7 @@ for fileNo = 1:length(uniqueInts)
     plot(X,Y,'LineWidth',2)
 
 end
-xlim([0 200])
+xlim([0 50])
 ylim([5 100])
 hold off
 xlabel('Frames')
@@ -289,6 +293,45 @@ set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
 fig.PaperPositionMode   = 'auto';
 print([photobleachFile 'Log_Bleaching_Survival_Curve'], '-dpng', '-r600');
 print([photobleachFile 'Log_Bleaching_Survival_Curve'], '-depsc', '-r600');
+
+%% not log Plot Bleaching Distributions
+
+YMinPercent = 0;
+YMaxPercent = 95;
+    
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+ax = gca;
+
+for fileNo = 1:length(uniqueInts)    
+
+    dataIn = cell2mat(allSingleStepData(laserInts==uniqueInts(fileNo)));
+    
+    dataIn = sort(dataIn(:,4));
+
+    X = 1:max(dataIn);
+    Y = arrayfun(@(z) 100.*nnz(dataIn>z)./length(dataIn),X);
+
+    ax.ColorOrderIndex = fileNo;
+    plot(X,Y,'LineWidth',2)
+
+end
+xlim([0 50])
+ylim([5 100])
+hold off
+xlabel('Frames')
+ylabel('Remaining Particles (%)')
+leg = legend(arrayfun(@(x)[num2str(x),' mW'],uniqueInts,'UniformOutput',false),'Location','eastoutside','Box','off','FontSize', 9);
+
+leg.ItemTokenSize = [15,30];
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([photobleachFile 'Bleaching_Survival_Curve'], '-dpng', '-r600');
+print([photobleachFile 'Bleaching_Survival_Curve'], '-depsc', '-r600');
 %% 5) Fit Bleach Times
 
 YMinPercent = 0;
