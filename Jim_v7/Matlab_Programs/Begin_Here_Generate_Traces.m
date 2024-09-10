@@ -102,6 +102,11 @@ imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the
 
 % Don't touch from here
  
+if (length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackVerticalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackHorizontalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackRotateChannel,"%f")) )
+        errordlg('Check that channelsToTransform, VerticalFlipChannel, HorizontalFlipChannel and RotateChannel all have the same number of parameters.','Error Inputting Parameters. channelsToTransform should be the list of channels that need to be transformed. VerticalFlipChannel and HorizontalFlipChannel should state whether the respective channel should (1) or shouldnt (0) be flipped. rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel'); 
+end
+
+
 sysVar.allChannelNames = ''; % make a list of all channels that need aligning (everything above channel 1)
 for j = 1:imStackNumberOfChannels
 sysVar.allChannelNames = [sysVar.allChannelNames,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif"'];
@@ -382,6 +387,14 @@ displayMax = 0.99; % This just adjusts the contrast in the displayed image. It d
 %don't touch from here
 
 if additionBackgroundDetect
+    
+    if length(split(additionalBackgroundStartFrame))<imStackNumberOfChannels
+        errordlg('additionalBackgroundStartFrame requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+    elseif length(split(additionalBackgroundEndFrame))<imStackNumberOfChannels
+        errordlg('additionalBackgroundEndFrame requires one value for each channel separated by a space. e.g. ''-1 -1'' for 2 channel data'); 
+    elseif length(split(additionalBackgroundWeights))<imStackNumberOfChannels
+        errordlg('additionalBackgroundWeights requires one value for each channel separated by a space. e.g. ''1 1'' for 2 channel data'); 
+    end
 
     sysVar.cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',workingDir,'Alignment_Channel_To_Channel_Alignment.csv" "',workingDir,'Alignment_Channel_1.csv" "',workingDir,'Background"',sysVar.allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
     if additionBackgroundUseMaxProjection

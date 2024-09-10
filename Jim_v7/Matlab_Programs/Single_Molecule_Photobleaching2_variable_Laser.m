@@ -41,9 +41,9 @@ NumberOfFiles=size(channel1,1);
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %% Detect Laser Intensities
 multipleLaserIntensities = true;
-beforelaserIdentifier = '\';
-afterlaserIdentifier = 'ms_';
-uniqueInts = [50];
+beforelaserIdentifier = '_';
+afterlaserIdentifier = 'mw';
+uniqueInts = [65];
 
 if multipleLaserIntensities
     laserInts = zeros(NumberOfFiles,1);
@@ -67,7 +67,7 @@ end
 disp('Step fitting completed');
 
 %% 3) View Single Step Filters
-fileToCheck = 11;
+fileToCheck = 10;
 pageNumber = 1;
 
 minFirstStepProb = 0.05;
