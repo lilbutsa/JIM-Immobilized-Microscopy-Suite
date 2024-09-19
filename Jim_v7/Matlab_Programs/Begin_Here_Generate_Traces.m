@@ -162,7 +162,7 @@ disp('Organization completed');
 alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
 alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = -1;% 
+alignEndFrame = 5;% 
 
 alignMaxShift = 10.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -264,7 +264,7 @@ detectUsingMaxProjection = false ; %Use a max projection rather than mean. This 
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
 detectionStartFrame = '1'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '-1'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionEndFrame = '10'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
 detectWeights = '1';
@@ -312,7 +312,7 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 0.5; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 0.75; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
 detectLeftEdge = 10;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
@@ -541,16 +541,25 @@ fprintf(sysVar.fileID, sysConst.variableString);
 fclose(sysVar.fileID);
 
 disp('Finished Generating Traces');
+%% Step-fit
+stepfit = true;
+stepfitChannel = 1;
+if stepfit
+    sysVar.cmd = [JIM,'Step_Fitting',fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Stepfit"'];
+    system(sysVar.cmd);
+end
 
+disp('Step fitting completed');
 %% (Optional) Save Parameters
 [sysVar.file,sysVar.path] = uiputfile('*.csv','Save Parameter CSV File');
 sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
-%% 9) View Traces
-montage.pageNumber =14; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+%% 10) View Traces
+montage.pageNumber =2; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'mins'; % Unit to use for x axis 
+montage.showStepfit = true;
 
 %don't touch from here
 for toCollapse = 1
@@ -575,6 +584,11 @@ sysVar.fact(1) = ceil(log10(max(max(sysVar.traces1))))-2;
 if imStackNumberOfChannels>1
     sysVar.traces2=sysVar.allTraces{2};
     sysVar.fact(2) = ceil(log10(max(max(sysVar.traces2))))-2;
+end
+
+if montage.showStepfit && stepfit
+    sysVar.stepPoints = csvread([workingDir,'Stepfit_StepPoints.csv'],1);
+    sysVar.stepMeans = csvread([workingDir,'Stepfit_StepMeans.csv'],1);
 end
 
 
@@ -605,7 +619,24 @@ for i=1:28
         end
 
         plot(montage.timeaxis,sysVar.traces1(i+28*(montage.pageNumber-1),:)./(10.^sysVar.fact(1)),'LineWidth',2)
+        
         plot([0 max(montage.timeaxis)],[0 0] ,'-black');
+        
+        if montage.showStepfit && stepfit
+            sysVar.count = 0;
+            sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
+            for j=1:size(sysVar.traces1,2)
+                if ismember(j-1,sysVar.stepPoints(i+28*(montage.pageNumber-1),:))
+                    sysVar.count = sysVar.count +1;
+                end
+                sysVar.stepPlot(j) = sysVar.stepMeans(i+28*(montage.pageNumber-1),sysVar.count);
+            end
+            if stepfitChannel == 1
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(1)),'-black','LineWidth',2)
+            elseif stepfitChannel == 2
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
+            end
+        end
 
         if imStackNumberOfChannels>1
             yyaxis right
@@ -638,10 +669,10 @@ print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
 savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 end
-%% 10)Extract Individual Trace and montage
-montage.traceNo = 390;
+%% 11)Extract Individual Trace and montage
+montage.traceNo = 42;
 montage.start = 3;
-montage.end = 148;
+montage.end = 48;
 montage.delta = 5;
 montage.average = 5;
 
@@ -675,6 +706,19 @@ ylabel(['Channel 1 Intensity ( a.u.)'])
 
 plot(montage.timeaxis,sysVar.traces1(montage.traceNo,:),'LineWidth',2)
 plot([0 max(montage.timeaxis)],[0 0] ,'-black');
+
+if montage.showStepfit && stepfit
+    sysVar.count = 0;
+    sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
+    for j=1:size(sysVar.traces1,2)
+        if ismember(j-1,sysVar.stepPoints(montage.traceNo,:))
+            sysVar.count = sysVar.count +1;
+        end
+        sysVar.stepPlot(j) = sysVar.stepMeans(montage.traceNo,sysVar.count);
+    end
+    plot(montage.timeaxis,sysVar.stepPlot,'-black','LineWidth',2)
+
+end
 
 if imStackNumberOfChannels>1
     yyaxis right
@@ -873,6 +917,10 @@ parfor i=1:sysConst.NumberOfFiles
         system(cmd);    
     end
     
+    if stepfit
+    cmd = [JIM,'Step_Fitting',fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Stepfit"'];
+    system(cmd);
+    end
     
     fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
     fprintf(fileID, sysConst.variableString);
@@ -892,7 +940,10 @@ disp('Batch Process Completed');
 sysVar.outputFolder = uigetdir(); 
 sysVar.outputFolder = [sysVar.outputFolder,filesep];
 
-sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false)];
+sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false);
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepMeans.csv']),'UniformOutput',false);
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepPoints.csv']),'UniformOutput',false)];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
 
 for i=1:length(sysVar.outputFile)
