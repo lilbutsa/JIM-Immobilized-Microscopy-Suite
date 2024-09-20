@@ -624,11 +624,17 @@ for i=1:28
         
         if montage.showStepfit && stepfit
             sysVar.count = 0;
-            sysVar.stepPlot = sysVar.traces1;
+            sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
             for j=1:size(sysVar.traces1,2)
-                if(sysVar.count==)
+                if ismember(j-1,sysVar.stepPoints(i+28*(montage.pageNumber-1),:))
+                    sysVar.count = sysVar.count +1;
                 end
-                sysVar.stepPlot(j) = sysVar.stepMeans(sysVar.count);
+                sysVar.stepPlot(j) = sysVar.stepMeans(i+28*(montage.pageNumber-1),sysVar.count);
+            end
+            if stepfitChannel == 1
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(1)),'-black','LineWidth',2)
+            elseif stepfitChannel == 2
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
             end
         end
 
@@ -664,9 +670,9 @@ print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)
 savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 end
 %% 11)Extract Individual Trace and montage
-montage.traceNo = 390;
+montage.traceNo = 42;
 montage.start = 3;
-montage.end = 148;
+montage.end = 48;
 montage.delta = 5;
 montage.average = 5;
 
@@ -700,6 +706,19 @@ ylabel(['Channel 1 Intensity ( a.u.)'])
 
 plot(montage.timeaxis,sysVar.traces1(montage.traceNo,:),'LineWidth',2)
 plot([0 max(montage.timeaxis)],[0 0] ,'-black');
+
+if montage.showStepfit && stepfit
+    sysVar.count = 0;
+    sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
+    for j=1:size(sysVar.traces1,2)
+        if ismember(j-1,sysVar.stepPoints(montage.traceNo,:))
+            sysVar.count = sysVar.count +1;
+        end
+        sysVar.stepPlot(j) = sysVar.stepMeans(montage.traceNo,sysVar.count);
+    end
+    plot(montage.timeaxis,sysVar.stepPlot,'-black','LineWidth',2)
+
+end
 
 if imStackNumberOfChannels>1
     yyaxis right
@@ -744,7 +763,7 @@ savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Trace_' num2str(monta
 %% 1) Detect files for batch
 filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
-for toCollapse = 1
+
 sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
 sysVar.fileName=[sysVar.fileName,filesep];
 
@@ -766,7 +785,7 @@ if imStackMultipleFiles
 end
 sysConst.NumberOfFiles=size(allFiles,1);
 disp(['There are ',num2str(sysConst.NumberOfFiles),' files to analyse']);
-end
+
 %% 2) Batch Analyse
 overwritePreviouslyAnalysed = true;
 deleteWorkingImageStacks = true;
@@ -898,6 +917,10 @@ parfor i=1:sysConst.NumberOfFiles
         system(cmd);    
     end
     
+    if stepfit
+    cmd = [JIM,'Step_Fitting',fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Stepfit"'];
+    system(cmd);
+    end
     
     fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
     fprintf(fileID, sysConst.variableString);
@@ -917,7 +940,10 @@ disp('Batch Process Completed');
 sysVar.outputFolder = uigetdir(); 
 sysVar.outputFolder = [sysVar.outputFolder,filesep];
 
-sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false)];
+sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false);
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepMeans.csv']),'UniformOutput',false);
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepPoints.csv']),'UniformOutput',false)];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
 
 for i=1:length(sysVar.outputFile)

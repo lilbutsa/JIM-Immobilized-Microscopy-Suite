@@ -763,7 +763,7 @@ savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Trace_' num2str(monta
 %% 1) Detect files for batch
 filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
-for toCollapse = 1
+
 sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
 sysVar.fileName=[sysVar.fileName,filesep];
 
@@ -785,7 +785,7 @@ if imStackMultipleFiles
 end
 sysConst.NumberOfFiles=size(allFiles,1);
 disp(['There are ',num2str(sysConst.NumberOfFiles),' files to analyse']);
-end
+
 %% 2) Batch Analyse
 overwritePreviouslyAnalysed = true;
 deleteWorkingImageStacks = true;
