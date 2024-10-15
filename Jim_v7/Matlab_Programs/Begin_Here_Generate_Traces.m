@@ -312,7 +312,7 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 0.75; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 1.5; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
 detectLeftEdge = 10;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
@@ -482,6 +482,17 @@ for j = 1:imStackNumberOfChannels
     system(sysVar.cmd);    
 end
 
+%% Step-fit
+stepfitDetect = true;
+stepfitChannel = 1;
+if stepfitDetect
+    sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'"'];
+    system(sysVar.cmd);
+end
+
+disp('Step fitting completed');
+%% Save Parameters
+
 sysConst.falsetrue = ['false';'true '];
 sysConst.variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nadditionalExtensionsToRemove,',num2str(additionalExtensionsToRemove)...
@@ -534,23 +545,17 @@ sysConst.variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nexpandForegroundDist,',num2str(expandForegroundDist)...
     ,'\nexpandBackInnerDist,', num2str(expandBackInnerDist)...
     ,'\nexpandBackOuterDist,', num2str(expandBackOuterDist)...
-    ,'\ntraceVerboseOutput,', sysConst.falsetrue(traceVerboseOutput+1,:)];
+    ,'\ntraceVerboseOutput,', sysConst.falsetrue(traceVerboseOutput+1,:)...
+    ,'\nstepfitDetect,', sysConst.falsetrue(stepfitDetect+1,:)...
+    ,'\nstepfitChannel,', num2str(stepfitChannel)...
+    ];
 
 sysVar.fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
 fprintf(sysVar.fileID, sysConst.variableString);
 fclose(sysVar.fileID);
 
 disp('Finished Generating Traces');
-%% Step-fit
-stepfit = true;
-stepfitChannel = 1;
-if stepfit
-    sysVar.cmd = [JIM,'Step_Fitting',fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Stepfit"'];
-    system(sysVar.cmd);
-end
-
-disp('Step fitting completed');
-%% (Optional) Save Parameters
+%% (Optional) Save Copy of Parameters
 [sysVar.file,sysVar.path] = uiputfile('*.csv','Save Parameter CSV File');
 sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
@@ -918,8 +923,8 @@ parfor i=1:sysConst.NumberOfFiles
     end
     
     if stepfit
-    cmd = [JIM,'Step_Fitting',fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Stepfit"'];
-    system(cmd);
+        cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'"'];
+        system(cmd);
     end
     
     fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
