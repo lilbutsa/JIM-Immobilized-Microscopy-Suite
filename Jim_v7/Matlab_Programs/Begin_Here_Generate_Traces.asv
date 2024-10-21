@@ -90,7 +90,7 @@ imStackNumberOfChannels = 1; % Input the number of channels in the data
 
 imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
-imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
+imStackStartFrame = 30; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
@@ -483,10 +483,11 @@ for j = 1:imStackNumberOfChannels
 end
 
 %% Step-fit
-stepfitDetect = true;
+stepfitEnable = true;
 stepfitChannel = 1;
-if stepfitDetect
-    sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'"'];
+stepfitThreshold = 5;
+if stepfitEnable
+    sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
     system(sysVar.cmd);
 end
 
@@ -546,8 +547,9 @@ sysConst.variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nexpandBackInnerDist,', num2str(expandBackInnerDist)...
     ,'\nexpandBackOuterDist,', num2str(expandBackOuterDist)...
     ,'\ntraceVerboseOutput,', sysConst.falsetrue(traceVerboseOutput+1,:)...
-    ,'\nstepfitDetect,', sysConst.falsetrue(stepfitDetect+1,:)...
+    ,'\nstepfitEnable,', sysConst.falsetrue(stepfitEnable+1,:)...
     ,'\nstepfitChannel,', num2str(stepfitChannel)...
+    ,'\nstepfitThreshold,', num2str(stepfitThreshold)...
     ];
 
 sysVar.fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
@@ -561,7 +563,7 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =11; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber =12; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'frame'; % Unit to use for x axis 
 montage.showStepfit = true;
@@ -591,9 +593,9 @@ if imStackNumberOfChannels>1
     sysVar.fact(2) = ceil(log10(max(max(sysVar.traces2))))-2;
 end
 
-if montage.showStepfit && stepfitDetect
-    sysVar.stepPoints = csvread([workingDir,'Channel_',num2str(j),'_StepPoints.csv'],1);
-    sysVar.stepMeans = csvread([workingDir,'Channel_',num2str(j),'_StepMeans.csv'],1);
+if montage.showStepfit && stepfitEnable
+    sysVar.stepPoints = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepPoints.csv'],1);
+    sysVar.stepMeans = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepMeans.csv'],1);
 end
 
 
@@ -627,7 +629,7 @@ for i=1:28
         
         plot([0 max(montage.timeaxis)],[0 0] ,'-black');
         
-        if montage.showStepfit && stepfitDetect
+        if montage.showStepfit && stepfitEnable
             sysVar.count = 0;
             sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
             for j=1:size(sysVar.traces1,2)
@@ -712,7 +714,7 @@ ylabel(['Channel 1 Intensity ( a.u.)'])
 plot(montage.timeaxis,sysVar.traces1(montage.traceNo,:),'LineWidth',2)
 plot([0 max(montage.timeaxis)],[0 0] ,'-black');
 
-if montage.showStepfit && stepfitDetect
+if montage.showStepfit && stepfitEnable
     sysVar.count = 0;
     sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
     for j=1:size(sysVar.traces1,2)
@@ -795,7 +797,7 @@ disp(['There are ',num2str(sysConst.NumberOfFiles),' files to analyse']);
 overwritePreviouslyAnalysed = true;
 deleteWorkingImageStacks = true;
 
-parfor i=1:sysConst.NumberOfFiles
+for i=1:sysConst.NumberOfFiles
     
     completeName = allFiles{i};
     
@@ -922,8 +924,8 @@ parfor i=1:sysConst.NumberOfFiles
         system(cmd);    
     end
     
-    if stepfitDetect
-        cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'"'];
+    if stepfitEnable
+        cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
         system(cmd);
     end
     
@@ -948,7 +950,8 @@ sysVar.outputFolder = [sysVar.outputFolder,filesep];
 sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false);
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepMeans.csv']),'UniformOutput',false);
-    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepPoints.csv']),'UniformOutput',false)];
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepPoints.csv']),'UniformOutput',false);
+    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Detected_Filtered_Measurements.csv']),'UniformOutput',false);];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
 
 for i=1:length(sysVar.outputFile)

@@ -90,7 +90,7 @@ imStackNumberOfChannels = 1; % Input the number of channels in the data
 
 imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
-imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
+imStackStartFrame = 30; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
@@ -485,7 +485,7 @@ end
 %% Step-fit
 stepfitEnable = true;
 stepfitChannel = 1;
-stepfitThreshold = 3;
+stepfitThreshold = 5;
 if stepfitEnable
     sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
     system(sysVar.cmd);
@@ -563,7 +563,7 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =11; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber =12; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'frame'; % Unit to use for x axis 
 montage.showStepfit = true;
@@ -594,8 +594,8 @@ if imStackNumberOfChannels>1
 end
 
 if montage.showStepfit && stepfitEnable
-    sysVar.stepPoints = csvread([workingDir,'Channel_',num2str(j),'_StepPoints.csv'],1);
-    sysVar.stepMeans = csvread([workingDir,'Channel_',num2str(j),'_StepMeans.csv'],1);
+    sysVar.stepPoints = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepPoints.csv'],1);
+    sysVar.stepMeans = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepMeans.csv'],1);
 end
 
 
