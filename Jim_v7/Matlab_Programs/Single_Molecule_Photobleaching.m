@@ -1,0 +1,331 @@
+%%
+clear
+%% 1) Select Input Folder
+filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+
+fileName = uigetdir('G:\My_Jim\SLO_Output','Select Folder Containing All Traces'); % open the dialog box to select the folder for batch files
+fileName=[fileName,filesep]; 
+
+allFolders = arrayfun(@(x)[fileName,x.name],dir(fileName),'UniformOutput',false); % find everything in the input folder
+allFolders = allFolders(arrayfun(@(x) isfolder(cell2mat(x)),allFolders));
+allFolders = allFolders(3:end);
+allFolders = arrayfun(@(x)[x{1},filesep],allFolders,'UniformOutput',false);
+
+if filesInSubFolders
+    allSubFolders = allFolders;
+    allFolders = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),allSubFolders,'UniformOutput',false);
+    allFolders = arrayfun(@(x)x{:}(3:end),allFolders,'UniformOutput',false);
+    allFolders = horzcat(allFolders{:})';
+    allFolders = allFolders(arrayfun(@(x) isfolder(cell2mat(x)),allFolders));
+    allFolders = arrayfun(@(x)[x{1},filesep],allFolders,'UniformOutput',false);
+end
+
+allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),allFolders','UniformOutput',false);
+allFiles = horzcat(allFiles{:})';
+channel1 = allFiles(contains(allFiles,'Channel_1_Fluorescent_Intensities.csv','IgnoreCase',true));
+NumberOfFiles=size(channel1,1);
+disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
+%% Select Output File
+fileName = uigetdir(); % open the dialog box to select the folder for batch files
+saveFolder=[fileName,filesep];
+%% 3) View Single Step Filters
+fileToCheck = 1;
+pageNumber = 1;
+
+maxSecondMeanFirstMeanRatio=0.25;
+
+noStepMindivMaxRatio = 0.75;
+
+stepMeans = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepMeans.csv'],1);
+stepNum = arrayfun(@(z) find(stepMeans(z,:)~=0,1,'last')-1,1:length(stepMeans))';
+
+selectQ = false(4,length(stepNum));
+selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1);
+selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio;
+selectQ(3,:) = stepNum>1 & (~selectQ(2,:))';
+selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
+
+
+traces=csvread(channel1{fileToCheck},1);
+stepPoints = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepPoints.csv'],1);
+stepPoints = horzcat(stepPoints,zeros(length(stepPoints),1));
+for i=1:length(stepPoints)
+    stepPoints(i,stepNum(i)+2) = size(traces,2);
+end
+stepFitTraces = cell2mat(arrayfun(@(x) cell2mat(arrayfun(@(z)zeros(stepPoints(x,z+1)-stepPoints(x,z),1)+stepMeans(x,z),1:(stepNum(x)+1),'UniformOutput',false)'),1:length(stepMeans),'UniformOutput',false))';
+
+classNames = {'Single Step Traces','No Step Traces','Multi-Step Traces','Other Traces'};
+
+
+for plottype=1:length(classNames)
+    toplot = traces(selectQ(plottype,:),:);
+    toplot2 = stepFitTraces(selectQ(plottype,:),:);
+    
+    fig = figure('Name',classNames{plottype})
+    set(gcf, 'Position', [100, 100, 700, 800])
+    axes('XScale', 'linear', 'YScale', 'linear','LineWidth',2, 'FontName','Times')
+    for i=1:32
+        if i+32*(pageNumber-1)<size(toplot,1)
+            subplot(8,4,i)
+            hold on
+            plot(toplot(i+36*(pageNumber-1),:),'LineWidth',1.5);
+            plot(toplot2(i+36*(pageNumber-1),:),'LineWidth',1.5);
+            plot([0 size(toplot(i+36*(pageNumber-1),:),2)],[0 0] ,'-black');
+            hold off
+        end
+    end
+    han=axes(fig,'visible','off'); 
+    han.Title.Visible='on';
+    han.XLabel.Visible='on';
+    han.YLabel.Visible='on';
+    ylabel(han,'Intensity (a.u.)');
+    xlabel(han,'Frames');
+    title(han,classNames{plottype});
+
+    print([saveFolder 'Example_' strrep(classNames{plottype},' ','_') '_File_' num2str(fileToCheck) '_Page_' num2str(pageNumber)], '-dpng', '-r600');
+    print([saveFolder 'Example_' strrep(classNames{plottype},' ','_') '_File_' num2str(fileToCheck) '_Page_' num2str(pageNumber)], '-depsc', '-r600');  
+end
+
+
+    
+%% 4) Filter All Files for Single Steps
+classCounts = zeros(4,NumberOfFiles);
+singleStepTraces = cell(NumberOfFiles,1);
+singleStepStepFrames = cell(NumberOfFiles,1);
+singleStepStepHeights = cell(NumberOfFiles,1);
+allFirstFrameIntensities = cell(NumberOfFiles,1);
+
+allResults = zeros(18,1);
+
+for fileToCheck = 1:NumberOfFiles
+    stepMeans = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepMeans.csv'],1);
+    stepNum = arrayfun(@(z) find(stepMeans(z,:)~=0,1,'last')-1,1:length(stepMeans))';
+
+    selectQ = false(4,length(stepNum));
+    selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1);
+    selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio;
+    selectQ(3,:) = stepNum>1 & (~selectQ(2,:))';
+    selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
+    
+    
+    traces=csvread(channel1{fileToCheck},1);
+    stepPoints = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepPoints.csv'],1);
+    
+    classCounts(:,fileToCheck) = arrayfun(@(z) nnz(selectQ(z,:)),1:size(selectQ,1));
+    singleStepTraces{fileToCheck} = traces(selectQ(1,:),:);
+    singleStepStepFrames{fileToCheck} = stepPoints(selectQ(1,:),2);
+    singleStepStepHeights{fileToCheck} = stepMeans(selectQ(1,:),1)-stepMeans(selectQ(1,:),2);
+    allFirstFrameIntensities{fileToCheck} = traces(:,1);
+end
+allResults = mean(sum(classCounts));
+allResults(2:5) = mean(classCounts');
+
+%% Combined Bleaching Rate
+
+stepPoints = cell2mat(singleStepStepFrames);
+
+x = 0:max(stepPoints);
+y = 100.*arrayfun(@(z) nnz(stepPoints>z),x)./length(stepPoints);
+
+singlePopPercent = sum(classCounts(1,:))./(sum(classCounts(1,:))+sum(classCounts(2,:)));
+y = y.*singlePopPercent+100.*(1-singlePopPercent);
+
+
+by = @(b,bx)( b(1)*exp(-b(2)*bx)+b(3));             % Objective function
+OLS = @(b) sum((by(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [100.*singlePopPercent 1/mean(stepPoints) 100.*(1-singlePopPercent)], opts);
+
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 7;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+plot(x,y,'LineWidth',2)
+plot(x,by(bestFitParams,x),'--')
+
+ylim([0 100])
+xlim([0 max(x)])
+xlabel('Frames')
+ylabel('Remaining Particles (%)')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'Bleaching_Survival_Curve'], '-dpng', '-r600');
+print([saveFolder 'Bleaching_Survival_Curve'], '-depsc', '-r600');
+
+allResults(6) = bestFitParams(2);
+allResults(7) = 1./bestFitParams(2);
+allResults(8) = log(10/9)./bestFitParams(2);
+allResults(9) =  log(2)./bestFitParams(2);
+
+disp(['The pooled bleaching rate of ' num2str(bestFitParams(2)) ' per frame corresponds to a mean of ' num2str(1./bestFitParams(2)) ...
+        ' and a 10% beaching frame of ' num2str(log(10/9)./bestFitParams(2))]);
+%% Measure Read Noise
+
+stepPoints = cell2mat(singleStepStepFrames);
+stepMeans = cell2mat(singleStepStepHeights);
+traces = cell2mat(singleStepTraces);
+
+%measurementError = cell2mat(arrayfun(@(z) (traces(z,1:stepPoints(z))-stepMeans(z))./sqrt(stepMeans(z)),1:size(traces,1),'UniformOutput',false));
+measurementError = cell2mat(arrayfun(@(z) (traces(z,1:stepPoints(z))-stepMeans(z)),1:size(traces,1),'UniformOutput',false));
+
+
+x = -3*std(measurementError):std(measurementError)/100:3*std(measurementError);
+y = arrayfun(@(z) nnz(measurementError<z),x)./length(measurementError);
+by2 = @(b,bx)( normcdf(x,b(1),b(2)));             % Objective function
+OLS = @(b) sum((by2(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams2 = fminsearch(OLS, [0 std(measurementError)], opts);
+
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 7;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+histogram(measurementError,'Normalization','pdf')
+plot(x(1:end-1),diff(by2(bestFitParams2,x))/mean(diff(x)),'LineWidth',2) 
+%plot(x,y,'LineWidth',2)
+%plot(x,by(bestFitParams2,x),'--') 
+
+xlim([min(x) max(x)])
+xlabel('Read Noise (a.u.)')
+ylabel('Prob. Density')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'Measurement_Error'], '-dpng', '-r600');
+print([saveFolder 'Measurement_Error'], '-depsc', '-r600');  
+
+allResults(10) = bestFitParams2(2);
+
+%% Fit Single Molecule Intensity
+
+stepMeans = cell2mat(singleStepStepHeights);
+
+x = mean(stepMeans)-3*std(stepMeans):std(stepMeans)/100:mean(stepMeans)+3*std(stepMeans);
+x = x(x>0);
+y = 100.*arrayfun(@(z) nnz(stepMeans<z),x)./length(stepMeans);
+
+middleThird = @(z)(z(length(z)/3+1:2*length(z)/3));
+by3 = @(b,bx)(mean(diff(bx)).*middleThird(100.*conv([zeros(1,length(bx)) normcdf(log(bx),b(1),b(2)) (1+zeros(1,length(bx)))],normpdf(bx,max(bx)/2,b(3)),'same')));
+OLS = @(b) sum((by3(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams3 = fminsearch(OLS, [log(median(stepMeans)) sqrt(log(var(stepMeans))) bestFitParams2(2)*sqrt(bestFitParams(2))], opts);
+
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 7;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+histogram(stepMeans,'Normalization','pdf')
+plot(x(1:end-1),0.01.*diff(by3(bestFitParams3,x))/mean(diff(x)),'LineWidth',2) 
+
+%plot(x,y,'LineWidth',2)
+%plot(x,by3(bestFitParams3,x),'--') 
+xlim([min(x) max(x)])
+xlabel('Step Heights (a.u.)')
+ylabel('Prob. Density')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'Intensity_Distribution'], '-dpng', '-r600');
+print([saveFolder 'Intensity_Distribution'], '-depsc', '-r600');  
+baselineNormalNoiseStdDev = sqrt(bestFitParams3(3)^2-(bestFitParams2(2)*sqrt(bestFitParams(2))).^2);
+xZero = exp(bestFitParams3(1));
+
+allResults(11) = mean(stepMeans);
+allResults(12) = xZero;
+allResults(13) = bestFitParams3(2);
+allResults(14) = baselineNormalNoiseStdDev;
+
+%% Fit Initial Intensities
+
+firstIntensities = cell2mat(singleStepStepHeights);
+
+x = 1:max(firstIntensities)/1000:4*max(firstIntensities);
+y = 100.*arrayfun(@(z) nnz(firstIntensities<z),x)./length(firstIntensities);
+
+
+by4 = @(b,bx)( abs(1-abs(b(1)-1)).* by3([log(1.*xZero) bestFitParams3(2) sqrt(baselineNormalNoiseStdDev^2+1*bestFitParams2(2)^2)],bx)+...
+    abs(1-abs(b(2)-1)).* by3([log(2.*xZero) bestFitParams3(2) sqrt(baselineNormalNoiseStdDev^2+2*bestFitParams2(2)^2)],bx)+...
+    abs(1-abs(b(3)-1)).* by3([log(3.*xZero) bestFitParams3(2) sqrt(baselineNormalNoiseStdDev^2+3*bestFitParams2(2)^2)],bx)+...
+    (1-sum(abs(1-abs(b-1)))).* by3([log(4.*xZero) bestFitParams3(2) sqrt(baselineNormalNoiseStdDev^2+4*bestFitParams2(2)^2)],bx));
+OLS = @(b) sum((by4(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams4 = abs(1-abs(bestFitParams4-1));
+bestFitParams4(4) = (1-sum(bestFitParams4));
+
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 9;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+histogram(firstIntensities,'Normalization','pdf')
+plot(x(1:end-1),0.01.*diff(by4(bestFitParams4,x))/mean(diff(x)),'LineWidth',2) 
+for i=1:4
+    plot(x(1:end-1),abs(bestFitParams4(i)).*0.01/mean(diff(x)).*diff(by3([log(i.*xZero) bestFitParams3(2) sqrt(baselineNormalNoiseStdDev^2+i*bestFitParams2(2)^2)],x)),'LineWidth',2)
+end
+xlim([0 prctile(firstIntensities,99.5)])
+leg = legend({'','Combined','Monomer','Dimer','Trimer','Tetramer'},'Location','eastoutside','Box','off','FontSize', 9);
+leg.ItemTokenSize = [15,30];
+hold off
+xlabel('Initial Intensity (a.u.)')
+ylabel('Prob. Density')
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'MultiStep_Fit_nmer_overlay'], '-dpng', '-r600');
+print([saveFolder 'MultiStep_Fit_nmer_overlay'], '-depsc', '-r600');  
+
+allResults(15:18) = 100.*bestFitParams4;
+
+%% Summerise Results
+
+f=figure;
+set(gcf, 'Position', [100, 100, 500, 400])
+t=uitable(f,'Data',allResults','Position', [0, 0, 500, 400]);
+outputNames = {'Mean Count per FOV','Mean Single Step Traces per FOV','Mean No Step Traces per FOV','Mean Multi-Step Traces per FOV','Mean Other Traces per FOV','Bleach Rate per Frame', 'Mean Bleach Frame','10% bleaching Frame','Bleaching Half Life'...
+    'Read Noise (Std. Dev.)','Mean Single Step Intensity','Log Normal Fit Mean','Log Normal Shape Parameter','Baseline Normal Noise Std Dev','Monomer Percent','Dimer Percent','Trimer Percent','Tetramer Percent'};
+t.RowName = outputNames;
+ 
+outputNames = replace(replace(outputNames,' ','_'),'%','p.c.');
+T = array2table(allResults');
+T.Properties.RowNames = outputNames;
+writetable(T, [saveFolder,'Bleaching_Summary.csv'],'WriteRowNames',true);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    

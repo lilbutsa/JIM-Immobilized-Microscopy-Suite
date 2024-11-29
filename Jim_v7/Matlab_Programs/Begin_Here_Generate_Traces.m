@@ -86,11 +86,11 @@ completeName = ['"',completeName,'" '];
 %% 2) Organise Image Stack into channels 
 imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 1; % Input the number of channels in the data
+imStackNumberOfChannels = 2; % Input the number of channels in the data
 
 imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
-imStackStartFrame = 30; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
+imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
@@ -159,25 +159,25 @@ end
 disp('Organization completed');
 
 %% 3) Align Channels and Calculate Drifts
-alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
+alignIterations = 3; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
 alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 5;% 
+alignEndFrame = 20;% 
 
-alignMaxShift = 10.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 50.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
 %regarless of this value
-alignOutputStacks = false ;
+alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
 %Parameters for Automatic Alignment
-alignMaxIntensities = '65000 65000 65000';% Set a threshold so that during channel to channel alignment agregates are ignored
+alignMaxIntensities = '65000 65000';% Set a threshold so that during channel to channel alignment agregates are ignored
 alignSNRCutoff = 0.1; % Set a minimum alignment SNR to throw warnings 
 
 %Parameters for Manual Alignment
-alignManually = true ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
+alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 alignXOffset = '0 0';
 alignYOffset = '0 0';
 alignRotationAngle = '0 0';
@@ -263,11 +263,11 @@ disp('Alignment completed');
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
-detectionStartFrame = '1'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '5'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1 0'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '2 0'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1';
+detectWeights = '1 0';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -312,13 +312,13 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 1.5; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 0.4; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectLeftEdge = 10;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-detectRightEdge = 10;% Excluded particles closer to the Right edge than this. 
-detectTopEdge = 10;% Excluded particles closer to the Top edge than this. 
-detectBottomEdge = 10;% Excluded particles closer to the Bottom edge than this. 
+detectLeftEdge = 25;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 25;% Excluded particles closer to the Right edge than this. 
+detectTopEdge = 25;% Excluded particles closer to the Top edge than this. 
+detectBottomEdge = 25;% Excluded particles closer to the Bottom edge than this. 
 
 detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
@@ -331,7 +331,7 @@ detectMaxLength = 10000.00; % Maximum number of pixels for the major axis of the
 
 detectMaxDistFromLinear = 10000.00; % Maximum distance that a pixel can diviate from the major axis.
 
-detectMinSeparation = 5.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = 10.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
 % Visualisation saturationg percentages
 
@@ -366,18 +366,18 @@ imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
 %% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
-additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
+additionBackgroundDetect = true ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
-additionBackgroundUseMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
+additionBackgroundUseMaxProjection = true ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 additionBackgroundPercent = false;
 
-additionalBackgroundStartFrame = '0 1 1'; %first frame of the reference region for background detection
-additionalBackgroundEndFrame = '0 -1 -1';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundStartFrame = '0 1'; %first frame of the reference region for background detection
+additionalBackgroundEndFrame = '0 -1';%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
-additionalBackgroundWeights = '0 1 1';
+additionalBackgroundWeights = '0 1';
 
-additionBackgroundCutoff = 2.5; %Threshold for particles to be detected for background
+additionBackgroundCutoff = 2; %Threshold for particles to be detected for background
 
 % Visualisation saturationg percentages
 
@@ -485,7 +485,7 @@ end
 %% Step-fit
 stepfitEnable = true;
 stepfitChannel = 1;
-stepfitThreshold = 5;
+stepfitThreshold = 10;
 if stepfitEnable
     sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
     system(sysVar.cmd);
@@ -563,9 +563,9 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =12; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
-montage.timePerFrame = 1;%Set to zero to just have frames
-montage.timeUnits = 'frame'; % Unit to use for x axis 
+montage.pageNumber =3; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.timePerFrame = 6;%Set to zero to just have frames
+montage.timeUnits = 's'; % Unit to use for x axis 
 montage.showStepfit = true;
 
 %don't touch from here
@@ -768,7 +768,7 @@ savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Trace_' num2str(monta
 %
 %
 %% 1) Detect files for batch
-filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = true; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 
 sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
