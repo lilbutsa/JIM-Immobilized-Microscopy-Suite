@@ -256,6 +256,7 @@ by4 = @(b,bx)( abs(1-abs(b(1)-1)).* by3([log(1.*xZero) bestFitParams3(2) sqrt(ba
     (1-sum(abs(1-abs(b-1)))).* by3([log(4.*xZero) bestFitParams3(2) sqrt(baselineNormalNoiseStdDev^2+4*bestFitParams2(2)^2)],bx));
 OLS = @(b) sum((by4(b,x) - y).^2);          % Ordinary Least Squares cost function
 opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams4 = fminsearch(OLS, [0.4 0.2 0.2], opts);
 bestFitParams4 = abs(1-abs(bestFitParams4-1));
 bestFitParams4(4) = (1-sum(bestFitParams4));
 
