@@ -234,7 +234,7 @@ set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
 fig.PaperPositionMode   = 'auto';
 print([saveFolder 'Intensity_Distribution'], '-dpng', '-r600');
 print([saveFolder 'Intensity_Distribution'], '-depsc', '-r600');  
-baselineNormalNoiseStdDev = sqrt(bestFitParams3(3)^2-(bestFitParams2(2)*sqrt(bestFitParams(2))).^2);
+baselineNormalNoiseStdDev = sqrt(max(bestFitParams3(3)^2-(bestFitParams2(2)*sqrt(bestFitParams(2))).^2,0));
 xZero = exp(bestFitParams3(1));
 
 allResults(11) = mean(stepMeans);
