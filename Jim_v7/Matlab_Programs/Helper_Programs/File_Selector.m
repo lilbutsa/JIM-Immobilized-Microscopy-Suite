@@ -72,21 +72,21 @@ for i=1:NumberOfFiles
     for j=1:length(minutesPerFrameIdentifier)
         if contains(allData(i).intensityFileNames(1),minutesPerFrameIdentifier(j),'IgnoreCase',true) 
             allData(i).MPF = minutesPerFrame(j);
-            allData(i).expNo = allData(i).expNo*j;
+            allData(i).expNo = allData(i).expNo+length(concentrationIdentifier)*j;
             break;
         end
     end
     for j=1:length(reagentIdentifier)
         if contains(allData(i).intensityFileNames(1),reagentIdentifier(j),'IgnoreCase',true) 
             allData(i).reagent = j;
-            allData(i).expNo = allData(i).expNo*j;
+            allData(i).expNo = allData(i).expNo+length(concentrationIdentifier)*length(minutesPerFrameIdentifier)*j;
             break;
         end
     end
     for j=1:length(replicateIdentifier)
         if contains(allData(i).intensityFileNames(1),replicateIdentifier(j),'IgnoreCase',true) 
             allData(i).rep = j;
-            allData(i).expNo = allData(i).expNo*j;
+            allData(i).expNo = allData(i).expNo+length(concentrationIdentifier)*length(minutesPerFrameIdentifier)*length(reagentIdentifier)*j;
             break;
         end
     end
@@ -99,23 +99,25 @@ for i=1:numOfExps
     for j=1:numberOfChannels
         expData(i).allTraces{j} = cell2mat(arrayfun(@(z) csvread(allData(z).intensityFileNames{1},1)',find([allData.expNo]==sysVar.detectedExps(i)),'UniformOutput',false))';
     end
-    expData(i).concentration = allData(sysVar.detectedExps(i)).concentration;
-    expData(i).MPF = allData(sysVar.detectedExps(i)).MPF;
-    expData(i).reagent = allData(sysVar.detectedExps(i)).reagent;
+    expData(i).numOfTraces = size(expData(i).allTraces{1},1);
+    expData(i).concentration = allData(find([allData.expNo]==sysVar.detectedExps(i),1)).concentration;
+    expData(i).MPF = allData(find([allData.expNo]==sysVar.detectedExps(i),1)).MPF;
+    expData(i).reagent = allData(find([allData.expNo]==sysVar.detectedExps(i),1)).reagent;
     
     if stepFitting
         expData(i).stepMeans = arrayfun(@(z) csvread(allData(z).stepMeans,1)',find([allData.expNo]==sysVar.detectedExps(i)),'UniformOutput',false);
-        sysvar.maxsize = max(arrayfun(@(z)size(expData(i).stepMeans{z},1),1:length(expData(i).stepMeans)));
-        expData(i).stepMeans = cell2mat(arrayfun(@(z)resize(expData(i).stepMeans{z},[sysvar.maxsize size(expData(i).stepMeans{z},2)]),1:length(expData(i).stepMeans),'UniformOutput',false))';
+        sysVar.maxsize = max(arrayfun(@(z)size(expData(i).stepMeans{z},1),1:length(expData(i).stepMeans)));
+        expData(i).stepMeans = cell2mat(arrayfun(@(z)resize(expData(i).stepMeans{z},[sysVar.maxsize size(expData(i).stepMeans{z},2)]),1:length(expData(i).stepMeans),'UniformOutput',false))';
         expData(i).stepPoints = arrayfun(@(z) csvread(allData(z).stepPoints,1)',find([allData.expNo]==sysVar.detectedExps(i)),'UniformOutput',false);
-        sysvar.maxsize = max(arrayfun(@(z)size(expData(i).stepPoints{z},1),1:length(expData(i).stepPoints)));
-        expData(i).stepPoints = cell2mat(arrayfun(@(z)resize(expData(i).stepPoints{z},[sysvar.maxsize size(expData(i).stepPoints{z},2)]),1:length(expData(i).stepPoints),'UniformOutput',false))';
-
+        sysVar.maxsize = max(arrayfun(@(z)size(expData(i).stepPoints{z},1),1:length(expData(i).stepPoints)));
+        expData(i).stepPoints = cell2mat(arrayfun(@(z)resize(expData(i).stepPoints{z},[sysVar.maxsize size(expData(i).stepPoints{z},2)]),1:length(expData(i).stepPoints),'UniformOutput',false))';
+        expData(i).numOfSteps = arrayfun(@(z) length(expData(i).stepMeans(z,expData(i).stepMeans(z,:)~=0))-1,1:expData(i).numOfTraces)';
+        expData(i).stepHeights = cell2mat(arrayfun(@(z) resize(diff(expData(i).stepMeans(z,expData(i).stepMeans(z,:)~=0)),[1 size(expData(i).stepMeans,2)-1]),1:expData(i).numOfTraces,'UniformOutput',false)');
     end
+    
 end
 
 %% View inital intensities
-expToCheck=1;
 figure
 histogram(cell2mat(arrayfun(@(z) expData(z).stepMeans(:,1),1:numOfExps,'UniformOutput',false)'))
 xlabel('Initial Intensity')
@@ -123,51 +125,49 @@ ylabel('count')
 
 %% 3) View Single Step Filters
 
-    expToCheck=1;
-    pageNumber = 1;
-    
-    minInitialIntensity = 100;
-    maxInitialIntensity = 15000;
-   
-    
-    maxSecondMeanFirstMeanRatio = 0.25; %Ratio of step heights -  1000 for no step fitting
-    
-    noStepMinRatio = 0.5;%If step height ratio is greater than this for no step
-    
-    ch1traces=csvread(sysVar.allFiles{expToCheck},1);
-    stepsdata = csvread([fileparts(sysVar.allFiles{expToCheck}) filesep 'Stepfit_Single_Step_Fits.csv'],1);
+expToCheck=1;
+pageNumber = 1;
 
+minInitialIntensity = 100;
+maxInitialIntensity = 10000;
+
+maxRemainingSignalAfterStep = 0.25; %Ratio of step heights -  1000 for no step fitting
+
+maxSignalLossForNoPop = 0.5;%If step height ratio is greater than this for no step
+
+particleTypeNames = {'No Step','Single Step','Multi Step','Other'};
+
+sysVar.maxStepPos = arrayfun(@(z)find(expData(expToCheck).stepHeights(z,:)==min(expData(expToCheck).stepHeights(z,:)),1),1:length(expData(expToCheck).stepHeights))';
+
+
+sysVar.toselect =  expData(expToCheck).stepMeans(:,1)>minInitialIntensity & expData(expToCheck).stepMeans(:,1)<maxInitialIntensity...
+     & arrayfun(@(z) 1-min(expData(expToCheck).stepMeans(z,1:(expData(expToCheck).numOfSteps(z)+1)))/max(expData(expToCheck).stepMeans(z,1:(expData(expToCheck).numOfSteps(z)+1))),1:length(expData(expToCheck).stepHeights))'<maxSignalLossForNoPop;
+expData(expToCheck).traceType = 1*double(sysVar.toselect);
+
+sysVar.toselect =  expData(expToCheck).traceType==0 & expData(expToCheck).stepMeans(:,1)>minInitialIntensity & expData(expToCheck).stepMeans(:,1)<maxInitialIntensity...
+     & arrayfun(@(z)expData(expToCheck).stepHeights(z,sysVar.maxStepPos(z)+1) < maxRemainingSignalAfterStep .* expData(expToCheck).stepHeights(z,sysVar.maxStepPos(z)),1:length(expData(expToCheck).stepHeights))';
+expData(expToCheck).traceType = expData(expToCheck).traceType + 2*double(sysVar.toselect);
+
+sysVar.toselect =  expData(expToCheck).traceType==0 & expData(expToCheck).stepMeans(:,1)>minInitialIntensity & expData(expToCheck).stepMeans(:,1)<maxInitialIntensity...
+    & expData(expToCheck).numOfSteps>1;
+expData(expToCheck).traceType = expData(expToCheck).traceType + 3*double(sysVar.toselect);
+
+sysVar.toselect =  expData(expToCheck).traceType==0;
+expData(expToCheck).traceType = expData(expToCheck).traceType + 4*double(sysVar.toselect);
+
+
+%%UP TO HERE
+
+%Plot Traces based on class
+for plottype=1:length(particleTypeNames)
+    sysVar.tracePos = find(expData(expToCheck).traceType==plottype);
     
-    particleTypeQ = cell(4,NumberOfFiles);%No pop, leaky,opening,closed,other
-    particleTypeNames = {'Single Step','Closed','No Pop','Other'};
-    
-    ch1traces=csvread(sysVar.allFiles{expToCheck},1);
-    stepsdata = csvread([fileparts(sysVar.allFiles{expToCheck}) filesep 'Stepfit_Single_Step_Fits.csv'],1);
-   
-    %Single Step
-    particleTypeQ{1,expToCheck} = stepsdata(:,3)>minFirstStepProb & stepsdata(:,5) < maxVLPInt  & stepsdata(:,5)>0 & abs(stepsdata(:,6)) < maxSecondMeanFirstMeanRatio .* stepsdata(:,5) & stepsdata(:,7)<maxMoreStepProb ;
-    %Closed
-    particleTypeQ{2,expToCheck} = abs(stepsdata(:,6)) >noStepMinRatio .* stepsdata(:,5) & stepsdata(:,5) < maxVLPInt & stepsdata(:,6)> noStepMinIntesntiy & ~particleTypeQ{1,expToCheck} ;
-    %No Pop
-    particleTypeQ{3,expToCheck} = stepsdata(:,5) > maxVLPInt;
-    %other
-    particleTypeQ{4,expToCheck} = ~particleTypeQ{1,expToCheck} & ~particleTypeQ{2,expToCheck} & ~particleTypeQ{3,expToCheck};
-    
-  %Plot Traces based on class
-  for plottype=1:size(particleTypeQ,1)
-    ch1traces=csvread(sysVar.allFiles{expToCheck},1);  
-    ch1traces = ch1traces(particleTypeQ{plottype,expToCheck},:);
-    if twochannel
-        ch2traces = csvread(channel2{expToCheck},1);
-        ch2traces = ch2traces(particleTypeQ{plottype,expToCheck},:);
-    end 
-   
     figure('Name',particleTypeNames{plottype})
     set(gcf, 'Position', [100, 100, 700, 800])
     axes('XScale', 'linear', 'YScale', 'linear','LineWidth',2, 'FontName','Times')
     ax = gca;
     for i=1:32
-        if size(ch1traces,1)>=i+36*(pageNumber-1)
+        if length(sysVar.tracePos)>=i+36*(pageNumber-1)
             subplot(8,4,i)
             hold on
             colororder([0 158/255 115/255;1 0 1])
@@ -177,21 +177,21 @@ ylabel('count')
             if mod(i,4)==1
             ylabel('VLP Int.')
             end
-
+    
             toplot = ch1traces(i+36*(pageNumber-1),:);
             plot([1:size(ch1traces(i+36*(pageNumber-1),:),2)].*minutesPerFrame(expToCheck),toplot,'LineWidth',1.5);
             plot([0 size(ch1traces(i+36*(pageNumber-1),:),2)].*minutesPerFrame(expToCheck),[0 0] ,'-black');
             ylim([min([-0.2.*max(toplot) min(toplot)]) max(toplot)])
             %xlim([0 size(ch1traces(i+36*(pageNumber-1),:),2)]);
             xlim([0 size(ch1traces(i+36*(pageNumber-1),:),2)].*minutesPerFrame(expToCheck))
-
+    
             hold off
         end
     end
     set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
     print([saveFolder 'Example_' particleTypeNames{plottype} '_Traces_File_' num2str(expToCheck) '_Page_' num2str(pageNumber)], '-dpng', '-r600');
     print([saveFolder 'Example_' particleTypeNames{plottype} '_Traces_File_' num2str(expToCheck) '_Page_' num2str(pageNumber)], '-dsvg', '-r600');
-  end
+end
 
 %% Classify All files
 allSingleStepsData = cell(NumberOfFiles,1);
