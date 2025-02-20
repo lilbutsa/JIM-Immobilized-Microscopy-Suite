@@ -161,8 +161,8 @@ disp('Organization completed');
 %% 3) Align Channels and Calculate Drifts
 alignIterations = 3; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
-alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 3;% 
+alignStartFrame = 300;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 350;% 
 
 alignMaxShift = 50.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -177,7 +177,7 @@ alignMaxIntensities = '65000 65000';% Set a threshold so that during channel to 
 alignSNRCutoff = 0.1; % Set a minimum alignment SNR to throw warnings 
 
 %Parameters for Manual Alignment
-alignManually = true ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
+alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 alignXOffset = '0';
 alignYOffset = '0';
 alignRotationAngle = '0';
@@ -263,11 +263,11 @@ disp('Alignment completed');
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
-detectionStartFrame = '1 1'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '2 2'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1 0'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '100 0'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1 1';
+detectWeights = '1 0';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -312,15 +312,15 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 1.5; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff =0.75; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectLeftEdge = 25;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-detectRightEdge = 25;% Excluded particles closer to the Right edge than this. 
-detectTopEdge = 25;% Excluded particles closer to the Top edge than this. 
-detectBottomEdge = 25;% Excluded particles closer to the Bottom edge than this. 
+detectLeftEdge = 2;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 2;% Excluded particles closer to the Right edge than this. 
+detectTopEdge = 2;% Excluded particles closer to the Top edge than this. 
+detectBottomEdge = 2;% Excluded particles closer to the Bottom edge than this. 
 
-detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+detectMinCount = 7; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 detectMinEccentricity = -0.10; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
@@ -331,7 +331,7 @@ detectMaxLength = 10000.00; % Maximum number of pixels for the major axis of the
 
 detectMaxDistFromLinear = 10000.00; % Maximum distance that a pixel can diviate from the major axis.
 
-detectMinSeparation = 5.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = 1.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
 % Visualisation saturationg percentages
 
@@ -563,7 +563,7 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =2; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber =1; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 6;%Set to zero to just have frames
 montage.timeUnits = 's'; % Unit to use for x axis 
 montage.showStepfit = true;
@@ -628,22 +628,7 @@ for i=1:28
         plot(montage.timeaxis,sysVar.traces1(i+28*(montage.pageNumber-1),:)./(10.^sysVar.fact(1)),'LineWidth',2)
         
         plot([0 max(montage.timeaxis)],[0 0] ,'-black');
-        
-        if montage.showStepfit && stepfitEnable
-            sysVar.count = 0;
-            sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
-            for j=1:size(sysVar.traces1,2)
-                if ismember(j-1,sysVar.stepPoints(i+28*(montage.pageNumber-1),:))
-                    sysVar.count = sysVar.count +1;
-                end
-                sysVar.stepPlot(j) = sysVar.stepMeans(i+28*(montage.pageNumber-1),sysVar.count);
-            end
-            if stepfitChannel == 1
-                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(1)),'-black','LineWidth',2)
-            elseif stepfitChannel == 2
-                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
-            end
-        end
+       
 
         if imStackNumberOfChannels>1
             yyaxis right
@@ -665,6 +650,25 @@ for i=1:28
             yyaxis left
             set(gca,'Ylim',sort([sysVar.yliml(2)*sysVar.ratio sysVar.yliml(2)]))
         end
+
+        if montage.showStepfit && stepfitEnable
+            sysVar.count = 0;
+            sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
+            for j=1:size(sysVar.traces1,2)
+                if ismember(j-1,sysVar.stepPoints(i+28*(montage.pageNumber-1),:))
+                    sysVar.count = sysVar.count +1;
+                end
+                sysVar.stepPlot(j) = sysVar.stepMeans(i+28*(montage.pageNumber-1),sysVar.count);
+            end
+            if stepfitChannel == 1
+                yyaxis right
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(1)),'-black','LineWidth',2)
+            elseif stepfitChannel == 2
+                yyaxis left
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
+            end
+        end
+
         xlim([0 max(montage.timeaxis)])
         hold off
     end
