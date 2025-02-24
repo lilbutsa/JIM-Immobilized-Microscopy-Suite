@@ -60,7 +60,7 @@ reagentIdentifier = {'Batch1' 'Batch2'};
 singleMoleculeIntensities = [1 1;1 1];% have one for each channel each line is for each reagent/rep, set it to one to just keep it as camera intensity
 
 
-replicateIdentifier = {'Rep1','Rep2','Rep3'};
+replicateIdentifier = {'Rep1','Rep2','Rep3','Rep4'};
 
 for i=1:NumberOfFiles
     for j=1:length(concentrationIdentifier)
@@ -100,6 +100,7 @@ for i=1:numOfExps
     expData(i).reagent = allData(find([allData.expNo]==sysVar.detectedExps(i),1)).reagent;
     expData(i).concentration = allData(find([allData.expNo]==sysVar.detectedExps(i),1)).concentration;
     expData(i).MPF = allData(find([allData.expNo]==sysVar.detectedExps(i),1)).MPF;
+    expData(i).replicate = allData(find([allData.expNo]==sysVar.detectedExps(i),1)).rep;
 
     expData(i).allTraces = cell(numberOfChannels,1);
     expData(i).allBackgrounds = cell(numberOfChannels,1);
@@ -152,7 +153,7 @@ expToCheck=1;
 pageNumber = 1;
 
 channel1Name = 'Liposome Int.';
-channel2Name = 'SLO'
+channel2Name = 'Gasdermin';
 
 minInitialIntensity = 100;
 maxInitialIntensity = 10000;
@@ -329,5 +330,72 @@ savefig(sysVar.fig,[saveFolder 'Examples' filesep 'Example_Page_' num2str(pageNu
 
 end
 
+%% Filter all particles
+for expToCheck = 1:length(expData)
+
+    sysVar.SH = expData(expToCheck).allStepHeights{1};
+    sysVar.temp = expData(expToCheck).allStepMeans{1};
+    sysVar.NOS = expData(expToCheck).allNumOfSteps{1};
+    sysVar.SP = expData(expToCheck).allStepPoints{1};
+    sysVar.maxStepPos = arrayfun(@(z)find(sysVar.SH(z,:)==min(sysVar.SH(z,:)),1),1:length(sysVar.SH))';
+    
+    sysVar.toselect = sysVar.temp(:,1)<minInitialIntensity | sysVar.temp(:,1)>maxInitialIntensity;
+    expData(expToCheck).traceType = 4*double(sysVar.toselect);
+    
+    sysVar.toselect = expData(expToCheck).traceType==0 & ...
+        arrayfun(@(z) 1-min(sysVar.temp(z,1:(sysVar.NOS(z)+1)))/max(sysVar.temp(z,1:(sysVar.NOS(z)+1))),1:length(sysVar.temp))'<maxSignalLossForNoPop;
+    expData(expToCheck).traceType = expData(expToCheck).traceType + 1*double(sysVar.toselect);
+
+    sysVar.toselect =  expData(expToCheck).traceType==0 ...
+         & arrayfun(@(z)sysVar.temp(z,sysVar.maxStepPos(z)+1) < maxRemainingSignalAfterStep .* sysVar.temp(z,sysVar.maxStepPos(z)),1:length(sysVar.temp))';
+    expData(expToCheck).traceType = expData(expToCheck).traceType + 2*double(sysVar.toselect);
+
+    sysVar.toselect =  expData(expToCheck).traceType==0 & (sysVar.NOS>1)' ...
+        & arrayfun(@(z) min(sysVar.temp(z,1:(sysVar.NOS(z)+1)))<maxRemainingSignalAfterStep .*max(sysVar.temp(z,1:(sysVar.NOS(z)+1))),1:length(sysVar.temp))';
+    expData(expToCheck).traceType = expData(expToCheck).traceType + 3*double(sysVar.toselect);
+
+    sysVar.toselect =  expData(expToCheck).traceType==0;
+    expData(expToCheck).traceType = expData(expToCheck).traceType + 4*double(sysVar.toselect);
+end
+%% Extract Single Step Traces
+
+singleStepData = expData;
+
+for expToCheck = 1:length(expData)
+    sysVar.toselect = (expData(expToCheck).traceType==2);
+
+    sysVar.SH = expData(expToCheck).allStepHeights{1};
+    sysVar.temp = expData(expToCheck).allStepMeans{1};
+    sysVar.NOS = expData(expToCheck).allNumOfSteps{1};
+    sysVar.SP = expData(expToCheck).allStepPoints{1};
+    sysVar.maxStepPos = arrayfun(@(z)find(sysVar.SH(z,:)==min(sysVar.SH(z,:)),1),1:length(sysVar.SH))';
 
 
+    singleStepData(expToCheck).numOfTraces = nnz(sysVar.toselect);
+    singleStepData(expToCheck).stepFrame = arrayfun(@(z) sysVar.SP(z,sysVar.maxStepPos(z)+1),1:length(sysVar.SP))';
+    singleStepData(expToCheck).stepFrame = singleStepData(expToCheck).stepFrame(sysVar.toselect);
+
+    singleStepData(expToCheck).traceType = singleStepData(expToCheck).traceType(sysVar.toselect);
+    for i=1:numberOfChannels
+        sysVar.temp = expData(expToCheck).allTraces{i};
+        singleStepData(expToCheck).allTraces{i} = sysVar.temp(sysVar.toselect,:);
+
+        sysVar.temp = expData(expToCheck).allBackgrounds{i};
+        singleStepData(expToCheck).allBackgrounds{i} = sysVar.temp(sysVar.toselect,:);
+
+        sysVar.temp = expData(expToCheck).allStepMeans{i};
+        if(length(sysVar.temp) == length(sysVar.toselect))
+            singleStepData(expToCheck).allStepMeans{i} = sysVar.temp(sysVar.toselect,:);
+
+            sysVar.temp = expData(expToCheck).allStepPoints{i};
+            singleStepData(expToCheck).allStepPoints{i} = sysVar.temp(sysVar.toselect,:);
+
+            sysVar.temp = expData(expToCheck).allNumOfSteps{i}';
+            singleStepData(expToCheck).allNumOfSteps{i} = sysVar.temp(sysVar.toselect,:);            
+
+            sysVar.temp = expData(expToCheck).allStepHeights{i};
+            singleStepData(expToCheck).allStepHeights{i} = sysVar.temp(sysVar.toselect,:);
+
+        end
+    end
+end
