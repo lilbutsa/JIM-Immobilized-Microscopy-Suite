@@ -569,7 +569,7 @@ montage.timeUnits = 's'; % Unit to use for x axis
 montage.showStepfit = true;
 
 %don't touch from here
-for toCollapse = 1
+
 if ~exist([workingDir 'Examples' filesep], 'dir')
     mkdir([workingDir 'Examples' filesep])%make a subfolder with that name
 end
@@ -679,7 +679,7 @@ movegui(sysVar.fig);
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
 savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
-end
+
 %% 11)Extract Individual Trace and montage
 montage.traceNo = 285;
 montage.start = 3;
