@@ -29,7 +29,7 @@ fclose(sysVar.fid);
 matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
-additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
+additionalExtensionsToRemove = 1; %remove extra .ome from working folder name if you want to
 
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
 
@@ -65,7 +65,7 @@ else
     sysConst.JIM = ['"',fileparts(sysConst.JIM),'/c++_Base_Programs/Linux/'];
 end
 
-[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image sysVar.file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
+[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
 
 completeName = [sysVar.pathName,sysVar.fileName];
 [sysVar.fileNamein,sysVar.name,~] = fileparts(completeName);%get the name of the tiff image
@@ -84,9 +84,9 @@ completeName = ['"',completeName,'" '];
 
 
 %% 2) Organise Image Stack into channels 
-imStackMultipleFiles = true ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
+imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 3; % Input the number of channels in the data
+imStackNumberOfChannels = 1; % Input the number of channels in the data
 
 imStackDisableMetadata = false ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
@@ -161,8 +161,8 @@ disp('Organization completed');
 %% 3) Align Channels and Calculate Drifts
 alignIterations = 3; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
-alignStartFrame = 50;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 70;% 
+alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 5;% 
 
 alignMaxShift = 50.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -482,17 +482,6 @@ for j = 1:imStackNumberOfChannels
     system(sysVar.cmd);    
 end
 
-%% Step-fit
-stepfitEnable = true;
-stepfitChannel = 1;
-stepfitThreshold = 5;
-if stepfitEnable
-    sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
-    system(sysVar.cmd);
-end
-
-disp('Step fitting completed');
-%% Save Parameters
 
 sysConst.falsetrue = ['false';'true '];
 sysConst.variableString = ['Date, ', datestr(datetime('today'))...
@@ -566,7 +555,6 @@ fclose(sysVar.fileID);
 montage.pageNumber =1; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'frames'; % Unit to use for x axis 
-montage.showStepfit = true;
 
 %don't touch from here
 
@@ -591,11 +579,6 @@ sysVar.fact(1) = ceil(log10(max(max(sysVar.traces1))))-2;
 if imStackNumberOfChannels>1
     sysVar.traces2=sysVar.allTraces{2};
     sysVar.fact(2) = ceil(log10(max(max(sysVar.traces2))))-2;
-end
-
-if montage.showStepfit && stepfitEnable
-    sysVar.stepPoints = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepPoints.csv'],1);
-    sysVar.stepMeans = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepMeans.csv'],1);
 end
 
 
@@ -649,26 +632,6 @@ for i=1:28
             set(gca,'Ylim',sort([sysVar.ylimr(2)*sysVar.ratio sysVar.ylimr(2)]))
             yyaxis left
             set(gca,'Ylim',sort([sysVar.yliml(2)*sysVar.ratio sysVar.yliml(2)]))
-        end
-
-        if montage.showStepfit && stepfitEnable
-            sysVar.count = 0;
-            sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
-            for j=1:size(sysVar.traces1,2)
-                if ismember(j-1,sysVar.stepPoints(i+28*(montage.pageNumber-1),:))
-                    sysVar.count = sysVar.count +1;
-                end
-                sysVar.stepPlot(j) = sysVar.stepMeans(i+28*(montage.pageNumber-1),sysVar.count);
-            end
-            if stepfitChannel == 1
-                if imStackNumberOfChannels>1
-                    yyaxis left
-                end
-                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(1)),'-black','LineWidth',2)
-            elseif stepfitChannel == 2
-                yyaxis right
-                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
-            end
         end
 
         xlim([0 max(montage.timeaxis)])
@@ -928,11 +891,6 @@ parfor i=1:sysConst.NumberOfFiles
             cmd = [cmd,' -Verbose'];
         end  
         system(cmd);    
-    end
-    
-    if stepfitEnable
-        cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
-        system(cmd);
     end
     
     fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');

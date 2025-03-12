@@ -30,7 +30,7 @@ fileName = uigetdir(); % open the dialog box to select the folder for batch file
 saveFolder=[fileName,filesep];
 %% 3) View Single Step Filters
 fileToCheck = 1;
-pageNumber = 2;
+pageNumber = 1;
 
 maxSecondMeanFirstMeanRatio=0.25;
 
