@@ -1,7 +1,7 @@
 %% 1) Select Input Folder
-imStackNumberOfChannels = 1;
+imStackNumberOfChannels = 2;
 
-filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
 
@@ -66,7 +66,7 @@ NumberOfFiles=length(allData);
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %%
 stepfitChannel = 1;
-stepfitThreshold = 5;
+stepfitThreshold = 20;
 fileToCheck = 1;
 
 
@@ -86,7 +86,6 @@ if ~exist([workingDir 'Examples' filesep], 'dir')
     mkdir([workingDir 'Examples' filesep])%make a subfolder with that name
 end
 
-sysVar.measures = csvread([workingDir,'Detected_Filtered_Measurements.csv'],1);
 
 sysVar.allTraces = cell(imStackNumberOfChannels,1);
 for j=1:imStackNumberOfChannels
@@ -103,8 +102,8 @@ end
 
 
 
-sysVar.stepPoints = cell(imStackNumberOfChannels,1);
-sysVar.stepMeans = cell(imStackNumberOfChannels,1);
+sysVar.allstepPoints = cell(imStackNumberOfChannels,1);
+sysVar.allstepPoints = cell(imStackNumberOfChannels,1);
 for i=1:imStackNumberOfChannels
     if exist([workingDir,'Channel_',num2str(i),'_StepPoints.csv'], 'file')
         sysVar.allstepPoints{i} = csvread([workingDir,'Channel_',num2str(i),'_StepPoints.csv'],1);
@@ -204,7 +203,7 @@ savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montag
 %% Batch all files
 
 for i=1:length(allData)
-    workingDir = [fileparts(allData(i).intensityFileNames{stepFitChannel}),filesep];
+    workingDir = [fileparts(allData(i).intensityFileNames{stepfitChannel}),filesep];
     sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
     system(sysVar.cmd);
 end
