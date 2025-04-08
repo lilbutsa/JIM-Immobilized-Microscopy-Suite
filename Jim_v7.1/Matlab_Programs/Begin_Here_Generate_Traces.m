@@ -86,9 +86,9 @@ completeName = ['"',completeName,'" '];
 %% 2) Organise Image Stack into channels 
 imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 1; % Input the number of channels in the data
+imStackNumberOfChannels = 2; % Input the number of channels in the data
 
-imStackDisableMetadata = false ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
+imStackDisableMetadata = false; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
 imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
@@ -162,7 +162,7 @@ disp('Organization completed');
 alignIterations = 3; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
 alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 5;% 
+alignEndFrame = 1;% 
 
 alignMaxShift = 50.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -177,7 +177,7 @@ alignMaxIntensities = '65000 65000 65000';% Set a threshold so that during chann
 alignSNRCutoff = 0.1; % Set a minimum alignment SNR to throw warnings 
 
 %Parameters for Manual Alignment
-alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
+alignManually = true ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 alignXOffset = '0';
 alignYOffset = '0';
 alignRotationAngle = '0';
@@ -263,11 +263,11 @@ disp('Alignment completed');
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
-detectionStartFrame = '1'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '5'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1 0'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '1 0'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1';
+detectWeights = '1 0';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -312,13 +312,13 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff =2; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff =1; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectLeftEdge = 100;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-detectRightEdge = 100;% Excluded particles closer to the Right edge than this. 
-detectTopEdge = 100;% Excluded particles closer to the Top edge than this. 
-detectBottomEdge =100;% Excluded particles closer to the Bottom edge than this. 
+detectLeftEdge = 5;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 5;% Excluded particles closer to the Right edge than this. 
+detectTopEdge = 5;% Excluded particles closer to the Top edge than this. 
+detectBottomEdge =5;% Excluded particles closer to the Bottom edge than this. 
 
 detectMinCount = 7; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
@@ -536,9 +536,6 @@ sysConst.variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nexpandBackInnerDist,', num2str(expandBackInnerDist)...
     ,'\nexpandBackOuterDist,', num2str(expandBackOuterDist)...
     ,'\ntraceVerboseOutput,', sysConst.falsetrue(traceVerboseOutput+1,:)...
-    ,'\nstepfitEnable,', sysConst.falsetrue(stepfitEnable+1,:)...
-    ,'\nstepfitChannel,', num2str(stepfitChannel)...
-    ,'\nstepfitThreshold,', num2str(stepfitThreshold)...
     ];
 
 sysVar.fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
@@ -552,7 +549,7 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =1; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber = 9; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 'frames'; % Unit to use for x axis 
 
