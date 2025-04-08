@@ -184,6 +184,9 @@ for i=1:28
                 elseif stepfitChannel == 2
                     yyaxis right
                     plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
+                else
+                    yyaxis right
+                    plot(montage.timeaxis,sysVar.stepPlot.*max(sysVar.traces2(i+28*(montage.pageNumber-1),:))./(10.^sysVar.fact(2))./max(traces(i+28*(montage.pageNumber-1),:)),'-black','LineWidth',2)
                 end
             end
         end
