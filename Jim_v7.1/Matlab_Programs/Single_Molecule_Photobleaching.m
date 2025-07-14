@@ -1,7 +1,7 @@
 %%
 clear
 %% 1) Select Input Folder
-filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 fileName = uigetdir('G:\My_Jim\SLO_Output','Select Folder Containing All Traces'); % open the dialog box to select the folder for batch files
 fileName=[fileName,filesep]; 
@@ -94,6 +94,7 @@ singleStepTraces = cell(NumberOfFiles,1);
 singleStepStepFrames = cell(NumberOfFiles,1);
 singleStepStepHeights = cell(NumberOfFiles,1);
 allFirstFrameIntensities = cell(NumberOfFiles,1);
+allFirstStepMeans = cell(NumberOfFiles,1);
 
 allResults = zeros(18,1);
 
@@ -116,6 +117,7 @@ for fileToCheck = 1:NumberOfFiles
     singleStepStepFrames{fileToCheck} = stepPoints(selectQ(1,:),2);
     singleStepStepHeights{fileToCheck} = stepMeans(selectQ(1,:),1)-stepMeans(selectQ(1,:),2);
     allFirstFrameIntensities{fileToCheck} = traces(:,1);
+    allFirstStepMeans{fileToCheck} = stepMeans(:,1);
 end
 allResults = mean(sum(classCounts));
 allResults(2:5) = mean(classCounts');
@@ -227,7 +229,7 @@ plot(x(1:end-1),0.01.*diff(by3(bestFitParams3,x))/mean(diff(x)),'LineWidth',2)
 %plot(x,y,'LineWidth',2)
 %plot(x,by3(bestFitParams3,x),'--') 
 xlim([min(x) max(x)])
-xlabel('Step Heights (a.u.)')
+xlabel('Single Step Heights (a.u.)')
 ylabel('Prob. Density')
 hold off
 set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
@@ -241,10 +243,9 @@ allResults(11) = mean(stepMeans);
 allResults(12) = xZero;
 allResults(13) = bestFitParams3(2);
 allResults(14) = baselineNormalNoiseStdDev;
-
 %% Fit Initial Intensities
 
-firstIntensities = cell2mat(singleStepStepHeights);
+firstIntensities = cell2mat(allFirstFrameIntensities);
 
 x = 1:max(firstIntensities)/1000:4*max(firstIntensities);
 y = 100.*arrayfun(@(z) nnz(firstIntensities<z),x)./length(firstIntensities);
@@ -284,13 +285,16 @@ print([saveFolder 'MultiStep_Fit_nmer_overlay'], '-depsc', '-r600');
 
 allResults(15:18) = 100.*bestFitParams4;
 
+allResults(19) = mean(cell2mat(allFirstStepMeans))/xZero;
+allResults(20) = sum(bestFitParams4.*[1 2 3 4]);
+allResults(21) = mean(cell2mat(allFirstStepMeans));
 %% Summerise Results
 
 f=figure;
 set(gcf, 'Position', [100, 100, 500, 400])
 t=uitable(f,'Data',allResults','Position', [0, 0, 500, 400]);
 outputNames = {'Mean Count per FOV','Mean Single Step Traces per FOV','Mean No Step Traces per FOV','Mean Multi-Step Traces per FOV','Mean Other Traces per FOV','Bleach Rate per Frame', 'Mean Bleach Frame','10% bleaching Frame','Bleaching Half Life'...
-    'Read Noise (Std. Dev.)','Mean Single Step Intensity','Log Normal Fit Mean','Log Normal Shape Parameter','Baseline Normal Noise Std Dev','Monomer Percent','Dimer Percent','Trimer Percent','Tetramer Percent'};
+    'Read Noise (Std. Dev.)','Mean Single Step Intensity','Log Normal Fit Mean','Log Normal Shape Parameter','Baseline Normal Noise Std Dev','Monomer Percent','Dimer Percent','Trimer Percent','Tetramer Percent','Label Ratio (All Initial/Single Steps)','Label Ratio (Distribution Fit)','Mean Initial Intensity'};
 t.RowName = outputNames;
  
 outputNames = replace(replace(outputNames,' ','_'),'%','p.c.');

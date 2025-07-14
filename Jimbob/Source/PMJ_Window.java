@@ -14,6 +14,7 @@ import ij.plugin.filter.ParticleAnalyzer;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+import ij.process.ShortProcessor;
 import org.micromanager.Studio;
 import org.micromanager.data.Coords;
 import org.micromanager.data.DataProvider;
@@ -38,7 +39,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class PMJ_Window {
-    private Studio studio;
     PMJ_Window mainWindow;
 
 
@@ -86,11 +86,10 @@ public class PMJ_Window {
 
     int totChanNum,totFrameNum,totPosNum;
     int currentFrame, currentPos;
-
     int totPartNum;
     int totImageWidth,totImageHeight,totNOP;
 
-
+    int[][] allDrifts;
     double[][][] traces=new double[0][0][0];
     double[][][] backTraces=new double[0][0][0];
 
@@ -102,18 +101,23 @@ public class PMJ_Window {
     int plotWidth = 0;
     int plotHeight = 0;
 
-    List<Color> mycolour = Arrays.asList(Color.MAGENTA, Color.CYAN, Color.BLUE, Color.BLACK, Color.PINK);
+    final List<Color> mycolour = Arrays.asList(Color.MAGENTA, Color.CYAN, Color.BLUE, Color.BLACK, Color.PINK);
 
     short[] rawImage16;
-    float[] roiImageFloat,imageForDetection;
+
     byte[] backgroundMask;
 
-    Rectangle fullImageRec;
+    float[] imageForDetection;
+    int[] imageForAlignment;
+
+    Rectangle fullImageRec, alignmentRectangle;
 
     Runnable imageForDetectRunnable,detectRunnable,measureTracesRunnable,stepFitRunnbale;
 
     int posNum;
     boolean outputDisplay;
+
+
 
     //parameters
     boolean driftCorrectDetect, driftCorrectTrace,displayAlignedStack,saveTraces,batchStepFit;
@@ -129,6 +133,8 @@ public class PMJ_Window {
             alignROILength = (int)Math.round(Math.pow(2,alignROILength));
         }
         AlignROISizeTextBox.setText(String.valueOf(alignROILength));
+
+        alignmentRectangle = new Rectangle(totImageWidth/2-alignROILength/2,totImageHeight/2-alignROILength/2,alignROILength,alignROILength);
 
         alignMaxShift = Integer.parseInt(driftMaxShiftBox.getText());
         driftCorrectDetect = driftCorrectDetectBox.isSelected();
@@ -174,7 +180,6 @@ public class PMJ_Window {
         } catch (java.io.IOException e1) {
             System.out.println(e1);
             statusText.setText(e1.toString());
-            return;
         }
     }
 
@@ -203,7 +208,7 @@ public class PMJ_Window {
     }
 
 
-    void getROIImageFloat(short[] imageIn,Rectangle ROI,int driftX, int driftY,boolean add){
+    void getROIImageFloat(int[] imageIn,float[] roiImageFloat, Rectangle ROI,int driftX, int driftY,boolean add){
         if(roiImageFloat==null || roiImageFloat.length != ROI.width * ROI.height){
             if(add)System.out.println("WARNING Imaging reset when adding!!!");
             roiImageFloat = new float[ROI.width * ROI.height];
@@ -222,13 +227,47 @@ public class PMJ_Window {
             }
     }
 
+    void getROIImageForAlign(int[] imageIn,int[] roiImageForAlign, Rectangle ROI,int driftX, int driftY,boolean add){
+        if(roiImageForAlign==null || roiImageForAlign.length != ROI.width * ROI.height){
+            roiImageForAlign = new int[ROI.width * ROI.height];
+        }
+        for (int i = 0; i < ROI.width; i++)
+            for (int j = 0; j < ROI.height; j++) {
+                int xIn = (i + ROI.x + driftX);
+                if(xIn<0)xIn=0;
+                if(xIn>=totImageWidth)xIn = totImageWidth-1;
+                int yIn = (j + ROI.y + driftY);
+                if(yIn<0)yIn=0;
+                if(yIn>=totImageHeight)yIn = totImageHeight-1;
 
+                if(add) roiImageForAlign[i + j * ROI.width] = roiImageForAlign[i + j * ROI.width]+imageIn[(xIn + yIn * totImageWidth)];
+                else roiImageForAlign[i + j * ROI.width] = imageIn[(xIn + yIn * totImageWidth)];
+
+            }
+    }
+
+    void getROIImageShort(short[] imageIn,short[] roiImageForAlign, Rectangle ROI,int driftX, int driftY){
+        if(roiImageForAlign==null || roiImageForAlign.length != ROI.width * ROI.height){
+            roiImageForAlign = new short[ROI.width * ROI.height];
+        }
+        for (int i = 0; i < ROI.width; i++)
+            for (int j = 0; j < ROI.height; j++) {
+                int xIn = (i + ROI.x + driftX);
+                if(xIn<0)xIn=0;
+                if(xIn>=totImageWidth)xIn = totImageWidth-1;
+                int yIn = (j + ROI.y + driftY);
+                if(yIn<0)yIn=0;
+                if(yIn>=totImageHeight)yIn = totImageHeight-1;
+
+                roiImageForAlign[i + j * ROI.width] = imageIn[(xIn + yIn * totImageWidth)];
+
+            }
+    }
 
 
 
     public PMJ_Window(Studio studioin) {
-        studio = studioin;
-        myDisplayManager = studio.getDisplayManager();
+        myDisplayManager = studioin.getDisplayManager();
         myDataViewer=null;
 
         mainWindow = this;
@@ -238,38 +277,55 @@ public class PMJ_Window {
                 statusText.setText("Summing Frame ");
             }
             getImage(0, 0, posNum);
-            ImageAligner detectAligner;
-            //load the reference image
+            myFFT aligner = new myFFT(alignROILength);
 
-            detectAligner = new ImageAligner(alignROILength,totImageWidth,totImageHeight,alignMaxShift);
-            for (int frameNum = detectStart; frameNum < detectEnd; frameNum++) {
-                if(outputDisplay)statusText.setText("Summing Frame "+String.valueOf(detectStart+1));
-                int[] channelSum = new int[totNOP];
-                short[] channelMean = new short[totNOP];
-                int chanStart = 0,chanEnd = totChanNum;
-                if(alignChannel>0){
-                    chanStart = alignChannel-1;
-                    chanEnd = alignChannel;
-                }
-                for (int chanNum = chanStart; chanNum < chanEnd; chanNum++) {
-                    getImage(chanNum, frameNum, posNum);
-                    for(int i=0;i<totNOP;i++)channelSum[i]+=rawImage16[i];
-                }
-                for(int i=0;i<totNOP;i++)channelMean[i] = (short)(channelSum[i]/(chanEnd-chanStart)) ;
+            //Declare summed image sizes
 
-                if(frameNum==detectStart) {
-                    if(driftCorrectDetect)detectAligner.set_Reference(channelMean);
-                    getROIImageFloat(channelMean, fullImageRec, 0, 0, false);
-                }
-                else if(driftCorrectDetect) {
-                    detectAligner.align(channelMean);
-                    getROIImageFloat(channelMean,fullImageRec, detectAligner.xDrift, detectAligner.yDrift, true);
-                }
-                else getROIImageFloat(channelMean,fullImageRec, 0, 0, true);
+            int[] tempImageForAlign = new int[alignROILength*alignROILength];
+            imageForAlignment = new int[alignROILength*alignROILength];
+            imageForDetection = new float[totNOP];
+
+            //set the bounds for channels that are used for detection and alignment
+            int chanStart = 0,chanEnd = totChanNum;
+            if(alignChannel>0){
+                chanStart = alignChannel-1;
+                chanEnd = alignChannel;
             }
 
-            imageForDetection = new float[totNOP];
-            for(int i=0;i<totNOP;i++)imageForDetection[i] = roiImageFloat[i]/(detectEnd-detectStart);
+            int[] chanSum = new int[totNOP];
+
+            for (int frameNum = detectStart; frameNum < detectEnd; frameNum++) {
+                if(outputDisplay)statusText.setText("Summing Frame "+String.valueOf(detectStart+1));
+                chanSum = new int[totNOP];
+                //get sum of channels
+                for (int chanNum = chanStart; chanNum < chanEnd; chanNum++) {
+                    getImage(chanNum, frameNum, posNum);
+                    for(int i=0;i<totNOP;i++)chanSum[i] += (int)rawImage16[i];
+                }
+                //align image
+                int xDrift = 0, yDrift = 0;
+                if(frameNum==detectStart && driftCorrectDetect) {
+                    getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, 0, 0, false);
+                    aligner.set_Reference(tempImageForAlign);
+                } else if(driftCorrectDetect) {
+                    getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, 0, 0, false);
+                    aligner.align(tempImageForAlign, alignMaxShift);
+                    xDrift = aligner.maxXPos;
+                    yDrift = aligner.maxYPos;
+                }
+                //add aligned images to stack
+                getROIImageForAlign(chanSum, imageForAlignment, alignmentRectangle, xDrift, yDrift, true);
+                getROIImageFloat(chanSum, imageForDetection, fullImageRec,  xDrift, yDrift, true);
+            }
+
+            //Debugging
+            getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, 0, 0, false);
+            aligner.set_Reference(tempImageForAlign);
+            for(int i=-3;i<3;i++)for(int j=-3;j<3;j++){
+                getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, i, j, false);
+                aligner.align(tempImageForAlign,100);
+                System.out.println("i,j,iout,jout = "+i+","+j+","+(-aligner.maxXPos)+","+(-aligner.maxYPos));
+            }
 
             if(outputDisplay){
                new ImagePlus("Detection Image",new FloatProcessor(totImageWidth, totImageHeight, imageForDetection.clone())).show();
@@ -317,7 +373,7 @@ public class PMJ_Window {
 
             float threshold = (float) (mean+cutoff*stddev);
             byte[] detectIm = new byte[totNOP];
-            roiImageFloat = new float[totNOP];
+            float[] roiImageFloat = new float[totNOP];
             for(int i=0;i<flogim.length;i++)
                 if(flogim[i]>threshold){
                     detectIm[i]=foreground;
@@ -338,7 +394,6 @@ public class PMJ_Window {
             if(myPartAnal.analyze(detected)==false){
                 System.out.println("Error With particle analyzer");
             }
-
 
             double[][] myResults = new double[myRT.size()][9]; //Area, x,y,width,height, eccentricity, nearest neighbour
 
@@ -379,8 +434,7 @@ public class PMJ_Window {
             if(outputDisplay) {
                 Overlay detectedOverlay = new Overlay();
                 totPartNum = filteredROIs.size();
-                for(int i=0;i<totPartNum;i++)
-                detectedOverlay.add(new Roi(filteredROIs.get(i)));
+                for(int i=0;i<totPartNum;i++) detectedOverlay.add(new Roi(filteredROIs.get(i)));
                 ImagePlus outputImStack = new ImagePlus("Detection", imstackin);
                 outputImStack.setOverlay(detectedOverlay);
                 outputImStack.show();
@@ -395,21 +449,28 @@ public class PMJ_Window {
 
             if(outputDisplay)statusText.setText("Channel/Frame ");
 
-            int xDrift = 0,yDrift = 0;
-            //load the reference image
-            ImageAligner traceAligner= new ImageAligner(alignROILength, totImageWidth, totImageHeight, alignMaxShift);
 
             short[][] allChanRawImage16 = new short[totChanNum][totNOP];
-            float[] sumRawImage = new float[totNOP];
-            float[] sumRawAlign = new float[totNOP];
 
+            allDrifts = new int[2][totFrameNum];
+            int[] tempImageForAlign = new int[alignROILength*alignROILength];
+            myFFT aligner = new myFFT(alignROILength);
             if(driftCorrectTrace) {
-                traceAligner.set_Reference(imageForDetection);
+                aligner.set_Reference(imageForAlignment);
             }
+            //calculate frames used for alignment
+            int chanStart = 0,chanEnd = totChanNum;
+            if(alignChannel>0){
+                chanStart = alignChannel-1;
+                chanEnd = alignChannel;
+            }
+
             ImageStack imstackin = new ImageStack(totImageWidth, totImageHeight);
 
             traces = new double[totChanNum][totFrameNum][totPartNum];
             backTraces =  new double[totChanNum][totFrameNum][totPartNum];
+
+
 
 
             for (int frameNum = 0; frameNum < totFrameNum; frameNum++) {
@@ -417,33 +478,34 @@ public class PMJ_Window {
                 //read images
                 for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
                     getImage(chanNum, frameNum, posNum);
-                    for(int i=0;i<totNOP;i++){
-                        allChanRawImage16[chanNum][i] = rawImage16[i];
-                        if(chanNum==0) {
-                            sumRawImage[i] = rawImage16[i];
-                            if(alignChannel==0 || alignChannel-1==chanNum)sumRawAlign[i] = rawImage16[i];
-                        }
-                        else {
-                            sumRawImage[i] += rawImage16[i];
-                            if(alignChannel==0 || alignChannel-1==chanNum)sumRawAlign[i] += rawImage16[i];
-                        }
-                    }
+                    if (totNOP >= 0) System.arraycopy(rawImage16, 0, allChanRawImage16[chanNum], 0, totNOP);
                 }
+
                 //align images
+                allDrifts[0][frameNum] = 0;
+                allDrifts[1][frameNum] = 0;
                 if (driftCorrectTrace) {
-                    traceAligner.align(sumRawImage);
-                    xDrift = traceAligner.xDrift;
-                    yDrift = traceAligner.yDrift;
+                    //get sum of channels used for alignment
+                    int[] chanSum = new int[totNOP];
+                    for (int chanNum = chanStart; chanNum < chanEnd; chanNum++)
+                        for(int i=0;i<totNOP;i++)chanSum[i] += (int)allChanRawImage16[chanNum][i];
 
-                    //System.out.println(frameNum+" =  "+xDrift+" , "+yDrift);
+                    //align image
+                    getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, 0, 0, false);
+                    aligner.align(tempImageForAlign, alignMaxShift);
+                    allDrifts[0][frameNum] = aligner.maxXPos;
+                    allDrifts[1][frameNum] = aligner.maxYPos;
 
+
+                    //add aligned images to stack
                     if (outputDisplay && displayAlignedStack) {
                         for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
-                            getROIImageFloat(allChanRawImage16[chanNum], fullImageRec, xDrift, yDrift, false);
-                            imstackin.addSlice(new FloatProcessor(totImageWidth, totImageHeight, roiImageFloat.clone()));
+                            getROIImageShort(allChanRawImage16[chanNum],rawImage16, fullImageRec, allDrifts[0][frameNum], allDrifts[1][frameNum]);
+                            imstackin.addSlice(new ShortProcessor(totImageWidth, totImageHeight, rawImage16.clone(),null));
                         }
                     }
                 }
+
                 //calculate traces
                 int xIn,yIn;
                 for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
@@ -453,16 +515,16 @@ public class PMJ_Window {
                         int foregroundCount = 0;
                         int backgroundCount = 0;
                         Rectangle roiRect = filteredROIs.get(partNum);
-                        for (int i = -backgroundWidth; i < roiRect.width + backgroundWidth; i++)
+                        for (int i = -backgroundWidth; i <  roiRect.width + backgroundWidth; i++)
                             for (int j = -backgroundWidth; j < roiRect.height + backgroundWidth; j++) {
-                                xIn = (i + roiRect.x + xDrift);
-                                yIn = (j + roiRect.y + yDrift);
+                                xIn = (i + roiRect.x + allDrifts[0][frameNum]);
+                                yIn = (j + roiRect.y + allDrifts[1][frameNum]);
                                 if(xIn<0||yIn<0||xIn>=totImageWidth||yIn>=totImageHeight);
                                 else if (i >= 0 && i < roiRect.width && j >= 0 && j < roiRect.height) {
-                                    foregroundSum += allChanRawImage16[chanNum][(i + roiRect.x + xDrift) + (j + roiRect.y + yDrift) * totImageWidth];
+                                    foregroundSum += allChanRawImage16[chanNum][xIn + yIn * totImageWidth];
                                     foregroundCount++;
                                 } else if (backgroundMask[(i + roiRect.x) + (j + roiRect.y) * totImageWidth] == 0) {
-                                    backgroundSum += allChanRawImage16[chanNum][(i + roiRect.x + xDrift) + (j + roiRect.y + yDrift) * totImageWidth];
+                                    backgroundSum += allChanRawImage16[chanNum][xIn + yIn * totImageWidth];
                                     backgroundCount++;
                                 }
                             }
@@ -475,7 +537,7 @@ public class PMJ_Window {
                 }
             }
 
-            if(outputDisplay) {
+            if(outputDisplay && displayAlignedStack) {
                 ImagePlus outputImStack = new ImagePlus("Aligned Stack ", imstackin);
                 outputImStack = new HyperStackConverter().toHyperStack(outputImStack, totChanNum, 1, totFrameNum, "CZT", "grayscale");
                 outputImStack.show();
@@ -661,6 +723,8 @@ public class PMJ_Window {
                 plot.setLimitsToFit(true);
                 if(saveTraces) new FileSaver(plot.getImagePlus()).saveAsPng(getFolderName()+"Mean_Trace_"+traces[0][0].length+"_Particles.png");
                 plot.show();
+
+
                 //make trace page
 
                 Plot plot2;
@@ -676,7 +740,7 @@ public class PMJ_Window {
                     plot2.setAxisLabelFont(Font.BOLD, 40);
                     plot2.setFont(Font.BOLD, 40);
                     plot2.setLineWidth(6);
-                    plot2.addLabel(0.25,0,"No. "+String.valueOf(partNum + 1)+" X "+String.valueOf(filteredROIs.get(partNum).x+filteredROIs.get(partNum).width/2)+" Y "+String.valueOf(filteredROIs.get(partNum).y+filteredROIs.get(partNum).height/2));
+                    plot2.addLabel(0.2,0.01,"No. "+String.valueOf(partNum + 1)+" X "+String.valueOf(filteredROIs.get(partNum).x+filteredROIs.get(partNum).width/2)+" Y "+String.valueOf(filteredROIs.get(partNum).y+filteredROIs.get(partNum).height/2));
                     for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
                         plot2.setColor(mycolour.get(chanNum));
                         maxval = 0;
@@ -706,6 +770,23 @@ public class PMJ_Window {
                     if(saveTraces) new FileSaver(outputMontage).saveAsPng(getFolderName()+"Example_Traces_Page_"+Integer.parseInt(pageNumberBox.getText())+".png");
                     outputMontage.show();
                 }
+
+                //plot Drifts
+                Plot plotDrift = new Plot("Sample Drift", "Time ("+timePerFrameUnits+")","Pixels");
+                plotDrift.setSize(600,600);
+                plotDrift.setFrameSize(400, 250);
+                PlotWindow.noGridLines = true;
+                plotDrift.setAxisLabelFont(Font.BOLD, 40);
+                plotDrift.setFont(Font.BOLD, 40);
+                plotDrift.setLineWidth(6);
+                //plot.addLabel(0.25,0,"Mean Trace");
+                for (int chanNum = 0; chanNum < 2; chanNum++) {
+                    plotDrift.setColor(mycolour.get(chanNum));
+                    plotDrift.add("line",frames, Arrays.stream(allDrifts[chanNum]).asDoubleStream().toArray());
+                }
+                plotDrift.setLimitsToFit(true);
+                if(saveTraces) new FileSaver(plotDrift.getImagePlus()).saveAsPng(getFolderName()+"Sample_Drift.png");
+                plotDrift.show();
 
                 System.out.println(totPartNum);
             }
