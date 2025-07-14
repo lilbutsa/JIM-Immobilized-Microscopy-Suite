@@ -1,6 +1,38 @@
 #ifndef BLFLAGPARSER_HPP
 #define BLFLAGPARSER_HPP
 
+
+/**
+ * @file    BLFlagParser.hpp
+ * @brief   Lightweight command-line flag parser supporting scalar and vector arguments.
+ *
+ * This header defines a templated utility for parsing command-line flags into variables
+ * or vectors using a list of flag-to-variable mappings. It supports:
+ *   - Typed scalar flags (int, float, double, string, bool)
+ *   - Multiple-value flags via `std::vector<T>`
+ *   - Automatic type conversion with error handling
+ *   - Optional flags (bool switches with no value required)
+ *
+ * Example usage:
+ *     bool verbose = false;
+ *     int threads = 4;
+ *     std::string filename;
+ *     std::vector<float> thresholds;
+ *     std::vector<std::pair<std::string, bool*>> scalarParams = {{"verbose", &verbose}};
+ *     std::vector<std::pair<std::string, int*>> scalarParams = {{"threads", &threads}};
+ *     std::vector<std::pair<std::string, std::string*>> stringParams = {{"file", &filename}};
+ *     std::vector<std::pair<std::string, std::vector<float>*>> vectorParams = {{"thresh", &thresholds}};
+ *     BLFlagParser::parseValues(scalarParams, argc, argv);
+ *     BLFlagParser::parseValues(stringParams, argc, argv);
+ *     BLFlagParser::parseValues(vectorParams, argc, argv);
+ *
+ * @note This library avoids external dependencies for lightweight usage. 
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2025-07-14
+ */
+
+
+
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -73,7 +105,7 @@ namespace BLFlagParser {
     }
 
 
-    bool isNumber(std::string token)
+    bool isNumber(const std::string& token)
     {
         return std::regex_match(token, std::regex(("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?")));
     }

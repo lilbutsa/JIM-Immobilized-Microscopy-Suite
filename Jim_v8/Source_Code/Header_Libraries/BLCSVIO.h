@@ -1,4 +1,30 @@
 #pragma once
+/**
+ * @file BLCSVIO.h
+ * @brief Basic Library of CSV Input and Output - Simple library for reading and writing CSV data into and out of `std::vector`.
+ *
+ * This header provides templated functions for:
+ *  - Reading fixed-width or variable-width CSV files with optional header parsing.
+ *  - Writing CSV files with string or vector<string> headers.
+ *  - Writing CSVs with a custom row order.
+ *
+ *
+ * Functions:
+ *  - readCSV                  : Reads fixed-width CSV into a 2D vector with header.
+ *  - readVariableWidthCSV     : Reads variable-width CSVs, optionally ignoring empty cells.
+ *  - writeCSV (string header) : Writes CSV with a single-line string header.
+ *  - writeCSV (vector header) : Writes CSV with a vector of header fields.
+ *  - writeCSVVariableOrder    : Writes CSV with rows in custom order.
+ *
+ * @note This library avoids external dependencies for lightweight usage. 
+ * To do: Handle commas in strings withing fields
+ * @author James Walsh  james.walsh@phys.unsw.edu.au
+ * @date 2023-02-09
+ */
+
+
+
+
 #include <vector>
 #include <string>
 #include <fstream>
@@ -10,13 +36,14 @@
 
 namespace BLCSVIO {
 	template <typename vectortype>
-	inline int readCSV(std::string inputfile, std::vector<std::vector<vectortype> >& tableout, std::vector<std::string>& headerLine) {
-		//std::vector<std::string>& headerLine = std::vector<std::string>(0)
+	inline int readCSV(const std::string& inputfile, std::vector<std::vector<vectortype> >& tableout, std::vector<std::string>& headerLine) {
+
 		std::ifstream myfile(inputfile.c_str()); //file opening constructor
 									
 		if (myfile.is_open()) {//Operation to check if the file opened
 			std::string line;
 
+			// Read the first line to extract column headers
 			getline(myfile, line);
 
 			std::string s = line;
@@ -42,7 +69,7 @@ namespace BLCSVIO {
 
 		}
 		else {
-			std::invalid_argument("ERROR: Unable to open the file!\n"+inputfile+"\n");
+			throw std::invalid_argument("ERROR: Unable to open the file!\n"+inputfile+"\n");
 			return 1;
 		}
 		return 0;
@@ -50,11 +77,11 @@ namespace BLCSVIO {
 
 
 	template <typename vectortype>
-	inline int readVariableWidthCSV(std::string inputfile, std::vector<std::vector<vectortype> >& tableout, std::vector<std::string>& headerLine,bool ignoreEmpty = true) {
-		//std::vector<std::string>& headerLine = std::vector<std::string>(0)
+	inline int readVariableWidthCSV(const std::string& inputfile, std::vector<std::vector<vectortype> >& tableout, std::vector<std::string>& headerLine,bool ignoreEmpty = true) {
+
 		std::ifstream myfile(inputfile.c_str()); //file opening constructor
-											//Operation to check if the file opened
-		if (myfile.is_open()) {
+											
+		if (myfile.is_open()) {//Operation to check if the file opened
 			std::string line;
 
 			getline(myfile, line);
@@ -89,7 +116,7 @@ namespace BLCSVIO {
 				numofcolumns = n + 1;
 				dataline.clear();
 				dataline.resize(numofcolumns);
-				//dataline = std::vector<vectortype>(numofcolumns);
+				
 				std::stringstream ss(line);  // note we use istringstream, we don't need the o part of stringstream
 				for (int i = 0; i < numofcolumns - 1; i++) {
 					streampos = ss.tellg();
@@ -113,7 +140,7 @@ namespace BLCSVIO {
 
 		}
 		else {
-			std::invalid_argument("ERROR: Unable to open the file!\n" + inputfile + "\n");
+			throw std::invalid_argument("ERROR: Unable to open the file!\n" + inputfile + "\n");
 			return 1;
 		}
 
@@ -121,7 +148,7 @@ namespace BLCSVIO {
 	}
 
 	template <typename vectortype>
-	inline void writeCSV(std::string filename, std::vector<std::vector<vectortype> > file_out, std::string headerline)
+	inline void writeCSV(const std::string& filename, std::vector<std::vector<vectortype> > file_out, std::string headerline)
 	{
 		std::ofstream myfile;
 		myfile.open(filename.c_str());
@@ -139,7 +166,7 @@ namespace BLCSVIO {
 	}
 
 	template <typename vectortype>
-	inline void writeCSV(std::string filename, std::vector< std::vector<vectortype> > file_out, std::vector<std::string> headerline)
+	inline void writeCSV(const std::string& filename, std::vector< std::vector<vectortype> > file_out, std::vector<std::string> headerline)
 	{
 		std::ofstream myfile;
 		myfile.open(filename.c_str());
@@ -162,7 +189,7 @@ namespace BLCSVIO {
 
 
 	template <typename vectortype>
-	inline void writeCSVVariableOrder(std::string filename, std::vector<std::vector<vectortype> > file_out, std::string headerline, std::vector<int> order)
+	inline void writeCSVVariableOrder(const std::string& filename, std::vector<std::vector<vectortype> > file_out, std::string headerline, std::vector<int> order)
 	{
 		std::ofstream myfile;
 		myfile.open(filename.c_str());

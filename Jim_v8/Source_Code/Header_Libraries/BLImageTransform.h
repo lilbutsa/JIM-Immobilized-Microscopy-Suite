@@ -1,6 +1,59 @@
 #pragma once
-#ifndef POCKETFFTCLASS_H_
-#define POCKETFFTCLASS_H_
+#ifndef IMAGETRANSFORMCLASS_H_
+#define IMAGETRANSFORMCLASS_H_
+
+/**
+ * @file    image_transforms.hpp
+ * @brief   Fourier-based image alignment and geometric transformation utilities.
+ *
+ * This header defines a set of classes and functions for performing fast and accurate
+ * image alignment and transformation tasks on float images. 
+ *
+ * The code is organized into two main components:
+ *
+ * ------------------------------------------------------------------------
+ * [1] alignImages_32f:
+ *      - Performs image alignment via cross-correlation.
+ *      - Uses PocketFFT to compute FFTs for efficient convolution.
+ *      - Supports subpixel peak localization via quadratic fitting.
+ *      - Optional Laplacian of Gaussian filtering in frequency domain.
+ *
+ *      Key methods:
+ *        - FFTForward / FFTBackward: FFT wrappers
+ *        - alignLoadIm1 / alignIm2: Load reference & align target
+ *        - fitSubPixelQuadratic: Subpixel maximum estimation
+ *        - laplaciandOfGaussian: Frequency-space LOG filter
+ *
+ * ------------------------------------------------------------------------
+ * [2] imageTransform_32f:
+ *      - Applies geometric transformations (translate, rotate, scale) to images.
+ *      - Uses bilinear interpolation with edge clamping.
+ *
+ *      Key methods:
+ *        - transform: Rotation + scaling + translation
+ *        - translate: Translation only
+ *
+ * ------------------------------------------------------------------------
+ * [3] Utility Functions:
+ *      - meanAndStdDev<T>: Computes mean and standard deviation.
+ *      - normalizeVector<T>: Normalizes a vector to zero-mean, unit-stddev.
+ *
+ * Dependencies:
+ *      - Requires PocketFFT (single-header version). (https://github.com/mreineck/pocketfft)
+ *
+ * Example usage:
+ *      alignImages_32f aligner(w, h);
+ *      aligner.alignLoadIm1(image1, maxDist);
+ *      aligner.alignIm2(image2);
+ *      float dx = aligner.quadFitX, dy = aligner.quadFitY;
+ *
+ *      imageTransform_32f transformer(w, h);
+ *      transformer.transform(imageIn, imageOut, dx, dy, angle, scale);
+ * 
+ * @author James Walsh  james.walsh@phys.unsw.edu.au
+ * @date 2020-02-09
+ */
+
 
 #include <complex>
 #include <cmath>

@@ -2,6 +2,29 @@
 #ifndef BLTiffIO_H
 #define BLTiffIO_H
 
+/*
+ * BLTiffIO - A Lightweight TIFF Input/Output Library for OME-TIFF and BigTIFF Images
+ *
+ * This header defines a minimalistic, dependency-free C++ library for reading and writing
+ * TIFF and BigTIFF image stacks, including support for OME-TIFF metadata extraction.
+ *
+ * Features:
+ * - Low-level parsing of TIFF and BigTIFF formats using standard C++ streams.
+ * - Efficient support for 8, 16, and 32-bit grayscale images.
+ * - Frame-based reading and writing for multi-frame stacks.
+ * - OME-XML metadata parsing for axis ordering (T, C, Z).
+ * - Strip-based image reading for compatibility with tiled TIFFs.
+ *
+ * Limitations:
+ * - Only supports uncompressed grayscale images with a single sample per pixel.
+ * - No support for RGB(A), compression schemes, or tiled TIFFs beyond strip-based storage.
+ * - Assumes planar configuration = 1 (contiguous samples).
+ *
+ *
+ * Author: James Walsh
+ * Date: July 2020
+ */
+
 #include <stdint.h>
 #include <string>
 #include <iostream>
