@@ -86,7 +86,7 @@ completeName = ['"',completeName,'" '];
 %% 2) Organise Image Stack into channels 
 imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 2; % Input the number of channels in the data
+imStackNumberOfChannels = 3; % Input the number of channels in the data
 
 imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
@@ -94,7 +94,7 @@ imStackStartFrame = 1; % Part of the image stack can be completely ignored for a
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
-imStackChannelsToTransform = '';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
+imStackChannelsToTransform = '2 3';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
 imStackVerticalFlipChannel = '0 0';% For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
 imStackHorizontalFlipChannel = '1 0';% Same as vertical
 imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel
@@ -102,7 +102,7 @@ imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the
 
 % Don't touch from here
  
-if (length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackVerticalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackHorizontalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackRotateChannel,"%f")) )
+if (length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackVerticalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackHorizontalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackRotateChannel,"%f")) )
         errordlg('Check that channelsToTransform, VerticalFlipChannel, HorizontalFlipChannel and RotateChannel all have the same number of parameters.','Error Inputting Parameters. channelsToTransform should be the list of channels that need to be transformed. VerticalFlipChannel and HorizontalFlipChannel should state whether the respective channel should (1) or shouldnt (0) be flipped. rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel'); 
 end
 
@@ -159,12 +159,12 @@ end
 disp('Organization completed');
 
 %% 3) Align Channels and Calculate Drifts
-alignIterations = 3; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
+alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
-alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 3;% 
+alignStartFrame = 12;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 12;% 
 
-alignMaxShift = 50.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 30; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
@@ -173,11 +173,11 @@ alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
 %Parameters for Automatic Alignment
-alignMaxIntensities = '65000 65000';% Set a threshold so that during channel to channel alignment agregates are ignored
+alignMaxIntensities = '65000 65000 65000';% Set a threshold so that during channel to channel alignment agregates are ignored
 alignSNRCutoff = 0.1; % Set a minimum alignment SNR to throw warnings 
 
 %Parameters for Manual Alignment
-alignManually = true ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
+alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 alignXOffset = '0';
 alignYOffset = '0';
 alignRotationAngle = '0';
@@ -263,11 +263,11 @@ disp('Alignment completed');
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
-detectionStartFrame = '1 1'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '2 2'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1 -5 1'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '5 -1 5'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1 1';
+detectWeights = '1 1 1';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -312,19 +312,19 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 1.5; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 0.2; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectLeftEdge = 25;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-detectRightEdge = 25;% Excluded particles closer to the Right edge than this. 
-detectTopEdge = 25;% Excluded particles closer to the Top edge than this. 
-detectBottomEdge = 25;% Excluded particles closer to the Bottom edge than this. 
+detectLeftEdge = 10;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 10;% Excluded particles closer to the Right edge than this. 
+detectTopEdge = 10;% Excluded particles closer to the Top edge than this. 
+detectBottomEdge = 10;% Excluded particles closer to the Bottom edge than this. 
 
 detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 detectMinEccentricity = -0.10; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-detectMaxEccentricity = 0.5;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+detectMaxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
 detectMinLength = 0.00; % Minimum number of pixels for the major axis of the best fit ellipse
 detectMaxLength = 10000.00; % Maximum number of pixels for the major axis of the best fit ellipse
@@ -431,7 +431,7 @@ end
 
 %% 7) Expand Regions
 expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
+expandBackInnerDist = 7.10; % Minimum distance to dilate beyond the ROI to measure the local background
 expandBackOuterDist = 30.00; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
