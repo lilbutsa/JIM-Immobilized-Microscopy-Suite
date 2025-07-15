@@ -1,3 +1,25 @@
+/**
+ * @file Align_Channels Main.cpp 
+ * @brief Multi-channel image stack drift correction and alignment pipeline.
+ *
+ * This program performs sub-pixel drift correction and inter-channel alignment
+ * of multi-frame TIFF image stacks. It supports automatic alignment estimation
+ * or manual input, and can optionally output aligned image stacks.
+ *
+ * Usage:
+ *   ./Align_Channels [OutputFileBase] [Channel1.tif] [Channel2.tif] ... [options]
+ *
+ * Dependencies:
+ *   - BLTiffIO (for TIFF reading/writing)
+ *   - BLImageTransform (for image transformations and alignment)
+ *   - BLFlagParser (for parsing command-line arguments)
+ *
+ * Author: James Walsh
+ * Date: July 2020
+ */
+
+
+
 #include "BLTiffIO.h"
 #include "BLImageTransform.h"
 #include "writeChannelAlignment.hpp"

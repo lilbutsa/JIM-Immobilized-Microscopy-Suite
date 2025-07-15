@@ -1,3 +1,27 @@
+/**
+ * @file driftCorrect.cpp
+ * @brief Implements core functions for drift correction and inter-channel alignment.
+ *
+ *
+ * Functions:
+ * - driftCorrect:
+ *     Applies sub-pixel drift correction across time, optionally writing out
+ *     aligned image stacks and computing averaged projections.
+ *
+ * - findAlignment:
+ *     Estimates relative alignment parameters (translation, rotation, scale)
+ *     between channel 1 and all other channels using Fourier-based
+ *     cross-correlation and iterative parameter optimization.
+ *
+ * Dependencies:
+ *   - BLTiffIO (for TIFF I/O)
+ *   - BLImageTransform (for transformation and alignment logic)
+ *
+ * Author: James Walsh
+ * Date: July 2020
+ */
+
+
 #include "BLTiffIO.h"
 #include "BLImageTransform.h"
 

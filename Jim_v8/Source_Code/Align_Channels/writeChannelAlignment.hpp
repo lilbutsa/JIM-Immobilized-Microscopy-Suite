@@ -2,6 +2,39 @@
 #ifndef WRITESTUFF_H_
 #define WRITESTUFF_H_
 
+/**
+ * @file writeChannelAlignment.hpp
+ * @brief Utilities for writing alignment and drift correction results to CSV files.
+ *
+ * Contains inline functions for outputting computed inter-channel alignment parameters
+ * and per-frame drift corrections. The outputs are written in CSV format using BLCSVIO.
+ *
+ * Functions:
+ * - writeChannelAlignment:
+ *     Outputs channel-to-channel alignment parameters including rotation angle,
+ *     scale, translation offsets, and the transformation matrix components.
+ *     Saves results as "[OutputFile]_Channel_To_Channel_Alignment.csv".
+ *
+ * - writeDrifts:
+ *     Outputs frame-by-frame X and Y drift values for each channel. Transforms
+ *     drift vectors for non-reference channels using the channel alignment matrix.
+ *     Saves each channel's drift data as "[OutputFile]_Channel_X.csv".
+ *
+ * Output CSV columns:
+ * - writeChannelAlignment:
+ *     Channel Number, Angle of Rotation, Scale, X offset, Y offset,
+ *     X/Y components of translation matrix, and rotation point (image center).
+ * - writeDrifts:
+ *     X Drift, Y Drift per frame, transformed into each channel's reference frame.
+ *
+ * Dependencies:
+ *   - BLCSVIO (for CSV writing)
+ *
+ * Author: James Walsh
+ * Date: July 2020
+ */
+
+
 #include "BLCSVIO.h"
 
 

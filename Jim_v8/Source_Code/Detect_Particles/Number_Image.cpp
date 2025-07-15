@@ -1,3 +1,29 @@
+/*
+ * Number_Image.cpp
+ *
+ * Description:
+ *   This file provides a utility function for labeling particle centroids in a grayscale image
+ *   with numeric identifiers. 
+ *
+ * Functionality:
+ *   - Renders each particle’s index (starting from 1) directly onto the image as 5×3-pixel ASCII digits.
+ *   - Ensures label placement avoids image boundaries and adjusts positioning for multi-digit indices.
+ *   - Writes digits into the image buffer (`std::vector<uint8_t>`) at each particle's centroid.
+ *
+ * Public Functions:
+ *   - void numberimage(std::vector<std::vector<float>> &filteredcents,
+ *                      std::vector<uint8_t> &fn,
+ *                      int iw, int ih)
+ *       - filteredcents: Vector of centroids [x, y] for each detected region.
+ *       - fn: Output image buffer where pixel values are written (modified in-place).
+ *       - iw, ih: Image width and height.
+ *
+ *
+ *
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2020
+ */
+
 #include <string>
 #include <iostream>
 #include <vector>

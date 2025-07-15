@@ -1,8 +1,41 @@
+﻿/*
+ * Main.cpp - Picasso_Raw_Converter
+ *
+ * Description:
+ *   This utility converts a multi-frame TIFF image stack into a binary .raw file
+ *   and generates an accompanying .yaml metadata file compatible with
+ *   the Picasso single-molecule localization microscopy (SMLM) analysis software suite.
+ *
+ *
+ * Input Arguments:
+ *   argv[1] - Input TIFF file.
+ *   argv[2] - Output file base name (no extension; generates both .raw and .yaml).
+ *
+ * Output:
+ *   - <outputName>.raw  : Binary stream of pixel values from all frames, stored sequentially.
+ *                         Format: little-endian, 16-bit unsigned integers.
+ *   - <outputName>.yaml : Metadata file describing image dimensions and data format,
+ *                         as expected by Picasso for raw image import.
+ *
+ * Dependencies:
+ *   - BLTiffIO: TIFF file I/O support.
+ *
+ * Usage Example:
+ *   ./Picasso_Raw_Converter input_stack.tiff output_path/output_file
+ *     → Generates output_file.raw and output_file.yaml
+ *
+ * Notes:
+ *   - All image frames are read sequentially and stored contiguously.
+ *   - Assumes input TIFF is properly formatted and readable via `BLTiffIO`.
+ *
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2025-07-14
+ */
+
 #include <string>
 #include <iostream>
 #include <vector>
 #include "BLTiffIO.h"
-#include "BLCSVIO.h"
 
 using namespace std;
 

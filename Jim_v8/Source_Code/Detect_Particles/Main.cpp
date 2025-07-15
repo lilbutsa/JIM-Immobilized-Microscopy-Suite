@@ -1,3 +1,45 @@
+/*
+ * Detect_Particles main.cpp
+ *
+ * Description:
+ *   This program performs particle detection on an image using Laplacian of Gaussian (LoG) filtering,
+ *   followed by binarization, and optional filtering based on shape, size, and position criteria.
+ *
+ * Usage:
+ *   Detect_Particles <TIFF_Image> <Output_Base> [Optional Parameters]
+ *
+ * Optional Parameters:
+ *   -BinarizeCutoff <float>           : Threshold multiplier for binarization (default 0.2)
+ *   -minDistFromEdge <float>         : Minimum distance from all edges (overrides specific edges if larger)
+ *   -left/-right/-top/-bottom <float>: Minimum distance from respective image edge
+ *   -minEccentricity/-maxEccentricity<float>: Eccentricity filter
+ *   -minLength/-maxLength <float>    : Length of major axis filter
+ *   -minCount/-maxCount <float>      : Minimum/maximum number of pixels per region
+ *   -maxDistFromLinear <float>       : Deviation from best-fit line
+ *   -minSeparation <float>           : Minimum separation between region centers
+ *   -GaussianStdDev <float>          : Standard deviation for LoG filter (default 5)
+ *   -includeSmall                    : Include small regions in nearest neighbour calculations and for background ROI output
+ *
+ * Outputs (written to <Output_Base>.*):
+ *   - _Regions.tif                   : Binary image showing detected ROIs
+ *   - _Measurements.csv              : Raw measurements of all ROIs
+ *   - _Positions.csv                 : Raw pixel positions of all ROIs
+ *   - _Filtered_Regions.tif          : Binary image of filtered ROIs
+ *   - _Filtered_Region_Numbers.tif   : ROI labels overlaid as indexed pixels
+ *   - _Filtered_Measurements.csv     : Measurements of ROIs after filtering
+ *   - _Filtered_Positions.csv        : Positions of ROIs after filtering
+ *
+ * Dependencies:
+ *   - BLTiffIO: For TIFF input/output
+ *   - BLCSVIO: For CSV input/output
+ *   - BLImageTransform: For image filtering and analysis
+ *   - BLFlagParser: For parsing command-line arguments
+ *
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2025-07-14
+ */
+
+
 #include <iostream>
 #include <vector>
 #include <algorithm>

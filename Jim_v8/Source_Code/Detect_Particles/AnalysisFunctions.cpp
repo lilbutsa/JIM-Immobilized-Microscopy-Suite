@@ -1,3 +1,25 @@
+/*
+ * AnalysisFunctions.cpp
+ *
+ * Description:
+ *   This file provides core analysis routines for extracting geometric and spatial measurements from
+ *   ROIs detected in image data. 
+ *
+ *
+ * Public Classes:
+ *   - measurementsClass: Stores ROI measurements results.
+ *   - nearestNeighbour: A 2D nearest-neighbour query class.
+ *
+ * Public Functions:
+ *   - binaryToPositions(): Extracts vectorized ROIs from a flat binary mask using 8-connected labeling.
+ *   - componentMeasurements(): Computes shape, structure, and neighbour proximity metrics for a set of ROIs.
+ *
+ *
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2025-07-14
+ */
+
+
 #include <iostream>
 #include <vector>
 #include <algorithm>

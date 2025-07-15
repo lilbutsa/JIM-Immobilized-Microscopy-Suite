@@ -1,3 +1,60 @@
+/*
+ * Main.cpp - Mean_of_Frames
+ *
+ * Description:
+ *   This program generates a combined reference image from a range of frames across multiple imaging channels.
+ *   It applies drift correction, channel alignment, and optional normalization.
+ *   The resulting image is typically used for particle detection or as a composite visual reference.
+ *
+ * Core Functionality:
+ *   - Reads multi-frame TIFF images for each input channel.
+ *   - Applies spatial drift correction to each frame.
+ *   - Applies affine transformations to align channels using alignment CSV data.
+ *   - Computes either a mean or maximum projection over specified frame ranges.
+ *   - Allows optional intensity weighting for each channel.
+ *   - Optionally normalizes the result across time and channels.
+ *   - Outputs the final image as a TIFF file.
+ *
+ * Input Arguments (Positional):
+ *   argv[1] - Channel alignment CSV file (can be empty for single-channel input).
+ *   argv[2] - Drift correction CSV file (x, y drift per frame).
+ *   argv[3] - Output file base name.
+ *   argv[4...] - Input TIFF stacks (one per imaging channel).
+ *
+ * Optional Flags:
+ *   -Start <val1 val2 ...>    : Start frame per channel (1-based, default = 1).
+ *                               Can also be negative (offset from end) or used with -Percent.
+ *   -End <val1 val2 ...>      : End frame per channel (inclusive, default = total frames).
+ *                               Can also be negative or percent-based.
+ *   -Percent                  : Treat -Start and -End values as percentages (0–100).
+ *   -Weights <w1 w2 ...>      : Scaling weights per channel.
+ *   -MaxProjection            : Use max projection instead of summation/mean across frames.
+ *   -NoNorm                   : Skip normalization (output raw summed intensity values).
+ *
+ * Output:
+ *   - <outputfile>_Partial_Mean.tiff : Composite image result.
+ *       If normalization is used, written as 16-bit TIFF.
+ *       If not normalized, written as 32-bit float TIFF.
+ *
+ * Notes:
+ *   - Channel alignment is only applied if multiple input files are given.
+ *   - Drift correction is always applied prior to averaging.
+ *   - Frame ranges and weights are flexible and user-defined per channel.
+ *   - Designed for preprocessing steps in single-particle or ROI analysis workflows.
+ *
+ * Dependencies:
+ *   - BLCSVIO: Reads CSV files (drift, alignment).
+ *   - BLTiffIO: Reads and writes multi-frame TIFF stacks.
+ *   - BLImageTransform: Provides drift and affine transformation utilities.
+ *
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2025-07-14
+ */
+
+
+
+
+
 #include <string>
 #include <iostream>
 #include <vector>

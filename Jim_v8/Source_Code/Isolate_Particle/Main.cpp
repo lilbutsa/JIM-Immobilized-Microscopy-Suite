@@ -1,3 +1,55 @@
+/*
+ * Main.cpp - Isolate_Particle
+ *
+ * Description:
+ *   This program creates a montage of a single particle's. It outputs an intensity-normalized montage 
+ *   and optionally a TIFF stack of isolated regions-of-interest (ROIs) for the specified particle.
+ *
+ *
+ * Core Functionality:
+ *   - Loads image stacks, channel alignment matrices, drift correction data, and particle bounding boxes.
+ *   - Applies spatial transformation (translation, affine alignment) to each frame.
+ *   - Averages over specified frame ranges around each step to reduce noise.
+ *   - Extracts and crops a bounding box around the particle, and assembles a montage.
+ *   - Optionally outputs the time series of cropped images as a TIFF stack.
+ *
+ * Input Arguments (Positional):
+ *   argv[1]  - Channel alignment CSV file (ignored if only one channel).
+ *   argv[2]  - Drift correction CSV file (x, y drift per frame).
+ *   argv[3]  - Particle measurement CSV file (bounding box metadata).
+ *   argv[4]  - Output filename base (used for all output TIFFs).
+ *   argv[5...] - One or more TIFF stacks (1 per channel, all same dimensions).
+ *
+ * Optional Flags:
+ *   -Particle <int>   : Index of particle to isolate (1-based, default = 1)
+ *   -Start <int>      : First frame to include (0-based, default = 0)
+ *   -End <int>        : Last frame to include (exclusive, default = total number of frames)
+ *   -Delta <int>      : Frame step between montage entries (default = 1)
+ *   -Average <int>    : Number of frames to average around each montage frame (must be odd, default = 1)
+ *   -OutputImageStack : Output a full aligned ROI stack as a TIFF
+ *
+ * Output Files:
+ *   - <base>_Trace_<particle>_Range_<start>_<delta>_<end>_montage.tiff:
+ *       A montage image of the aligned ROI over time (channels stacked vertically).
+ *   - <base>_Trace_<particle>_Channel_<N>.tiff (optional):
+ *       A TIFF stack of aligned ROI frames for channel N (only if -OutputImageStack is specified).
+ *
+ * Notes:
+ *   - Pixel values are normalized using the 3rd to 97th percentile across all output frames for consistent contrast.
+ *   - Alignment and drift correction are applied before cropping.
+ *   - Output montage adds a 1-pixel border between tiles.
+ *
+ * Dependencies:
+ *   - BLCSVIO: CSV file reader for measurement/alignment input.
+ *   - BLTiffIO: TIFF I/O wrapper for reading multi-frame images and writing output.
+ *   - BLImageTransform: Provides affine and translation operations on images.
+ *   - BLFlagParser: Lightweight CLI flag parser.
+ *
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2025-07-14
+ */
+
+
 #include <string>
 #include <iostream>
 #include <vector>

@@ -1,3 +1,55 @@
+/*
+ * Main.cpp - Tiff_Channel_Splitter
+ *
+ * Description:
+ *   This utility separates multi-channel TIFF image stacks into individual per-channel TIFF files.
+ *   Supports both OME-TIFF files with embedded metadata and standard TIFFs without metadata.
+ *   Optionally applies channel-specific image transformations including vertical/horizontal flipping
+ *   and 90/180/270-degree clockwise rotation.
+ *
+ *
+ * Key Features:
+ *   - Auto-detection of channels using OME metadata (if available).
+ *   - Manual channel count specification for non-OME files.
+ *   - Channel-specific spatial transformations.
+ *   - Optional BigTIFF output for large datasets.
+ *   - Frame range selection (e.g., -StartFrame / -EndFrame).
+ *   - Multi-file input support and batch TIFF directory processing.
+ *
+ * Input Arguments:
+ *   argv[1]            : Output filename base.
+ *   argv[2]...[n]      : Input TIFF file(s).
+ *
+ * Optional Flags:
+ *   -NumberOfChannels i    : Manually sets the number of channels to extract (default = 2).
+ *   -StartFrame i          : Frame to start exporting from (1-based; negative for relative indexing).
+ *   -EndFrame i            : Frame to stop exporting at (inclusive).
+ *   -DisableMetadata       : Ignore OME metadata (assumes interleaved channel ordering).
+ *   -BigTiff               : Force output in BigTIFF format (supports >4 GB files).
+ *   -DisableBigTiff        : Force output in classic TIFF format.
+ *   -Transform [...]       : Per-channel transforms. For each channel:
+ *                            [Channel] [VertFlip] [HorzFlip] [RotateCW],
+ *                            e.g., "-Transform 1 1 0 90 2 0 1 0".
+ *   -DetectMultipleFiles   : Automatically detect and include all TIFFs in the input directory.
+ *
+ * Output:
+ *   - One TIFF file per channel: <OutputBase>_Channel_<n>.tif
+ *
+ * Assumptions:
+ *   - TIFF input images are grayscale.
+ *   - Channels are interleaved frame-wise if no metadata is available.
+ *
+ * Dependencies:
+ *   - BLTiffIO: Handles TIFF file reading/writing and metadata parsing.
+ *   - C++17 or later (uses std::filesystem).
+ *
+ * Usage Example:
+ *   ./Tiff_Channel_Splitter output image_stack.tif -NumberOfChannels 3 -Transform 1 1 0 90 2 0 1 0
+ *
+ * @author James Walsh james.walsh@phys.unsw.edu.au
+ * @date 2020
+ */
+
 #include <string>
 #include <iostream>
 #include <vector>

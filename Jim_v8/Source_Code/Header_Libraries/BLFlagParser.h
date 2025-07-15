@@ -1,7 +1,6 @@
 #ifndef BLFLAGPARSER_HPP
 #define BLFLAGPARSER_HPP
 
-
 /**
  * @file    BLFlagParser.hpp
  * @brief   Lightweight command-line flag parser supporting scalar and vector arguments.
@@ -14,7 +13,7 @@
  *   - Optional flags (bool switches with no value required)
  *
  * Example usage:
- *     bool verbose = false;
+ *     bool verbose = false; 
  *     int threads = 4;
  *     std::string filename;
  *     std::vector<float> thresholds;
