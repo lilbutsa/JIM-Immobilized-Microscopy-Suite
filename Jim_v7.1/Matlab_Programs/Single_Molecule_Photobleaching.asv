@@ -1,7 +1,7 @@
 %%
 clear
 %% 1) Select Input Folder
-filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 fileName = uigetdir('G:\My_Jim\SLO_Output','Select Folder Containing All Traces'); % open the dialog box to select the folder for batch files
 fileName=[fileName,filesep]; 
@@ -38,11 +38,14 @@ noStepMindivMaxRatio = 0.75;
 
 stepMeans = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepMeans.csv'],1);
 stepNum = arrayfun(@(z) find(stepMeans(z,:)~=0,1,'last')-1,1:length(stepMeans))';
+stepHeights = cell2mat(arrayfun(@(z) resize(diff(stepMeans(z,stepMeans(z,:)~=0)),[1 size(stepMeans,2)-1]),1:length(stepNum),'UniformOutput',false)');
+posStepQ = max(stepHeights')>0.1.*max(stepMeans');
+
 
 selectQ = false(4,length(stepNum));
-selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1);
-selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio;
-selectQ(3,:) = stepNum>1 & (~selectQ(2,:))';
+selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1) & ~posStepQ';
+selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio & ~posStepQ';
+selectQ(3,:) = stepNum>1 & (~selectQ(2,:))' & ~posStepQ';
 selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
 
 
@@ -68,9 +71,9 @@ for plottype=1:length(classNames)
         if i+32*(pageNumber-1)<size(toplot,1)
             subplot(8,4,i)
             hold on
-            plot(toplot(i+36*(pageNumber-1),:),'LineWidth',1.5);
-            plot(toplot2(i+36*(pageNumber-1),:),'LineWidth',1.5);
-            plot([0 size(toplot(i+36*(pageNumber-1),:),2)],[0 0] ,'-black');
+            plot(toplot(i+32*(pageNumber-1),:),'LineWidth',1.5);
+            plot(toplot2(i+32*(pageNumber-1),:),'LineWidth',1.5);
+            plot([0 size(toplot(i+32*(pageNumber-1),:),2)],[0 0] ,'-black');
             hold off
         end
     end
@@ -90,10 +93,15 @@ end
     
 %% 4) Filter All Files for Single Steps
 classCounts = zeros(4,NumberOfFiles);
+allStepCounts = zeros(6,NumberOfFiles);%{0,1,2,3,4,other}
+
 singleStepTraces = cell(NumberOfFiles,1);
 singleStepStepFrames = cell(NumberOfFiles,1);
 singleStepStepHeights = cell(NumberOfFiles,1);
 allFirstFrameIntensities = cell(NumberOfFiles,1);
+allFirstStepMeans = cell(NumberOfFiles,1);
+
+stepCountApprox = zeros(4,NumberOfFiles);
 
 allResults = zeros(18,1);
 
@@ -101,12 +109,17 @@ for fileToCheck = 1:NumberOfFiles
     stepMeans = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepMeans.csv'],1);
     stepNum = arrayfun(@(z) find(stepMeans(z,:)~=0,1,'last')-1,1:length(stepMeans))';
 
-    selectQ = false(4,length(stepNum));
-    selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1);
-    selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio;
-    selectQ(3,:) = stepNum>1 & (~selectQ(2,:))';
-    selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
+    stepHeights = cell2mat(arrayfun(@(z) resize(diff(stepMeans(z,stepMeans(z,:)~=0)),[1 size(stepMeans,2)-1]),1:length(stepNum),'UniformOutput',false)');
+    posStepQ = max(stepHeights')>0.1.*max(stepMeans');
     
+    
+    selectQ = false(4,length(stepNum));
+    selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1) & ~posStepQ';
+    selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio & ~posStepQ';
+    selectQ(3,:) = stepNum>1 & (~selectQ(2,:))' & ~posStepQ';
+    selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
+
+    stepCountApprox(:,fileToCheck) = arrayfun(@(z) nnz(sum((stepHeights'<-3/(4.*z).*max(stepMeans') & ~posStepQ))>z-1),1:4);
     
     traces=csvread(channel1{fileToCheck},1);
     stepPoints = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepPoints.csv'],1);
@@ -115,10 +128,88 @@ for fileToCheck = 1:NumberOfFiles
     singleStepTraces{fileToCheck} = traces(selectQ(1,:),:);
     singleStepStepFrames{fileToCheck} = stepPoints(selectQ(1,:),2);
     singleStepStepHeights{fileToCheck} = stepMeans(selectQ(1,:),1)-stepMeans(selectQ(1,:),2);
-    allFirstFrameIntensities{fileToCheck} = traces(:,1);
+
+    allFirstFrameIntensities{fileToCheck} = traces(:,2);
+    %allFirstFrameIntensities{fileToCheck} = traces(selectQ(1,:),1);
+    allFirstStepMeans{fileToCheck} = stepMeans(:,1);
 end
 allResults = mean(sum(classCounts));
 allResults(2:5) = mean(classCounts');
+%% approximate step numbers
+stepMeans = cell2mat(singleStepStepHeights);
+firstIntensities = cell2mat(allFirstFrameIntensities);
+figure
+hold on
+histogram(stepMeans,'Normalization','pdf')
+histogram(firstIntensities,'Normalization','pdf')
+hold off
+%% approximate step count
+
+fileToCheck = 1;
+pageNumber = 1;
+
+maxSecondMeanFirstMeanRatio=0.25;
+
+noStepMindivMaxRatio = 0.75;
+
+stepMeans = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepMeans.csv'],1);
+stepNum = arrayfun(@(z) find(stepMeans(z,:)~=0,1,'last')-1,1:length(stepMeans))';
+stepHeights = cell2mat(arrayfun(@(z) resize(diff(stepMeans(z,stepMeans(z,:)~=0)),[1 size(stepMeans,2)-1]),1:length(stepNum),'UniformOutput',false)');
+posStepQ = max(stepHeights')>0.1.*max(stepMeans');
+
+
+selectQ = false(4,length(stepNum));
+selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1) & ~posStepQ';
+selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio & ~posStepQ';
+selectQ(3,:) = stepNum>1 & (~selectQ(2,:))' & ~posStepQ';
+selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
+
+
+traces=csvread(channel1{fileToCheck},1);
+stepPoints = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepPoints.csv'],1);
+stepPoints = horzcat(stepPoints,zeros(length(stepPoints),1));
+for i=1:length(stepPoints)
+    stepPoints(i,stepNum(i)+2) = size(traces,2);
+end
+stepFitTraces = cell2mat(arrayfun(@(x) cell2mat(arrayfun(@(z)zeros(stepPoints(x,z+1)-stepPoints(x,z),1)+stepMeans(x,z),1:(stepNum(x)+1),'UniformOutput',false)'),1:length(stepMeans),'UniformOutput',false))';
+
+classNames = {'1 Step Traces','2 Step Trace','3 Step Trace','4 Step Tra'};
+
+
+for plottype=1:length(classNames)
+    toplot = traces(selectQ(plottype,:),:);
+    toplot2 = stepFitTraces(selectQ(plottype,:),:);
+    
+    fig = figure('Name',classNames{plottype})
+    set(gcf, 'Position', [100, 100, 700, 800])
+    axes('XScale', 'linear', 'YScale', 'linear','LineWidth',2, 'FontName','Times')
+    for i=1:32
+        if i+32*(pageNumber-1)<size(toplot,1)
+            subplot(8,4,i)
+            hold on
+            plot(toplot(i+32*(pageNumber-1),:),'LineWidth',1.5);
+            plot(toplot2(i+32*(pageNumber-1),:),'LineWidth',1.5);
+            plot([0 size(toplot(i+32*(pageNumber-1),:),2)],[0 0] ,'-black');
+            hold off
+        end
+    end
+    han=axes(fig,'visible','off'); 
+    han.Title.Visible='on';
+    han.XLabel.Visible='on';
+    han.YLabel.Visible='on';
+    ylabel(han,'Intensity (a.u.)');
+    xlabel(han,'Frames');
+    title(han,classNames{plottype});
+
+    print([saveFolder 'Example_' strrep(classNames{plottype},' ','_') '_File_' num2str(fileToCheck) '_Page_' num2str(pageNumber)], '-dpng', '-r600');
+    print([saveFolder 'Example_' strrep(classNames{plottype},' ','_') '_File_' num2str(fileToCheck) '_Page_' num2str(pageNumber)], '-depsc', '-r600');  
+end
+
+
+
+
+arrayfun(@(z) nnz(sum((stepHeights'<-3/(4.*z).*max(stepMeans') & ~posStepQ))>z-1),1:4);
+
 
 %% Combined Bleaching Rate
 
@@ -205,7 +296,7 @@ allResults(10) = bestFitParams2(2);
 
 stepMeans = cell2mat(singleStepStepHeights);
 
-x = mean(stepMeans)-3*std(stepMeans):std(stepMeans)/100:mean(stepMeans)+3*std(stepMeans);
+x = mean(stepMeans)-4*std(stepMeans):std(stepMeans)/100:mean(stepMeans)+4*std(stepMeans);
 x = x(x>0);
 y = 100.*arrayfun(@(z) nnz(stepMeans<z),x)./length(stepMeans);
 
@@ -244,6 +335,7 @@ allResults(14) = baselineNormalNoiseStdDev;
 %% Fit Initial Intensities
 
 firstIntensities = cell2mat(allFirstFrameIntensities);
+%firstIntensities = cell2mat(allFirstStepMeans);
 
 x = 1:max(firstIntensities)/1000:4*max(firstIntensities);
 y = 100.*arrayfun(@(z) nnz(firstIntensities<z),x)./length(firstIntensities);
@@ -283,16 +375,16 @@ print([saveFolder 'MultiStep_Fit_nmer_overlay'], '-depsc', '-r600');
 
 allResults(15:18) = 100.*bestFitParams4;
 
-allResults(19) = mean(cell2mat(allFirstFrameIntensities))/xZero;
-allResults(19) = sum(bestFitParams4.*[1 2 3 4]);
-
+allResults(19) = mean(cell2mat(allFirstStepMeans))/xZero;
+allResults(20) = sum(bestFitParams4.*[1 2 3 4]);
+allResults(21) = mean(cell2mat(allFirstStepMeans));
 %% Summerise Results
 
 f=figure;
 set(gcf, 'Position', [100, 100, 500, 400])
 t=uitable(f,'Data',allResults','Position', [0, 0, 500, 400]);
 outputNames = {'Mean Count per FOV','Mean Single Step Traces per FOV','Mean No Step Traces per FOV','Mean Multi-Step Traces per FOV','Mean Other Traces per FOV','Bleach Rate per Frame', 'Mean Bleach Frame','10% bleaching Frame','Bleaching Half Life'...
-    'Read Noise (Std. Dev.)','Mean Single Step Intensity','Log Normal Fit Mean','Log Normal Shape Parameter','Baseline Normal Noise Std Dev','Monomer Percent','Dimer Percent','Trimer Percent','Tetramer Percent'};
+    'Read Noise (Std. Dev.)','Mean Single Step Intensity','Log Normal Fit Mean','Log Normal Shape Parameter','Baseline Normal Noise Std Dev','Monomer Percent','Dimer Percent','Trimer Percent','Tetramer Percent','Label Ratio (All Initial/Single Steps)','Label Ratio (Distribution Fit)','Mean Initial Intensity'};
 t.RowName = outputNames;
  
 outputNames = replace(replace(outputNames,' ','_'),'%','p.c.');

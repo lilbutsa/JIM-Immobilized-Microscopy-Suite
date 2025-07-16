@@ -38,11 +38,14 @@ noStepMindivMaxRatio = 0.75;
 
 stepMeans = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepMeans.csv'],1);
 stepNum = arrayfun(@(z) find(stepMeans(z,:)~=0,1,'last')-1,1:length(stepMeans))';
+stepHeights = cell2mat(arrayfun(@(z) resize(diff(stepMeans(z,stepMeans(z,:)~=0)),[1 size(stepMeans,2)-1]),1:length(stepNum),'UniformOutput',false)');
+posStepQ = max(stepHeights')>0.1.*max(stepMeans');
+
 
 selectQ = false(4,length(stepNum));
-selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1);
-selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio;
-selectQ(3,:) = stepNum>1 & (~selectQ(2,:))';
+selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1) & ~posStepQ';
+selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio & ~posStepQ';
+selectQ(3,:) = stepNum>1 & (~selectQ(2,:))' & ~posStepQ';
 selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
 
 
@@ -68,9 +71,9 @@ for plottype=1:length(classNames)
         if i+32*(pageNumber-1)<size(toplot,1)
             subplot(8,4,i)
             hold on
-            plot(toplot(i+36*(pageNumber-1),:),'LineWidth',1.5);
-            plot(toplot2(i+36*(pageNumber-1),:),'LineWidth',1.5);
-            plot([0 size(toplot(i+36*(pageNumber-1),:),2)],[0 0] ,'-black');
+            plot(toplot(i+32*(pageNumber-1),:),'LineWidth',1.5);
+            plot(toplot2(i+32*(pageNumber-1),:),'LineWidth',1.5);
+            plot([0 size(toplot(i+32*(pageNumber-1),:),2)],[0 0] ,'-black');
             hold off
         end
     end
@@ -90,11 +93,15 @@ end
     
 %% 4) Filter All Files for Single Steps
 classCounts = zeros(4,NumberOfFiles);
+allStepCounts = zeros(6,NumberOfFiles);%{0,1,2,3,4,other}
+
 singleStepTraces = cell(NumberOfFiles,1);
 singleStepStepFrames = cell(NumberOfFiles,1);
 singleStepStepHeights = cell(NumberOfFiles,1);
 allFirstFrameIntensities = cell(NumberOfFiles,1);
 allFirstStepMeans = cell(NumberOfFiles,1);
+
+stepCountApprox = zeros(4,NumberOfFiles);
 
 allResults = zeros(18,1);
 
@@ -102,12 +109,17 @@ for fileToCheck = 1:NumberOfFiles
     stepMeans = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepMeans.csv'],1);
     stepNum = arrayfun(@(z) find(stepMeans(z,:)~=0,1,'last')-1,1:length(stepMeans))';
 
-    selectQ = false(4,length(stepNum));
-    selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1);
-    selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio;
-    selectQ(3,:) = stepNum>1 & (~selectQ(2,:))';
-    selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
+    stepHeights = cell2mat(arrayfun(@(z) resize(diff(stepMeans(z,stepMeans(z,:)~=0)),[1 size(stepMeans,2)-1]),1:length(stepNum),'UniformOutput',false)');
+    posStepQ = max(stepHeights')>0.1.*max(stepMeans');
     
+    
+    selectQ = false(4,length(stepNum));
+    selectQ(1,:) = stepNum==1 & stepMeans(:,1)>0 & abs(stepMeans(:,2)) < maxSecondMeanFirstMeanRatio .* stepMeans(:,1) & ~posStepQ';
+    selectQ(2,:) = stepNum ==0 | arrayfun(@(z) min(stepMeans(z,1:(stepNum(z)+1)))/max(stepMeans(z,1:(stepNum(z)+1))),1:length(stepNum))'>noStepMindivMaxRatio & ~posStepQ';
+    selectQ(3,:) = stepNum>1 & (~selectQ(2,:))' & ~posStepQ';
+    selectQ(4,:) = ~selectQ(1,:) & ~selectQ(2,:) & ~selectQ(3,:);
+
+    stepCountApprox(:,fileToCheck) = arrayfun(@(z) nnz(sum((stepHeights'<-3/(4.*z).*max(stepMeans') & ~posStepQ))>z-1),1:4);
     
     traces=csvread(channel1{fileToCheck},1);
     stepPoints = csvread([fileparts(channel1{fileToCheck}) filesep 'Channel_1_StepPoints.csv'],1);
@@ -116,11 +128,14 @@ for fileToCheck = 1:NumberOfFiles
     singleStepTraces{fileToCheck} = traces(selectQ(1,:),:);
     singleStepStepFrames{fileToCheck} = stepPoints(selectQ(1,:),2);
     singleStepStepHeights{fileToCheck} = stepMeans(selectQ(1,:),1)-stepMeans(selectQ(1,:),2);
-    allFirstFrameIntensities{fileToCheck} = traces(:,1);
+
+    allFirstFrameIntensities{fileToCheck} = traces(:,2);
+    %allFirstFrameIntensities{fileToCheck} = traces(selectQ(1,:),1);
     allFirstStepMeans{fileToCheck} = stepMeans(:,1);
 end
 allResults = mean(sum(classCounts));
 allResults(2:5) = mean(classCounts');
+
 
 %% Combined Bleaching Rate
 
@@ -207,7 +222,7 @@ allResults(10) = bestFitParams2(2);
 
 stepMeans = cell2mat(singleStepStepHeights);
 
-x = mean(stepMeans)-3*std(stepMeans):std(stepMeans)/100:mean(stepMeans)+3*std(stepMeans);
+x = mean(stepMeans)-4*std(stepMeans):std(stepMeans)/100:mean(stepMeans)+4*std(stepMeans);
 x = x(x>0);
 y = 100.*arrayfun(@(z) nnz(stepMeans<z),x)./length(stepMeans);
 
@@ -246,6 +261,7 @@ allResults(14) = baselineNormalNoiseStdDev;
 %% Fit Initial Intensities
 
 firstIntensities = cell2mat(allFirstFrameIntensities);
+%firstIntensities = cell2mat(allFirstStepMeans);
 
 x = 1:max(firstIntensities)/1000:4*max(firstIntensities);
 y = 100.*arrayfun(@(z) nnz(firstIntensities<z),x)./length(firstIntensities);

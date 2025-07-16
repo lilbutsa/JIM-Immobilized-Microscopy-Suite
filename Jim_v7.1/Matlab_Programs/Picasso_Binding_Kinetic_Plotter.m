@@ -1,0 +1,144 @@
+%%
+% - Filter data in picasso
+% - open data in render
+% - drift correct
+% - link
+%  - select areas
+%  - file->save picked localizations
+%  - open it here
+%% Select Single File
+[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Parameter File');
+picData = h5read([sysVar.pathName,sysVar.fileName],'/locs');
+%% OR combine all _picked.hdf5 from a folder 
+sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
+sysVar.fileName=[sysVar.fileName,filesep]; 
+
+sysVar.allFiles = dir(fullfile(sysVar.fileName, '**\*.*'));
+sysVar.toselect = arrayfun(@(z)contains([sysVar.allFiles(z).name],'.hdf5','IgnoreCase',true),1:length(sysVar.allFiles));
+
+sysVar.allFiles = arrayfun(@(z)[sysVar.allFiles(z).folder,filesep,sysVar.allFiles(z).name],find(sysVar.toselect),'UniformOutput',false)';
+
+picData = [];
+for i=1:length(sysVar.allFiles)
+    picData = [picData;h5read(sysVar.allFiles{i},'/locs')];
+end
+
+%%
+timePerFrame = 0.2;
+timeUnits = 's';
+%% Select Output File
+fileName = uigetdir(); % open the dialog box to select the folder for batch files
+saveFolder=[fileName,filesep];
+%% Off Rate with single exponential
+sysVar.len = cast(vertcat(picData.len),'double')';
+x = sort(sysVar.len).*timePerFrame;
+y =100.* [1:length(x)]./length(x);
+
+by = @(b,bx)( b(1).*(1-exp(-b(2)*bx)));             % Objective function
+OLS = @(b) sum((by(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [100 1/mean(x)], opts);
+
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Times', 'FontSize', 9);
+axes('XScale', 'log', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+plot(x,y,'LineWidth',2)
+plot(x,by(bestFitParams,x),'LineWidth',2)
+hold off
+xlabel(['Time (' timeUnits ')'])
+ylabel('Dissociated Molecules (%)')
+hold off
+%xlim([max(1,x(round(0.001*length(x)))-1),x(round(0.999*length(x)))])
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'OffRate_Single_Exp'], '-dpng', '-r600');
+print([saveFolder 'OffRate_Single_Exp'], '-depsc', '-r600');
+disp(['Single Exp Off rate fit = ' num2str(bestFitParams(2)) ' ' timeUnits '^{-1} and mean of ' num2str(1/bestFitParams(2)) ' ' timeUnits]);
+%% Off Rate with double exponential
+
+by2 = @(b,bx)(b(1)+b(3)-b(1)*exp(-b(2)*bx)-b(3)*exp(-b(4)*bx));             % Objective function
+OLS = @(b) sum((by2(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+%bestFitParams2 = fminsearch(OLS, [50 0.001/mean(x) 50 2/mean(x)], opts);
+bestFitParams2 = fminsearch(OLS, [50 1000 50 1/150], opts);
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Times', 'FontSize', 9);
+axes('XScale', 'log', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+plot(x,y,'LineWidth',2)
+plot(x,by2(bestFitParams2,x),'LineWidth',2)
+hold off
+%xlim([max(1,x(round(0.001*length(x)))-1),x(round(0.999*length(x)))])
+ylim([0 105])
+xlabel(['Time (' timeUnits ')'])
+ylabel('Dissociated Molecules (%)')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'OffRate_double_Exp'], '-dpng', '-r600');
+print([saveFolder 'OffRate_double_Exp'], '-depsc', '-r600');
+disp(['Double Exp Off rate fit: State 1 = ' num2str(bestFitParams2(1)) '% with rate ' num2str(bestFitParams2(2)) ' ' timeUnits '^{-1} and State 2 = ' num2str(bestFitParams2(3)) '% with rate ' num2str(bestFitParams2(4)) ' ' timeUnits '^{-1}']);
+%% On Rate with single exp
+minDarkFrames = 10;
+
+sysVar.frame = cast(vertcat(picData.frame),'double')';
+
+x = diff(sysVar.frame)-sysVar.len(1:end-1);
+x = sort(x(x>minDarkFrames)).*timePerFrame;
+y =100.* [1:length(x)]./length(x);
+
+
+by = @(b,bx)( b(1)*(1-exp(-b(2)*bx)));             % Objective function
+OLS = @(b) sum((by(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [100 1/mean(x)], opts);
+
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Times', 'FontSize', 9);
+axes('XScale', 'log', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+plot(x,y,'LineWidth',2)
+plot(x,by(bestFitParams,x),'LineWidth',2)
+hold off
+xlabel(['Time (' timeUnits ')'])
+ylabel('Associated Molecules (%)')
+hold off
+xlim([max(minDarkFrames.*timePerFrame,x(round(0.001*length(x)))),x(round(0.999*length(x)))])
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'OnRate_Single_Exp'], '-dpng', '-r600');
+print([saveFolder 'OnRate_Single_Exp'], '-depsc', '-r600');
+disp(['Single Exp On rate fit = ' num2str(bestFitParams(2)) ' ' timeUnits '^{-1} and mean of ' num2str(1/bestFitParams(2)) ' ' timeUnits]);
+
+%% On Rate with double exponential
+
+by2 = @(b,bx)(b(1)+b(3)-b(1)*exp(-b(2)*bx)-b(3)*exp(-b(4)*bx));             % Objective function
+OLS = @(b) sum((by2(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams2 = fminsearch(OLS, [50 0.5/mean(x) 50 2/mean(x)], opts);
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 8;opts.height= 6;opts.fontType= 'Times';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Times', 'FontSize', 9);
+axes('XScale', 'log', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+plot(x,y,'LineWidth',2)
+plot(x,by2(bestFitParams2,x),'LineWidth',2)
+hold off
+xlabel(['Time (' timeUnits ')'])
+ylabel('Associated Molecules (%)')
+hold off
+xlim([max(minDarkFrames.*timePerFrame,x(round(0.001*length(x)))),x(round(0.999*length(x)))])
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+print([saveFolder 'OnRate_double_Exp'], '-dpng', '-r600');
+print([saveFolder 'OnRate_double_Exp'], '-depsc', '-r600');
+disp(['Double Exp On rate fit: State 1 = ' num2str(bestFitParams2(1)) '% with rate ' num2str(bestFitParams2(2)) ' ' timeUnits '^{-1} and State 2 = ' num2str(bestFitParams2(3)) '% with rate ' num2str(bestFitParams2(4)) ' ' timeUnits '^{-1}']);
+%%

@@ -1,14 +1,8 @@
+clear
 %% 1) Select Input Folder
 imStackNumberOfChannels = 2;
 
-filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
-
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
-
-%Set JIM folder here if you have moved the generate traces file away from
-%its normal location
-%sysConst.JIM = 'C:\Users\jameswa\Google Drive\Jim\Jim_Compressed_v2';
-
 sysConst.fileEXE = '"';
 if ismac
     sysConst.JIM = [fileparts(sysConst.JIM),'/c++_Base_Programs/Mac/'];
@@ -26,47 +20,34 @@ else
     sysConst.JIM = ['"',fileparts(sysConst.JIM),'/c++_Base_Programs/Linux/'];
 end
 
-
-
-
 sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
 sysVar.fileName=[sysVar.fileName,filesep]; 
 
-sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); % find everything in the input folder
-sysVar.allFolders = sysVar.allFolders(arrayfun(@(x) isfolder(cell2mat(x)),sysVar.allFolders));
-sysVar.allFolders = sysVar.allFolders(3:end);
-sysVar.allFolders = arrayfun(@(x)[x{1},filesep],sysVar.allFolders,'UniformOutput',false);
+sysVar.allFiles = dir(fullfile(sysVar.fileName, '**\*.*'));
+sysVar.toselect = arrayfun(@(z)contains([sysVar.allFiles(z).name],'Channel_1_Fluorescent_Intensities.csv','IgnoreCase',true),1:length(sysVar.allFiles));
 
-if filesInSubFolders
-    sysVar.allSubFolders = sysVar.allFolders;
-    sysVar.allFolders = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),sysVar.allSubFolders,'UniformOutput',false);
-    sysVar.allFolders = arrayfun(@(x)x{:}(3:end),sysVar.allFolders,'UniformOutput',false);
-    sysVar.allFolders = horzcat(sysVar.allFolders{:})';
-    sysVar.allFolders = sysVar.allFolders(arrayfun(@(x) isfolder(cell2mat(x)),sysVar.allFolders));
-    sysVar.allFolders = arrayfun(@(x)[x{1},filesep],sysVar.allFolders,'UniformOutput',false);
-end
+sysVar.allFiles = arrayfun(@(z)sysVar.allFiles(z).folder,find(sysVar.toselect),'UniformOutput',false)';
 
-sysVar.allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),sysVar.allFolders','UniformOutput',false);
-sysVar.allFiles = horzcat(sysVar.allFiles{:})';
-
-sysVar.allFiles = sysVar.allFiles(contains(sysVar.allFiles,'Channel_1_Fluorescent_Intensities.csv','IgnoreCase',true));
-
-
+clear("allData");
 for j=1:size(sysVar.allFiles,1)
     allData(j).intensityFileNames = cell(imStackNumberOfChannels,1);
     allData(j).backgroundFileNames = cell(imStackNumberOfChannels,1);
+    allData(j).stepPoints = cell(imStackNumberOfChannels,1);
+    allData(j).stepMeans = cell(imStackNumberOfChannels,1);
     for i=1:imStackNumberOfChannels
-    allData(j).intensityFileNames{i} = [fileparts(sysVar.allFiles{j}) filesep 'Channel_' num2str(i) '_Fluorescent_Intensities.csv'];
-    allData(j).backgroundFileNames{i} = [fileparts(sysVar.allFiles{j}) filesep 'Channel_' num2str(i) '_Fluorescent_Backgrounds.csv'];
+        allData(j).intensityFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_' num2str(i) '_Fluorescent_Intensities.csv'];
+        allData(j).backgroundFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_' num2str(i) '_Fluorescent_Backgrounds.csv'];
+        allData(j).stepPointsFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_',num2str(i),'_StepPoints.csv'];
+        allData(j).stepMeansFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_',num2str(i),'_StepMeans.csv'];
     end
 end
 
-NumberOfFiles=length(allData);
+NumberOfFiles=length(sysVar.allFiles);
 
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %%
 stepfitChannel = 1;
-stepfitThreshold = 20;
+stepfitThreshold = 4;
 fileToCheck = 1;
 
 
@@ -163,10 +144,10 @@ for i=1:28
             set(gca,'Ylim',sort([sysVar.yliml(2)*sysVar.ratio sysVar.yliml(2)]))
         end
 
-        for stepfitChannel = 1:imStackNumberOfChannels
-            if ~isempty(sysVar.allstepPoints{stepfitChannel})
-                sysVar.stepPoints = sysVar.allstepPoints{stepfitChannel};
-                sysVar.stepMeans = sysVar.allstepMeans{stepfitChannel};
+        for stepfitChannelin = 1:imStackNumberOfChannels
+            if ~isempty(sysVar.allstepPoints{stepfitChannelin})
+                sysVar.stepPoints = sysVar.allstepPoints{stepfitChannelin};
+                sysVar.stepMeans = sysVar.allstepMeans{stepfitChannelin};
     
                 sysVar.count = 0;
                 sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
@@ -176,12 +157,12 @@ for i=1:28
                     end
                     sysVar.stepPlot(j) = sysVar.stepMeans(i+28*(montage.pageNumber-1),sysVar.count);
                 end
-                if stepfitChannel == 1
+                if stepfitChannelin == 1
                     if imStackNumberOfChannels>1
                         yyaxis left
                     end
                     plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(1)),'-black','LineWidth',2)
-                elseif stepfitChannel == 2
+                elseif stepfitChannelin == 2
                     yyaxis right
                     plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
                 else
