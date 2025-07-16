@@ -29,7 +29,7 @@ fclose(sysVar.fid);
 matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
-additionalExtensionsToRemove = 1; %remove extra .ome from working folder name if you want to
+additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
 
 [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
 
@@ -65,7 +65,7 @@ else
     sysConst.JIM = ['"',fileparts(sysConst.JIM),'/c++_Base_Programs/Linux/'];
 end
 
-[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
+[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image sysVar.file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
 
 completeName = [sysVar.pathName,sysVar.fileName];
 [sysVar.fileNamein,sysVar.name,~] = fileparts(completeName);%get the name of the tiff image
@@ -84,17 +84,17 @@ completeName = ['"',completeName,'" '];
 
 
 %% 2) Organise Image Stack into channels 
-imStackMultipleFiles = true ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
+imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 2; % Input the number of channels in the data
+imStackNumberOfChannels = 3; % Input the number of channels in the data
 
-imStackDisableMetadata = true; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
+imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
 
 imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
-imStackChannelsToTransform = '';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
+imStackChannelsToTransform = '2 3';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
 imStackVerticalFlipChannel = '0 0';% For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
 imStackHorizontalFlipChannel = '1 0';% Same as vertical
 imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel
@@ -102,7 +102,7 @@ imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the
 
 % Don't touch from here
  
-if (length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackVerticalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackHorizontalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>=length(sscanf(imStackRotateChannel,"%f")) )
+if (length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackVerticalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackHorizontalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackRotateChannel,"%f")) )
         errordlg('Check that channelsToTransform, VerticalFlipChannel, HorizontalFlipChannel and RotateChannel all have the same number of parameters.','Error Inputting Parameters. channelsToTransform should be the list of channels that need to be transformed. VerticalFlipChannel and HorizontalFlipChannel should state whether the respective channel should (1) or shouldnt (0) be flipped. rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel'); 
 end
 
@@ -161,15 +161,15 @@ disp('Organization completed');
 %% 3) Align Channels and Calculate Drifts
 alignIterations = 1; % Number of times to iterate drift correction calculations - 1 is fine if there minimal drift in the reference frames
 
-alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 100;% 
+alignStartFrame = 12;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 12;% 
 
-alignMaxShift = 50.00; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
+alignMaxShift = 30; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
 %regarless of this value
-alignOutputStacks = true;
+alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
 %Parameters for Automatic Alignment
@@ -177,7 +177,7 @@ alignMaxIntensities = '65000 65000 65000';% Set a threshold so that during chann
 alignSNRCutoff = 0.1; % Set a minimum alignment SNR to throw warnings 
 
 %Parameters for Manual Alignment
-alignManually = true ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
+alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
 alignXOffset = '0';
 alignYOffset = '0';
 alignRotationAngle = '0';
@@ -263,11 +263,11 @@ disp('Alignment completed');
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
-detectionStartFrame = '1 0'; %first frame of the reference region for detection for each channel
-detectionEndFrame = '100 0'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = '1 -5 1'; %first frame of the reference region for detection for each channel
+detectionEndFrame = '5 -1 5'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = '1 0';
+detectWeights = '1 1 1';
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -312,26 +312,26 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff =1; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 0.2; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectLeftEdge = 5;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
-detectRightEdge = 5;% Excluded particles closer to the Right edge than this. 
-detectTopEdge = 5;% Excluded particles closer to the Top edge than this. 
-detectBottomEdge =5;% Excluded particles closer to the Bottom edge than this. 
+detectLeftEdge = 10;% Excluded particles closer to the left edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases
+detectRightEdge = 10;% Excluded particles closer to the Right edge than this. 
+detectTopEdge = 10;% Excluded particles closer to the Top edge than this. 
+detectBottomEdge = 10;% Excluded particles closer to the Bottom edge than this. 
 
-detectMinCount = 7; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 detectMinEccentricity = -0.10; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-detectMaxEccentricity = 0.5;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+detectMaxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
 detectMinLength = 0.00; % Minimum number of pixels for the major axis of the best fit ellipse
 detectMaxLength = 10000.00; % Maximum number of pixels for the major axis of the best fit ellipse
 
 detectMaxDistFromLinear = 10000.00; % Maximum distance that a pixel can diviate from the major axis.
 
-detectMinSeparation = 6.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = 5.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
 % Visualisation saturationg percentages
 
@@ -431,7 +431,7 @@ end
 
 %% 7) Expand Regions
 expandForegroundDist = 4.10; % Distance to dilate the ROIs by to make sure all flourescence from the ROI is measured
-expandBackInnerDist = 4.10; % Minimum distance to dilate beyond the ROI to measure the local background
+expandBackInnerDist = 7.10; % Minimum distance to dilate beyond the ROI to measure the local background
 expandBackOuterDist = 30.00; % Maximum distance to dilate beyond the ROI to measure the local background
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -482,6 +482,17 @@ for j = 1:imStackNumberOfChannels
     system(sysVar.cmd);    
 end
 
+%% Step-fit
+stepfitEnable = true;
+stepfitChannel = 1;
+stepfitThreshold = 5;
+if stepfitEnable
+    sysVar.cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
+    system(sysVar.cmd);
+end
+
+disp('Step fitting completed');
+%% Save Parameters
 
 sysConst.falsetrue = ['false';'true '];
 sysConst.variableString = ['Date, ', datestr(datetime('today'))...
@@ -536,6 +547,9 @@ sysConst.variableString = ['Date, ', datestr(datetime('today'))...
     ,'\nexpandBackInnerDist,', num2str(expandBackInnerDist)...
     ,'\nexpandBackOuterDist,', num2str(expandBackOuterDist)...
     ,'\ntraceVerboseOutput,', sysConst.falsetrue(traceVerboseOutput+1,:)...
+    ,'\nstepfitEnable,', sysConst.falsetrue(stepfitEnable+1,:)...
+    ,'\nstepfitChannel,', num2str(stepfitChannel)...
+    ,'\nstepfitThreshold,', num2str(stepfitThreshold)...
     ];
 
 sysVar.fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
@@ -549,12 +563,13 @@ sysVar.fileID = fopen([sysVar.path,sysVar.file],'w');
 fprintf(sysVar.fileID, sysVar.variableString);
 fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber = 9; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
-montage.timePerFrame = 1;%Set to zero to just have frames
-montage.timeUnits = 'frames'; % Unit to use for x axis 
+montage.pageNumber =2; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.timePerFrame = 6;%Set to zero to just have frames
+montage.timeUnits = 's'; % Unit to use for x axis 
+montage.showStepfit = true;
 
 %don't touch from here
-
+for toCollapse = 1
 if ~exist([workingDir 'Examples' filesep], 'dir')
     mkdir([workingDir 'Examples' filesep])%make a subfolder with that name
 end
@@ -576,6 +591,11 @@ sysVar.fact(1) = ceil(log10(max(max(sysVar.traces1))))-2;
 if imStackNumberOfChannels>1
     sysVar.traces2=sysVar.allTraces{2};
     sysVar.fact(2) = ceil(log10(max(max(sysVar.traces2))))-2;
+end
+
+if montage.showStepfit && stepfitEnable
+    sysVar.stepPoints = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepPoints.csv'],1);
+    sysVar.stepMeans = csvread([workingDir,'Channel_',num2str(stepfitChannel),'_StepMeans.csv'],1);
 end
 
 
@@ -608,7 +628,22 @@ for i=1:28
         plot(montage.timeaxis,sysVar.traces1(i+28*(montage.pageNumber-1),:)./(10.^sysVar.fact(1)),'LineWidth',2)
         
         plot([0 max(montage.timeaxis)],[0 0] ,'-black');
-       
+        
+        if montage.showStepfit && stepfitEnable
+            sysVar.count = 0;
+            sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
+            for j=1:size(sysVar.traces1,2)
+                if ismember(j-1,sysVar.stepPoints(i+28*(montage.pageNumber-1),:))
+                    sysVar.count = sysVar.count +1;
+                end
+                sysVar.stepPlot(j) = sysVar.stepMeans(i+28*(montage.pageNumber-1),sysVar.count);
+            end
+            if stepfitChannel == 1
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(1)),'-black','LineWidth',2)
+            elseif stepfitChannel == 2
+                plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(2)),'-black','LineWidth',2)
+            end
+        end
 
         if imStackNumberOfChannels>1
             yyaxis right
@@ -630,7 +665,6 @@ for i=1:28
             yyaxis left
             set(gca,'Ylim',sort([sysVar.yliml(2)*sysVar.ratio sysVar.yliml(2)]))
         end
-
         xlim([0 max(montage.timeaxis)])
         hold off
     end
@@ -641,7 +675,7 @@ movegui(sysVar.fig);
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
 print([workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
 savefig(sysVar.fig,[workingDir 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
-
+end
 %% 11)Extract Individual Trace and montage
 montage.traceNo = 285;
 montage.start = 3;
@@ -890,6 +924,11 @@ parfor i=1:sysConst.NumberOfFiles
         system(cmd);    
     end
     
+    if stepfitEnable
+        cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',workingDir,'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',workingDir,'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
+        system(cmd);
+    end
+    
     fileID = fopen([workingDir,'Trace_Generation_Variables.csv'],'w');
     fprintf(fileID, sysConst.variableString);
     fclose(fileID);
@@ -912,7 +951,6 @@ sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false);
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepMeans.csv']),'UniformOutput',false);
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepPoints.csv']),'UniformOutput',false);
-    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*Trace_Generation_Variables.csv']),'UniformOutput',false);
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Detected_Filtered_Measurements.csv']),'UniformOutput',false);];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
 

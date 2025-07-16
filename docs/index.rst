@@ -18,6 +18,7 @@ Contents
    installation	
    getting_started
    begin_here_generate_traces
+   basic_c++_programs
    output_file_formats
    Jimbob
    tut_1_single_channel
