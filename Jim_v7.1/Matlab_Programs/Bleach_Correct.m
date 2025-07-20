@@ -30,7 +30,7 @@ NumberOfFiles=length(sysVar.allFiles);
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 
 %%
-bleachCorrectChannel = 3;
+bleachCorrectChannel = 1;
 meanBleachFrame = 21.06*65/10;%362*2;%
 parfor fileNo=1:length(allData)
     
@@ -52,14 +52,14 @@ parfor fileNo=1:length(allData)
 
     bleachFit = cell2mat(arrayfun(@(z) Amat*(correctedSteps(z,:)') ,1:size(traces,1),'UniformOutput' ,false))';
 
-    outputString = ['Each row is a particle. Each column is a Frame\n ' strjoin(arrayfun(@(z) strjoin(arrayfun(@num2str,bleachCorrected(z,:),'UniformOutput',false),','),1:size(bleachCorrected,1),'UniformOutput',false),'\n')];
+    outputString = ['Each row is a particle. Each column is a Frame,Bleach Corrected With Mean Bleach Frame =,' num2str(meanBleachFrame) '\n ' strjoin(arrayfun(@(z) strjoin(arrayfun(@num2str,bleachCorrected(z,:),'UniformOutput',false),','),1:size(bleachCorrected,1),'UniformOutput',false),'\n')];
 
     fileID = fopen(allData(fileNo).bleachCorrectedFileNames{bleachCorrectChannel},'w');
     fprintf(fileID, outputString);
     fclose(fileID);
 
 
-    outputString = ['Each row is a particle. Each column is a Frame\n ' strjoin(arrayfun(@(z) strjoin(arrayfun(@num2str,bleachFit(z,:),'UniformOutput',false),','),1:size(bleachFit,1),'UniformOutput',false),'\n')];
+    outputString = ['Each row is a particle. Each column is a Frame,Bleach Corrected With Mean Bleach Frame =,' num2str(meanBleachFrame) '\n ' strjoin(arrayfun(@(z) strjoin(arrayfun(@num2str,bleachFit(z,:),'UniformOutput',false),','),1:size(bleachFit,1),'UniformOutput',false),'\n')];
 
 
     fileID = fopen(allData(fileNo).bleachFitFileNames{bleachCorrectChannel},'w');
@@ -67,34 +67,19 @@ parfor fileNo=1:length(allData)
     fclose(fileID);
 
 end
-%%
-for fileNo=51
-    
-    traces = csvread(allData(fileNo).intensityFileNames{bleachCorrectChannel},1);
-
-    disp([fileNo,size(traces,1) ,size(traces,2)]);
-
-    Amat = zeros(length(traces(1,:)),length(traces(1,:)));
-    for i=1:length(traces(1,:))
-        for j=1:i
-            Amat(i,j) = exp((j-i)./meanBleachFrame);
-        end
-    end
-
-    correctedSteps = cell2mat(arrayfun(@(z) lsqnonneg(Amat,traces(z,:)') ,1:size(traces,1),'UniformOutput' ,false))';
-
-    bleachCorrected = cumsum(correctedSteps')';
-
-    bleachFit = cell2mat(arrayfun(@(z) Amat*(correctedSteps(z,:)') ,1:size(traces,1),'UniformOutput' ,false))';
-end
 
 %%
-traceNo = 111;
+fileNo=1;
+traces = csvread(allData(fileNo).intensityFileNames{bleachCorrectChannel},1);
+bleachFit = csvread(allData(fileNo).bleachFitFileNames{bleachCorrectChannel},1);
+bleachCorrected = csvread(allData(fileNo).bleachCorrectedFileNames{bleachCorrectChannel},1);
+
+traceNo = 11;
 figure
 hold on
 plot(traces(traceNo,:))
-plot(bleachCorrected(traceNo,:))
 plot(bleachFit(traceNo,:))
+plot(bleachCorrected(traceNo,:))
 hold off
 %%
 allSteps = correctedSteps(:);
@@ -102,29 +87,3 @@ allSteps = allSteps(allSteps>0.0001);
 figure
 histogram(allSteps)
 disp(mean(allSteps))
-%%
-stepPoints = csvread(allData(fileNo).stepPointsFileNames{bleachCorrectChannel},1);
-stepMeans = csvread(allData(fileNo).stepMeansFileNames{bleachCorrectChannel},1);
-%%
-traceNo = 99;
-
-count = 0;
-stepPlot = 0.*[1:size(traces,2)];
-for j=1:size(traces,2)
-    if ismember(j-1,stepPoints(traceNo,:))
-        count = count +1;
-    end
-    stepPlot(j) = stepMeans(traceNo,count);
-end
-
-figure
-hold on
-plot(traces(traceNo,:))
-plot(bleachCorrected(traceNo,:))
-plot(bleachFit(traceNo,:))
-plot(stepPlot)
-hold off
-
-%%
-
-%%

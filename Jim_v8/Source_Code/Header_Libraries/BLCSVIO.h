@@ -63,6 +63,7 @@ namespace BLCSVIO {
 				for (int i = 0; i < numofcolumns - 1; i++)ss >> dataline[i] >> c1;
 				ss >> dataline[numofcolumns - 1];
 				tableout.push_back(dataline);
+				std::cout << tableout.size()<<" " << dataline.size() << "\n";
 			}
 
 			myfile.close();

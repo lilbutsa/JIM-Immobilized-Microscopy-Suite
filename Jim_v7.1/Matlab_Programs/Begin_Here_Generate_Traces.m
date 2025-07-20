@@ -191,8 +191,6 @@ displayMax = 0.99;
 
 if (alignManually && (length(split(alignXOffset))<imStackNumberOfChannels-1 || length(split(alignYOffset))<imStackNumberOfChannels-1 || length(split(alignRotationAngle))<imStackNumberOfChannels-1 || length(split(alignScalingFactor))<imStackNumberOfChannels-1))
         errordlg('alignXOffset,alignYOffset,alignRotationAngle and alignScalingFactor each require one value for each channel that needs to be aligned to channel 1, separated by a space. e.g. ''5 -5'' for 3 channel data'); 
-elseif (~alignManually && length(split(alignMaxIntensities))<imStackNumberOfChannels)
-        errordlg('alignMaxIntensities requires one value for each channel separated by a space. e.g. ''65000 65000'' for 2 channel data'); 
 end
 
 

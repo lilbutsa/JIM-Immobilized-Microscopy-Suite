@@ -1,31 +1,15 @@
 %%
 clear
 %% 1) Select Input Folder
-numberOfChannels = 2;
-
-filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+numberOfChannels = 3;
 
 sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
 sysVar.fileName=[sysVar.fileName,filesep]; 
 
-sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); % find everything in the input folder
-sysVar.allFolders = sysVar.allFolders(arrayfun(@(x) isfolder(cell2mat(x)),sysVar.allFolders));
-sysVar.allFolders = sysVar.allFolders(3:end);
-sysVar.allFolders = arrayfun(@(x)[x{1},filesep],sysVar.allFolders,'UniformOutput',false);
+sysVar.allFiles = dir(fullfile(sysVar.fileName, '**\*.*'));
+sysVar.toselect = arrayfun(@(z)contains([sysVar.allFiles(z).name],'Channel_1_Fluorescent_Intensities.csv','IgnoreCase',true),1:length(sysVar.allFiles));
 
-if filesInSubFolders
-    sysVar.allSubFolders = sysVar.allFolders;
-    sysVar.allFolders = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),sysVar.allSubFolders,'UniformOutput',false);
-    sysVar.allFolders = arrayfun(@(x)x{:}(3:end),sysVar.allFolders,'UniformOutput',false);
-    sysVar.allFolders = horzcat(sysVar.allFolders{:})';
-    sysVar.allFolders = sysVar.allFolders(arrayfun(@(x) isfolder(cell2mat(x)),sysVar.allFolders));
-    sysVar.allFolders = arrayfun(@(x)[x{1},filesep],sysVar.allFolders,'UniformOutput',false);
-end
-
-sysVar.allFiles = arrayfun(@(y)arrayfun(@(x)[cell2mat(y),x.name],dir(cell2mat(y))','UniformOutput',false),sysVar.allFolders','UniformOutput',false);
-sysVar.allFiles = horzcat(sysVar.allFiles{:})';
-
-sysVar.allFiles = sysVar.allFiles(contains(sysVar.allFiles,'Channel_1_Fluorescent_Intensities.csv','IgnoreCase',true));
+sysVar.allFiles = arrayfun(@(z)sysVar.allFiles(z).folder,find(sysVar.toselect),'UniformOutput',false)';
 
 for j=1:size(sysVar.allFiles,1)
     allData(j).intensityFileNames = cell(numberOfChannels,1);
@@ -33,34 +17,34 @@ for j=1:size(sysVar.allFiles,1)
     allData(j).stepPoints = cell(numberOfChannels,1);
     allData(j).stepMeans = cell(numberOfChannels,1);
     for i=1:numberOfChannels
-        allData(j).intensityFileNames{i} = [fileparts(sysVar.allFiles{j}) filesep 'Channel_' num2str(i) '_Fluorescent_Intensities.csv'];
-        allData(j).backgroundFileNames{i} = [fileparts(sysVar.allFiles{j}) filesep 'Channel_' num2str(i) '_Fluorescent_Backgrounds.csv'];
-        allData(j).stepPointsFileNames{i} = [fileparts(sysVar.allFiles{j}) filesep 'Channel_',num2str(i),'_StepPoints.csv'];
-        allData(j).stepMeansFileNames{i} = [fileparts(sysVar.allFiles{j}) filesep 'Channel_',num2str(i),'_StepMeans.csv'];
+        allData(j).intensityFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_' num2str(i) '_Fluorescent_Intensities.csv'];
+        allData(j).backgroundFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_' num2str(i) '_Fluorescent_Backgrounds.csv'];
+        allData(j).stepPointsFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_',num2str(i),'_StepPoints.csv'];
+        allData(j).stepMeansFileNames{i} = [sysVar.allFiles{j} filesep 'Channel_',num2str(i),'_StepMeans.csv'];
     end
 end
 
-NumberOfFiles=length(allData);
+NumberOfFiles=length(sysVar.allFiles);
 
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %% Select the folder to save output images to
-sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
+sysVar.fileName = uigetdir(sysVar.fileName); % open the dialog box to select the folder for batch files
 saveFolder=[sysVar.fileName,filesep];
 
 %% detect experiment settings
 
-concentrationIdentifier = {'_40pM','_60pM','_80pM','_100pM','_150pM'};
-concentrations = [40 60 80 100 150];
+concentrationIdentifier = {'10pM_','_20pM','_40pM','_50pM','_60pM','_75pM','_80pM','_100pM'};
+concentrations = [10 20 40 50 60 75 80 100];
 
-minutesPerFrameIdentifier = {'_6spf','_24spf','_30spf'};
-minutesPerFrame = [6/60, 24/60, 30/60];
+minutesPerFrameIdentifier = {'_72sf','_36sf','_48sf','_4sf'};
+minutesPerFrame = [72/60 36/60 48/60 4/60];
 
-reagentIdentifier = {'Batch1' 'Batch2'};
+reagentIdentifier = {'SLO_VLPs','SLO_Liposomes','PFO_VLPs','PFO_Liposomes'};
 
-singleMoleculeIntensities = [1 1;1 1];% have one for each channel each line is for each reagent/rep, set it to one to just keep it as camera intensity
+singleMoleculeIntensities = [1 251.8;1 310;1 377.75;1 411.8];% have one for each channel, each line is for each reagent/rep, set it to one to just keep it as camera intensity
 
 
-replicateIdentifier = {'Rep1','Rep2','Rep3','Rep4'};
+replicateIdentifier = arrayfun(@(z) ['P' num2str(z)] ,1:15 ,'UniformOutput' ,false);
 
 for i=1:NumberOfFiles
     for j=1:length(concentrationIdentifier)
@@ -132,7 +116,6 @@ for i=1:numOfExps
         end
 
     end
-
     
 end
 
@@ -148,6 +131,8 @@ xlabel('Initial Intensity')
 ylabel('count')
 
 %% 3) View Single Step Filters
+stepChannel = 2;
+altStepChannel = 1;
 
 expToCheck=1;
 pageNumber = 1;
@@ -155,7 +140,7 @@ pageNumber = 1;
 channel1Name = 'Liposome Int.';
 channel2Name = 'Gasdermin';
 
-minInitialIntensity = 100;
+minInitialIntensity = 200;
 maxInitialIntensity = 10000;
 
 maxRemainingSignalAfterStep = 0.25; %Ratio of step heights -  1000 for no step fitting
@@ -164,9 +149,9 @@ maxSignalLossForNoPop = 0.5;%If step height ratio is greater than this for no st
 
 particleTypeNames = {'No Step','Single Step','Multi Step','Other'};
 
-sysVar.SH = expData(expToCheck).allStepHeights{1};
-sysVar.temp = expData(expToCheck).allStepMeans{1};
-sysVar.NOS = expData(expToCheck).allNumOfSteps{1};
+sysVar.SH = expData(expToCheck).allStepHeights{stepChannel};
+sysVar.temp = expData(expToCheck).allStepMeans{stepChannel};
+sysVar.NOS = expData(expToCheck).allNumOfSteps{stepChannel};
 
 sysVar.maxStepPos = arrayfun(@(z)find(sysVar.SH(z,:)==min(sysVar.SH(z,:)),1),1:length(sysVar.SH))';
 
@@ -195,7 +180,7 @@ if ~exist([saveFolder 'Examples' filesep], 'dir')
     mkdir([saveFolder 'Examples' filesep])%make a subfolder with that name
 end
 
-for plottype=1:length(particleTypeNames)
+for plottype=1:1%length(particleTypeNames)
     sysVar.tracePos = find(expData(expToCheck).traceType==plottype);
 
     sysVar.fig = figure('Name',particleTypeNames{plottype});
@@ -281,10 +266,12 @@ for plottype=1:length(particleTypeNames)
 
 
             for j=3:numberOfChannels
-                sysVar.traces=sysVar.allTraces{j};
+                yyaxis right
+                sysVar.traces=expData(expToCheck).allTraces{j};
+                sysVar.traces=sysVar.traces(sysVar.tracePos,:);
                 montage.c = colororder;
                 sysVar.fact(j) = max(sysVar.traces2(i,:))./(10.^sysVar.fact(2))./max(sysVar.traces(i,:));
-                plot(montage.timeaxis,sysVar.traces(i,:).*sysVar.fact(j),'-','LineWidth',2,'Color',montage.c(j,:))
+                plot(sysVar.timeaxis,sysVar.traces(i,:).*sysVar.fact(j),'-','LineWidth',2,'Color',montage.c(j,:))
 
                 % channel 2 step fit if it exists
                 sysVar.stepPoints = expData(expToCheck).allStepPoints{j};
@@ -295,13 +282,13 @@ for plottype=1:length(particleTypeNames)
         
                     sysVar.count = 0;
                     sysVar.stepPlot = 0.*[1:size(sysVar.traces1,2)];
-                    for j=1:size(sysVar.traces1,2)
-                        if ismember(j-1,sysVar.stepPoints(i,:))
+                    for k=1:size(sysVar.traces1,2)
+                        if ismember(k-1,sysVar.stepPoints(i,:))
                             sysVar.count = sysVar.count +1;
                         end
-                        sysVar.stepPlot(j) = sysVar.stepMeans(i,sysVar.count);
+                        sysVar.stepPlot(k) = sysVar.stepMeans(i,sysVar.count);
                     end
-                    plot(montage.timeaxis,sysVar.stepPlot./(10.^sysVar.fact(j)),'-black','LineWidth',1)
+                    plot(sysVar.timeaxis,sysVar.stepPlot.*(sysVar.fact(j)),'-black','LineWidth',1)
                 end
 
             end
@@ -333,10 +320,10 @@ end
 %% Filter all particles
 for expToCheck = 1:length(expData)
 
-    sysVar.SH = expData(expToCheck).allStepHeights{1};
-    sysVar.temp = expData(expToCheck).allStepMeans{1};
-    sysVar.NOS = expData(expToCheck).allNumOfSteps{1};
-    sysVar.SP = expData(expToCheck).allStepPoints{1};
+    sysVar.SH = expData(expToCheck).allStepHeights{stepChannel};
+    sysVar.temp = expData(expToCheck).allStepMeans{stepChannel};
+    sysVar.NOS = expData(expToCheck).allNumOfSteps{stepChannel};
+    sysVar.SP = expData(expToCheck).allStepPoints{stepChannel};
     sysVar.maxStepPos = arrayfun(@(z)find(sysVar.SH(z,:)==min(sysVar.SH(z,:)),1),1:length(sysVar.SH))';
     
     sysVar.toselect = sysVar.temp(:,1)<minInitialIntensity | sysVar.temp(:,1)>maxInitialIntensity;
@@ -364,12 +351,11 @@ singleStepData = expData;
 for expToCheck = 1:length(expData)
     sysVar.toselect = (expData(expToCheck).traceType==2);
 
-    sysVar.SH = expData(expToCheck).allStepHeights{1};
-    sysVar.temp = expData(expToCheck).allStepMeans{1};
-    sysVar.NOS = expData(expToCheck).allNumOfSteps{1};
-    sysVar.SP = expData(expToCheck).allStepPoints{1};
+    sysVar.SH = expData(expToCheck).allStepHeights{stepChannel};
+    sysVar.temp = expData(expToCheck).allStepMeans{stepChannel};
+    sysVar.NOS = expData(expToCheck).allNumOfSteps{stepChannel};
+    sysVar.SP = expData(expToCheck).allStepPoints{stepChannel};
     sysVar.maxStepPos = arrayfun(@(z)find(sysVar.SH(z,:)==min(sysVar.SH(z,:)),1),1:length(sysVar.SH))';
-
 
     singleStepData(expToCheck).numOfTraces = nnz(sysVar.toselect);
     singleStepData(expToCheck).stepFrame = arrayfun(@(z) sysVar.SP(z,sysVar.maxStepPos(z)+1),1:length(sysVar.SP))';
@@ -398,4 +384,17 @@ for expToCheck = 1:length(expData)
 
         end
     end
+
+    sysVar.SH = expData(expToCheck).allStepHeights{altStepChannel};
+    sysVar.SP = expData(expToCheck).allStepPoints{altStepChannel};
+    sysVar.maxStepPos = arrayfun(@(z)find(sysVar.SH(z,:)==min(sysVar.SH(z,:)),1),1:length(sysVar.SH))';
+
+    singleStepData(expToCheck).altStepFrame = arrayfun(@(z) sysVar.SP(z,sysVar.maxStepPos(z)+1),1:length(sysVar.SP))';
+    singleStepData(expToCheck).altStepFrame = singleStepData(expToCheck).altStepFrame(sysVar.toselect);
 end
+%% 
+expToCheck = 1;
+myData = singleStepData(expToCheck).allStepHeights{2};
+myData = myData(:,1);
+figure
+histogram (myData);

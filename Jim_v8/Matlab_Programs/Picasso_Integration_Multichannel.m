@@ -1,22 +1,155 @@
-%% Run Generate Traces before this. If using batch do NOT 
+%% Run Generate Traces before this. If using batch set deleteWorkingImageStacks = false;
 %%
-threshold = 600;
-channelNum = 2;
-cmd = ['picasso localize "' workingDir 'Images_Channel_' num2str(channelNum) '.tif" -b 9 -g ' num2str(threshold) ' -bl 100'];
-system(cmd);
-%%
-picData = h5read([workingDir 'Images_Channel_2_locs.hdf5'],'/locs');
-jimDrifts = csvread([workingDir,'Detected_Filtered_Drifts_Channel_2.csv'],1,0);
+additionalExtensionsToRemove = 1; %remove extra .ome from working folder name if you want to
+[sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
+
+%Set JIM folder here if you have moved the generate traces file away from
+%its normal location
+%sysConst.JIM = 'C:\Users\jameswa\Google Drive\Jim\Jim_Compressed_v2';
+
+
+% Default directory for input file selector e.g.
+%sysVar.defaultFolder = 'G:\My_Jim';
+sysVar.defaultFolder = [fileparts(sysConst.JIM) filesep 'Examples_To_Run' filesep]; %by default it will go to the example files
+
+% Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1
+sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
+
+%Don't Touch From Here
+sysConst.fileEXE = '"';
+if ismac
+    sysConst.JIM = [fileparts(sysConst.JIM),'/c++_Base_Programs/Mac/'];
+    source = dir([sysConst.JIM,'/*']);
+    for j=1:length(source)
+        cmd = ['chmod +x "',sysConst.JIM,source(j).name,'"'];
+        system(cmd);
+    end
+    sysConst.JIM = ['"',sysConst.JIM];
+    
+elseif ispc
+    sysConst.JIM = ['"',fileparts(sysConst.JIM),'\c++_Base_Programs\Windows\'];
+    sysConst.fileEXE = '.exe"';
+else
+    sysConst.JIM = ['"',fileparts(sysConst.JIM),'/c++_Base_Programs/Linux/'];
+end
+
+
+[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
+
+completeName = [sysVar.pathName,sysVar.fileName];
+[sysVar.fileNamein,sysVar.name,~] = fileparts(completeName);%get the name of the tiff image
+for j=1:additionalExtensionsToRemove
+    sysVar.workingDir = [sysVar.fileNamein,filesep,sysVar.name];
+    [sysVar.fileNamein,sysVar.name,~] = fileparts(sysVar.workingDir);
+end
+workingDir = [sysVar.fileNamein,filesep,sysVar.name,filesep];
+
+
+completeName = ['"',completeName,'" '];
+
+
+%% Run Picasso on channel
+bigTiff = false;% set this to true if a single channel is >4gb
+picassoThreshold = 180;
+picassoChannelNum = 2;%channel to run picasso on
+
+picassoDriftSegments = 0; %set to 0 to use jim
+
+if bigTiff
+    cmd = [sysConst.JIM,'Picasso_Raw_Converter',sysConst.fileEXE,' "',workingDir 'Raw_Image_Stack_Channel_' num2str(picassoChannelNum) '.tif" "',workingDir,'Raw_Image_Stack_Channel_' num2str(picassoChannelNum) '"'];
+    system(cmd);
+    cmd = ['picasso localize "' workingDir 'Raw_Image_Stack_Channel_' num2str(picassoChannelNum) '.raw" -b 9 -g ' num2str(picassoThreshold) ' -bl 100 -d ',num2str(picassoDriftSegments)];
+    system(cmd);
+else
+    cmd = ['picasso localize "' workingDir 'Raw_Image_Stack_Channel_' num2str(picassoChannelNum) '.tif" -b 9 -g ' num2str(picassoThreshold) ' -bl 100 -d ',num2str(picassoDriftSegments)];
+    system(cmd);
+end
+
+%% OR drift correct picasso output using JIM
+picData = h5read([workingDir,'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs.hdf5'],'/locs');
+jimDrifts = csvread([workingDir,'Alignment_Channel_',num2str(picassoChannelNum),'.csv'],1,0);
 
 for i=1:length(picData.x)
     picData.x(i) = picData.x(i)+jimDrifts(picData.frame(i)+1,1);
     picData.y(i) = picData.y(i)+jimDrifts(picData.frame(i)+1,2);
 end
 
-struct2hdf5(picData,'/locs',workingDir(1:end-1),'Images_Channel_2_locs_undrift.hdf5');
-copyfile([workingDir 'Images_Channel_2_locs.yaml'],[workingDir 'Images_Channel_2_locs_undrift.yaml']);
+struct2hdf5(picData,'/locs',workingDir(1:end-1),['Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift.hdf5']);
+copyfile([workingDir 'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs.yaml'],[workingDir,'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift.yaml']);
+
+%% Link localization
+picassoLinkDist = 5;
+picassoLinkFrames = 10;
+cmd = ['picasso link "' workingDir 'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift.hdf5" -d ',num2str(picassoLinkDist),' -t ',num2str(picassoLinkFrames)];
+system(cmd);
+
+%% View overlay
+displayMin = 0.05; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 0.98; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+
+
+sysVar.imout = cast(imread([workingDir,'Image_For_Detection_Partial_Mean.tiff']),'double');
+tosort = sort(sysVar.imout(:));
+sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
+end
+
+cmd = ['picasso render "' workingDir 'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift.hdf5" -o 1 -b none --scaling yes -c gray -s'];
+system(cmd);
+
+sysVar.imout = imread([workingDir 'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift.png']);
+sysVar.imout = im2double(sysVar.imout(:, :, 1));
+tosort = sort(sysVar.imout(:));
+tosort = tosort(tosort>0);
+sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(2,j);
+end
+
+cmd = ['picasso render "' workingDir 'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift_link.hdf5" -o 1 -b none --scaling yes -c gray -s'];
+system(cmd);
+
+sysVar.imout = imread([workingDir 'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift_link.png']);
+sysVar.imout = im2double(sysVar.imout(:, :, 1));
+tosort = sort(sysVar.imout(:));
+tosort = tosort(tosort>0);
+sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+for j=1:3
+    sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(3,j);
+end
+
+
+figure('Name','Detection Image - Red, Picasso Unlinked - Green, Picasso Linked - Blue')
+imshow(sysVar.combinedImage)
+
+%% Select Linked that are colocalized
+
+%sysVar.imout = cast(imread([workingDir,'Detected_Filtered_Regions.tif']),'uint16');
+
+
+jimPos = csvread([workingDir,'Detected_Filtered_Positions.csv'],1,0);
+
+jimPosX = 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %%
-jimPos = csvread([workingDir 'Expanded_Channel_2_ROI_Positions.csv'],1,0);
+jimPos = csvread([workingDir 'Expanded_ROI_Positions_Channel_',num2str(picassoChannelNum),'.csv'],1,0);
 
 imWidth = jimPos(1,1);
 imHeight = jimPos(1,2);
@@ -32,7 +165,7 @@ for i=2:size(jimPos,1)
     end
 end
 %%
-picData = h5read([workingDir 'Images_Channel_2_locs_undrift.hdf5'],'/locs');
+picData = h5read([workingDir 'Raw_Image_Stack_Channel_',num2str(picassoChannelNum),'_locs_undrift.hdf5'],'/locs');
 
 %%
 picData.group = cast(zeros(length(picData.x),1),'int32');

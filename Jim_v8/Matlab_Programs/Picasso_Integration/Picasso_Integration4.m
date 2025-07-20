@@ -1,9 +1,42 @@
-%% Run Generate Traces before this. If using batch do NOT 
+%% Run Generate Traces before this. If using batch set deleteWorkingImageStacks = false;
 %%
+[sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
+
+%Set JIM folder here if you have moved the generate traces file away from
+%its normal location
+%sysConst.JIM = 'C:\Users\jameswa\Google Drive\Jim\Jim_Compressed_v2';
+
+
+% Default directory for input file selector e.g.
+%sysVar.defaultFolder = 'G:\My_Jim';
+sysVar.defaultFolder = [fileparts(sysConst.JIM) filesep 'Examples_To_Run' filesep]; %by default it will go to the example files
+
+% Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1
+sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
+
+%Don't Touch From Here
+[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
+
+completeName = [sysVar.pathName,sysVar.fileName];
+[sysVar.fileNamein,sysVar.name,~] = fileparts(completeName);%get the name of the tiff image
+for j=1:additionalExtensionsToRemove
+    sysVar.workingDir = [sysVar.fileNamein,filesep,sysVar.name];
+    [sysVar.fileNamein,sysVar.name,~] = fileparts(sysVar.workingDir);
+end
+workingDir = [sysVar.fileNamein,filesep,sysVar.name,filesep];
+
+
+completeName = ['"',completeName,'" '];
+
+
+%% if less than 4gb
 threshold = 600;
 channelNum = 2;
 cmd = ['picasso localize "' workingDir 'Images_Channel_' num2str(channelNum) '.tif" -b 9 -g ' num2str(threshold) ' -bl 100'];
 system(cmd);
+%% else convert to raw first
+cmd = [JIM,'Picasso_Raw_Converter',fileEXE,' "',completeName,'" "',workingDir,'"'];
+returnVal = system(cmd);
 %%
 picData = h5read([workingDir 'Images_Channel_2_locs.hdf5'],'/locs');
 jimDrifts = csvread([workingDir,'Detected_Filtered_Drifts_Channel_2.csv'],1,0);
