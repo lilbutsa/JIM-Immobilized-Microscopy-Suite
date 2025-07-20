@@ -4,7 +4,8 @@ Basic C++ Programs
 
 This page describes the basic C++ programs included in the JIM image analysis suite. Each tool handles a specific part of the preprocessing and analysis workflow for multi-channel time-lapse microscopy data. These tools are modular, command-line driven, and designed to support batch processing and reproducible workflows.
 
-# Tiff\_Channel\_Splitter
+Tiff Channel Splitter
+====================
 
 This program is designed to separate multi-channel TIFF image stacks into individual single-channel TIFF files. It supports both standard TIFF files and OME-TIFF files, which include embedded metadata describing channel layout and image dimensions. If metadata is available, it automatically detects the number of channels and frame order. For non-OME files, users can manually specify the number of channels and their spatial transformations. The program is capable of handling large datasets via BigTIFF support and supports datasets split across multiple TIFF files.
 
@@ -56,7 +57,8 @@ In addition to channel separation, the program supports image transformations to
 * `BLTiffIO`: TIFF reading/writing and metadata handling.
 * Requires C++17 or later.
 
-# Align\_Channels
+Align Channels
+==============
 
 This program performs drift correction and inter-channel alignment on TIFF image stacks. Its primary function is to compensate for shifts due to sample drift, as well as between imaging channels due to chromatic aberration or misalignment in optical paths.
 
@@ -76,7 +78,8 @@ This program performs drift correction and inter-channel alignment on TIFF image
 * `BLImageTransform`: Image alignment and transformation operations.
 * `BLFlagParser`: Command-line argument parsing.
 
-# Mean\_of\_Frames
+Mean of Frames
+==============
 
 Generates a composite reference image from one or more channels over a defined frame range. The output of this program is typically used for particle detection.
 
@@ -147,7 +150,8 @@ This program performs particle detection on images using Laplacian of Gaussian (
 
 * `BLTiffIO`, `BLCSVIO`, `BLImageTransform`, `BLFlagParser`
 
-# Expand\_Shapes
+Expand Shapes
+=============
 
 This program takes takes the detected foreground particles and generates spatially expanded masks for both the foreground and background regions associated with each particle.
 
@@ -182,7 +186,8 @@ This program takes takes the detected foreground particles and generates spatial
 
 * `BLCSVIO`, `BLTiffIO`, `BLFlagParser`
 
-# Calculate\_Traces
+Calculate Traces
+================
 
 Extracts fluorescence traces for each ROI across all frames in a TIFF stack, with background subtraction and optional drift correction.
 
