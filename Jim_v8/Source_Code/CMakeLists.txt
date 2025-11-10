@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable -O2 optimization
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Ob2 -Oi -Ot -GL")
 
 # Set the path to the shared header files
 include_directories(${CMAKE_SOURCE_DIR}/Header_Libraries)
