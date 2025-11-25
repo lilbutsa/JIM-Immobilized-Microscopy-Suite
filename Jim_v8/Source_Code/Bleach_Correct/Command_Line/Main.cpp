@@ -42,57 +42,18 @@
 #include <numeric>
 #include "BLCSVIO.h"
 
-int nnls(std::vector<std::vector<double>>& a,int m,int n,double* b,double* x,double* rnorm,double* wp,double* zzp,int* indexp);
+int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleachFrame);
 
-using namespace std;
 
 int main(int argc, char* argv[])
 {
 
-    if (argc < 3) { std::cout << "could not read file name" << endl; return 1; }
+    if (argc < 3) { std::cout << "could not read file name.\n"; return 1; }
     std::string inputfile = argv[1];
     std::string output = argv[2];
     double meanBleachFrame = std::stod(argv[3]);
 
-    cout << "Bleach Correcting File " << inputfile << "\n";
+    Bleach_Correct(output, inputfile, meanBleachFrame);
 
-    vector<vector<double>> traces;
-    vector < string> headerLine;
-
-    traces.reserve(3000);
-
-    BLCSVIO::readVariableWidthCSV(inputfile, traces, headerLine);
-
-    int m = traces[0].size();
-
-    cout << traces.size() <<" Traces " << m << " Frames\n";
-
-
-    vector<double> fitOut(m, 0.0);
-    vector<vector<double>> bleachCorrected(traces.size(), vector<double>(m, 0));
-    vector<vector<double>> bleachFit(traces.size(), vector<double>(m, 0));
-
-    std::vector < std::vector<double>> aMat(m, std::vector<double>(m,0.0));
-    std::vector < std::vector<double>> aMatHold(m, std::vector<double>(m, 0.0));
-    for (int i = 0;i < m;i++) for (int j = i;j < m;j++)aMatHold[i][j] = exp((double)-1.0*(j - i) / meanBleachFrame);
-
-    double rnorm; 
-    vector<double> wp(m), zzp(m);
-    vector<int> indexp(m);
-
-    for (int traceCount = 0;traceCount < traces.size();traceCount++) {
-        aMat = aMatHold;
-        int retVal = nnls(aMat, m, m, traces[traceCount].data(), fitOut.data(), &rnorm, wp.data(), zzp.data(), indexp.data());
-        //int retVal = nnls(aMat, traces[traceCount], fitOut, &rnorm);
-
-        for (int i = 0;i < m;i++)for (int j = 0;j < m;j++)bleachFit[traceCount][i] += aMatHold[j][i] * fitOut[j];
-        std::partial_sum(fitOut.begin(), fitOut.end(), bleachCorrected[traceCount].begin());
-    }
-
-    headerLine.push_back("Bleach Corrected With Mean Bleach Frame =");
-    headerLine.push_back(std::to_string(meanBleachFrame));
-
-    BLCSVIO::writeCSV(output+"_Bleach_Fit.csv", bleachFit, headerLine);
-    BLCSVIO::writeCSV(output + "_Bleach_Corrected.csv", bleachCorrected, headerLine);
-
+    return 0;
 }            

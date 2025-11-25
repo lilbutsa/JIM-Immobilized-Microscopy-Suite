@@ -3,9 +3,10 @@
 #include <random>       // std::default_random_engine
 #include <chrono>       // std::chrono::system_clock
 #include "BLCSVIO.h"
+#include "../findStepHeader.hpp"
 
 
-#include "findStepHeader.hpp"
+int Step_Fitting(std::string output, std::string inputfile, double TThreshold, int maxSteps, int method);
 
 
 double erfinv(double x);
@@ -29,20 +30,10 @@ int main(int argc, char* argv[])
 	std::cout << "Step-Fitting File " << inputfile << "\n";
 
 	for (int i = 1; i < argc; i++) {
-		if (std::string(argv[i]) == "-Threshold") {
-			if (i + 1 < argc) {
-				threshold = std::stod(argv[i + 1]);
-				std::cout << "Threshold set to " << threshold;
-				threshold = 1 - threshold;
-				TThreshold = erfinv(threshold);
-				std::cout << "with T value = " << TThreshold << "\n";
-			}
-			else { std::cout << "error inputting threshold\n"; return 1; }
-		}
 		if (std::string(argv[i]) == "-TThreshold") {
 			if (i + 1 < argc) {
 				TThreshold = std::stod(argv[i + 1]);
-				threshold = erfinv(threshold);
+				threshold = erf(threshold);
 				std::cout << "T value threshold set to "<<TThreshold<<" corresponding to P value = " << 1-threshold << "\n";
 			}
 			else { std::cout << "error inputting t value threshold\n"; return 1; }
@@ -76,30 +67,7 @@ int main(int argc, char* argv[])
 		
 	}
 
-	std::vector<std::vector<double>> alltofit(3000, std::vector<double>(1000, 0));
-	std::vector<std::string> headerLine;
-	BLCSVIO::readVariableWidthCSV(inputfile, alltofit, headerLine);
-
-	if (maxSteps < 0)maxSteps = alltofit.size() / 4;
-
-	std::vector<std::vector<int>> stepPoints(alltofit.size());
-	std::vector<std::vector<double>> stepMeans(alltofit.size());
-
-	//double stdDev = 0;
-	//if(method==0)stdDev = approxNoiseStdDev(alltofit);
-
-	//std::cout << stdDev << " " << TThreshold << " " << TThreshold * TThreshold * stdDev * stdDev << "\n";
-
-	for (int fitCount = 0; fitCount < alltofit.size(); fitCount++) {
-		if (method == 0)aggarwalStepFit(alltofit[fitCount], TThreshold, maxSteps, stepPoints[fitCount], stepMeans[fitCount]);
-		if (method == 1)stasiStepFit(alltofit[fitCount], TThreshold , maxSteps, stepPoints[fitCount], stepMeans[fitCount]);
-		if (method == 2)autoStepFinder(alltofit[fitCount], maxSteps, stepPoints[fitCount], stepMeans[fitCount]);
-		if (method == 3)heuristicChangePointStepFit(alltofit[fitCount],threshold,iterations, maxSteps, stepPoints[fitCount], stepMeans[fitCount]);
-	}
-
-	BLCSVIO::writeCSV(output + "_StepPoints.csv", stepPoints, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
-	BLCSVIO::writeCSV(output + "_StepMeans.csv", stepMeans, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
-
+	return Step_Fitting(output, inputfile, TThreshold, maxSteps, method);
 	//for (int i = 0; i < 10; i++)for (int j = 0; j < 10; j++)testCase(i, 100, 0.25 * (j+1));
 	//system("PAUSE");
 }

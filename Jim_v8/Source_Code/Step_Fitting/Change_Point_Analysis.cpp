@@ -46,7 +46,8 @@ double stepprob(double* datain,int vecsize, int numofbootstraps) {
 }
 
 
-void heuristicChangePointStepFit(std::vector<double> tofit, double minStepProb,int iterations, int maxSteps, std::vector<int>& fitPoints, std::vector<double>& fitMeans) {
+void heuristicChangePointStepFit(std::vector<double> tofit, double TThreshold,int iterations, int maxSteps, std::vector<int>& fitPoints, std::vector<double>& fitMeans) {
+	double minStepProb = erf(TThreshold);
 	std::vector<std::vector<int>> savedpoints(maxSteps + 1);
 	std::vector<std::vector<double>> savedmeans(maxSteps + 1);
 
