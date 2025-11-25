@@ -65,34 +65,15 @@ double CalcMedian(std::vector<float> scores, int size)
 }
 
 
-int main(int argc, char *argv[])
+int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfile, std::string backgroundfile, std::string driftfile,bool veboseoutput)
 {
-	if (argc < 5) { std::cout << "could not read file name" << "\n"; return 1; }
-	std::string inputfile = argv[1];
-	std::string ROIfile = argv[2];
-	std::string backgroundfile = argv[3];
-	std::string output = argv[4];
 
-	bool bdrifts = false;
-	bool veboseoutput = false;
-	std::string driftfile;
+	
 	std::vector< std::vector<double> > tableofdrifts(3000, std::vector<double>(2, 0.0));
-
 	std::vector<std::string> headerLine;
 
-	for (int i = 1; i < argc; i++) {
-		if (std::string(argv[i]) == "-Drift") {
-			if (i + 1 < argc) {
-				bdrifts = true;
-				driftfile = argv[i + 1];
-				BLCSVIO::readCSV(driftfile, tableofdrifts,headerLine);
-				std::cout << "Drifts imported from " << driftfile << "\n";
-			}
-			else { std::cout << "error inputting drifts" << std::endl; return 1; }
-		}
-		if (std::string(argv[i]) == "-Verbose")veboseoutput = true;
-	}
-
+	bool bdrifts = (driftfile.length > 0);
+	if(bdrifts)BLCSVIO::readCSV(driftfile, tableofdrifts, headerLine);
 
 	BLTiffIO::TiffInput imclass(inputfile);
 
