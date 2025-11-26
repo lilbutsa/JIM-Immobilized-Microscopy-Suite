@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-int Expand_Shapes(std::string output, std::string foregroundposfile, std::string backgroundposfile, std::string extraBackgroundFileName, std::string channelAlignmentFileName, float boundaryDist, float backinnerradius, float backgroundDist)
+int Expand_Shapes(std::string output, std::string foregroundposfile, std::string backgroundposfile, std::string extraBackgroundFileName, std::string channelAlignmentFileName, float boundaryDist, float backinnerradius, float backgroundDist);
 
 //Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 
@@ -24,11 +24,11 @@ public:
         std::string extraBackgroundFileName = filebaseChar.toAscii();
         filebaseChar = inputs[4];
         std::string channelAlignmentFileName = filebaseChar.toAscii();
-        float boundaryDist = inputs[5];
-        float backinnerradius = inputs[6];
-        float backgroundDist = inputs[7];
+        float boundaryDist = inputs[5][0];
+        float backinnerradius = inputs[6][0];
+        float backgroundDist = inputs[7][0];
 
-        Expand_Shapes(output, foregroundposfile, backgroundposfile, extraBackgroundFileName, channelAlignmentFileName, boundaryDist, backinnerradius, backgroundDist);
+        Expand_Shapes(filebase, foregroundposfile, backgroundposfile, extraBackgroundFileName, channelAlignmentFileName, boundaryDist, backinnerradius, backgroundDist);
 
         std::cout << "Finished Expanding Shapes\n";
     }
@@ -40,7 +40,7 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least 8 inputs required - Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar("At least 8 inputs required - Standard input :Expand_Shapes(std::string output, std::string foregroundposfile, std::string backgroundposfile, std::string extraBackgroundFileName, std::string channelAlignmentFileName, float boundaryDist, float backinnerradius, float backgroundDist)") }));
         }
 
     }

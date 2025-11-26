@@ -25,13 +25,13 @@ public:
         int endFrame = inputs[inputs.size() - minNumOfInputs + 3][0];
         matlab::data::TypedArray<double> TransformMat = inputs[inputs.size() - minNumOfInputs + 4];
         matlab::data::ArrayDimensions dims = TransformMat.getDimensions();
-        std::vector<std::vector<float>> alignments(dims[0], std::vector<int>(dims[1], 0));
+        std::vector<std::vector<float>> alignments(dims[0], std::vector<float>(dims[1], 0));
         for (int i = 0;i < dims[0];i++)for (int j = 0;j < dims[1];j++)alignments[i][j] = (float)TransformMat[i][j];
         bool skipIndependentDrifts = inputs[inputs.size() - minNumOfInputs + 5][0];
         double maxShift = inputs[inputs.size() - minNumOfInputs + 6][0];
         bool outputAligned = inputs[inputs.size() - minNumOfInputs + 7][0];
 
-        Align_Channels(fileBase, inputfiles, startFrame, endFrame, alignments, skipIndependentDrifts, maxShift, outputAligned);
+        Align_Channels(filebase, inputFiles, startFrame, endFrame, alignments, skipIndependentDrifts, maxShift, outputAligned);
         std::cout << "Finished Aligning\n";
     }
 

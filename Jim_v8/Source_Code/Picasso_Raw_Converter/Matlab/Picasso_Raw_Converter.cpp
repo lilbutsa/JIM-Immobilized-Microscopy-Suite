@@ -4,23 +4,23 @@
 #include <iostream>
 #include <vector>
 
-int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleachFrame);
-//Standard input : ([Output File Base],[Input Traces] ,meanBleachFrame)
+int Picasso_Raw_Converter(std::string outputName, std::string fileIn);
 
+//Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 3;
+    const int minNumOfInputs = 9;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
-        std::cout << "Starting Bleach Correcting\n";
+        std::cout << "Starting Program\n";
         checkArguments(outputs, inputs);
         matlab::data::CharArray filebaseChar = inputs[0];
         std::string filebase = filebaseChar.toAscii();
-        filebaseChar = inputs[1];
-        std::string inputfile = filebaseChar.toAscii();
-        double meanBleachFrame = inputs[2][0];
 
-        Bleach_Correct(filebase, inputfile, meanBleachFrame);
-        std::cout << "Finished Bleach Correcting\n";
+        filebaseChar = inputs[1];
+        std::string fileIn = filebaseChar.toAscii();
+
+        Picasso_Raw_Converter(filebase, fileIn);
+        std::cout << "Finishing Program\n";
     }
 
 
@@ -30,7 +30,7 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least three inputs required - Standard input : ([Output File Base],[Input Traces] ,meanBleachFrame)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar("At least two inputs required - Standard input :int Picasso_Raw_Converter(std::string outputName, std::string fileIn)") }));
         }
 
     }

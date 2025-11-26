@@ -72,7 +72,7 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 	std::vector< std::vector<double> > tableofdrifts(3000, std::vector<double>(2, 0.0));
 	std::vector<std::string> headerLine;
 
-	bool bdrifts = (driftfile.length > 0);
+	bool bdrifts = (driftfile.length() > 0);
 	if(bdrifts)BLCSVIO::readCSV(driftfile, tableofdrifts, headerLine);
 
 	BLTiffIO::TiffInput imclass(inputfile);

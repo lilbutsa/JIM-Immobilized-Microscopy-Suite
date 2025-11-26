@@ -742,7 +742,7 @@ sysVar.fileName=[sysVar.fileName,filesep];
 if filesInSubFolders
     sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); % find everything in the input folder
     sysVar.allFolders = sysVar.allFolders(arrayfun(@(x) isdir(cell2mat(x)),sysVar.allFolders));
-    sysVar.allFolders = sysVar.allFolders(~startsWith(sysVar.allFolders, {'.', '..'}));
+    sysVar.allFolders = sysVar.allFolders(~startsWith(sysVar.allFolders, {[sysVar.fileName '.']}));
 else
     sysVar.allFolders = {sysVar.fileName};
 end

@@ -5,7 +5,7 @@
 #include <vector>
 
 int Detect_Particles(std::string fileBase, std::string inputfile, double gaussStdDev, double binarizecutoff, double minSeparation, double leftminDistFromEdge, double rightminDistFromEdge, double topminDistFromEdge, double bottomminDistFromEdge,
-    double minEccentricity, double maxEccentricity, double minLength, double maxLength, double minCount, double maxCount, double maxDistFromLinear, bool includeSmall)
+    double minEccentricity, double maxEccentricity, double minLength, double maxLength, double minCount, double maxCount, double maxDistFromLinear, bool includeSmall);
 //Standard input : ([Output File Base],[Input Image] , NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 
 class MexFunction : public matlab::mex::Function {
@@ -16,8 +16,8 @@ public:
         checkArguments(outputs, inputs);
         matlab::data::CharArray filebaseChar = inputs[0];
         std::string filebase = filebaseChar.toAscii();
-        matlab::data::CharArray filebaseChar = inputs[1];
-        std::string filebase = filebaseChar.toAscii();
+        filebaseChar = inputs[1];
+        std::string inputfile = filebaseChar.toAscii();
 
         double gaussStdDev = inputs[2][0];
         double binarizecutoff = inputs[3][0];
@@ -36,7 +36,7 @@ public:
         bool includeSmall = inputs[16][0];
 
 
-        Detect_Particles(fileBase, inputfile, gaussStdDev, binarizecutoff, minSeparation, leftminDistFromEdge, rightminDistFromEdge, topminDistFromEdge, bottomminDistFromEdge,
+        Detect_Particles(filebase, inputfile, gaussStdDev, binarizecutoff, minSeparation, leftminDistFromEdge, rightminDistFromEdge, topminDistFromEdge, bottomminDistFromEdge,
             minEccentricity, maxEccentricity, minLength, maxLength, minCount, maxCount, maxDistFromLinear, includeSmall);
         std::cout << "Finished dectection\n";
     }
