@@ -82,7 +82,6 @@ int main(int argc, char* argv[])
 
 	int numInputFiles = 0;
 	int particle = 1, start = 0, end = 100000000, delta = 1, average = 1;
-	int imageDepth, imageWidth, imageHeight, imagePoints, totnumofframes;
 	
 	std::string outputfile,driftfile,alignfile, measurementsfile;
 	std::vector<BLTiffIO::TiffInput*> vcinput;

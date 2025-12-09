@@ -12,9 +12,9 @@ public:
 		* maxDistfromLinear, * xEnd1LinFit, * yEnd1LinFit, * xEnd2LinFit, * yEnd2LinFit, * xBoundingBoxMin, * xBoundingBoxMax, * yBoundingBoxMin, * yBoundingBoxMax, * nearestNeighbour;
 };
 
-void componentMeasurements(std::vector<std::vector<int> >& pos /*positions vector*/, int imagewidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected);
+void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions vector*/, int imagewidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected);
 void numberimage(std::vector<std::vector<float> >& filteredcents, std::vector<uint8_t>& fn, int iw, int ih);
-std::vector<std::vector<int> > binaryToPositions(const std::vector<uint8_t> binary, const int imageWidth, const int imageHeight);
+std::vector<std::vector<uint64_t> > binaryToPositions(const std::vector<uint8_t> binary, const uint32_t imageWidth, const uint32_t imageHeight);
 
 
 int Detect_Particles(std::string fileBase, std::string inputfile, double gaussStdDev, double binarizecutoff, double minSeparation, double leftminDistFromEdge, double rightminDistFromEdge, double topminDistFromEdge, double bottomminDistFromEdge, 
@@ -23,11 +23,11 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 
 	BLTiffIO::TiffInput inputstack(inputfile);
 
-	int imageDepth = inputstack.imageDepth;
-	int imageWidth = inputstack.imageWidth;
-	int imageHeight = inputstack.imageHeight;
-	int imagePoints = imageWidth * imageHeight;
-	int totnumofframes = inputstack.numOfFrames;
+	uint32_t imageDepth = inputstack.imageDepth;
+	uint32_t imageWidth = inputstack.imageWidth;
+	uint32_t imageHeight = inputstack.imageHeight;
+	uint64_t imagePoints = imageWidth * imageHeight;
+	uint64_t totnumofframes = inputstack.numOfFrames;
 
 	//pure std c++ version
 
@@ -54,7 +54,7 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 	}
 
 	//Seperate individual ROIs in the Binary image
-	std::vector<std::vector<int> > labelledpos = binaryToPositions(detected, imageWidth, imageHeight);
+	std::vector<std::vector<uint64_t> > labelledpos = binaryToPositions(detected, imageWidth, imageHeight);
 
 	//Exclude small ROI from further analysis
 	if (!includeSmall) {
@@ -75,7 +75,7 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 	// Save the detected Binary image
 	BLTiffIO::TiffOutput(fileBase + "_Regions.tif", imageWidth, imageHeight, 8).write1dImage(detected);
 	// Save the detected Positions
-	std::vector<std::vector<int> > labelledposout = labelledpos;
+	std::vector<std::vector<uint64_t> > labelledposout = labelledpos;
 	labelledposout.insert(labelledposout.begin(), { imageWidth,imageHeight,imagePoints });
 	BLCSVIO::writeCSV(fileBase + "_Positions.csv", labelledposout, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
 	// Save initial measurements
@@ -86,7 +86,7 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 
 
 	//Filter ROIs
-	std::vector<std::vector<int> > filteredpos;
+	std::vector<std::vector<uint64_t> > filteredpos;
 	std::vector<std::vector<float> > filteredmeasurements;
 
 	for (int i = 0; i < measurementresults.size(); i++) {

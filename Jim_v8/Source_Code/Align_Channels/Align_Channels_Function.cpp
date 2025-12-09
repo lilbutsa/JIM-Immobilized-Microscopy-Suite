@@ -3,10 +3,10 @@
 #include "writeChannelAlignment.hpp"
 #include <stdexcept> 
 
-void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const uint32_t& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string& alignedStackNameBase);
+void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const float& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string& alignedStackNameBase);
 std::vector< std::vector<float>> findAlignment(std::vector< std::vector<float>>& prealignmentReference, uint32_t imageWidth, uint32_t imageHeight, float maxShift);
 
-int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, int startFrame, int endFrame, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, double maxShift, bool outputAligned)
+int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, int startFrame, int endFrame, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned)
 {
 
 	//Aim only open each file twice (thrice if auto alignment)
@@ -18,9 +18,9 @@ int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, i
 
 	const uint32_t imageWidth = is[0]->imageWidth;
 	const uint32_t imageHeight = is[0]->imageHeight;
-	const uint32_t imagePoints = imageWidth * imageHeight;
-	const uint32_t numOfFrames = is[0]->numOfFrames;
-	const uint32_t numOfChan = is.size();
+	const uint64_t imagePoints = imageWidth * imageHeight;
+	const uint64_t numOfFrames = is[0]->numOfFrames;
+	const uint64_t numOfChan = is.size();
 
 	std::vector<float> imagein(imagePoints, 0), imagetoalign(imagePoints, 0), outputImage(imagePoints, 0);
 	std::vector< std::vector<float> > prealignmentReference(numOfChan, std::vector<float>(imagePoints, 0)), imageOut(numOfChan, std::vector<float>(imagePoints, 0));
@@ -39,7 +39,7 @@ int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, i
 			is[chancount]->read1dImage(imcount, imagein);
 			std::transform(prealignmentReference[chancount].begin(), prealignmentReference[chancount].end(), imagein.begin(), prealignmentReference[chancount].begin(), std::plus<float>());
 		}
-		float divisor = (endFrame - startFrame + 1);
+		float divisor = (float)(endFrame - startFrame + 1);
 		std::transform(prealignmentReference[chancount].begin(), prealignmentReference[chancount].end(), prealignmentReference[chancount].begin(), [divisor](float val) { return val / divisor; });
 		BeforePartial.write1dImage(prealignmentReference[chancount]);
 	}

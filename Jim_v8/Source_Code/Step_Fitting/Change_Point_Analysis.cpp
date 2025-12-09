@@ -9,8 +9,9 @@
 
 double cusum(std::vector<double> datain) {
 	std::partial_sum(datain.begin(), datain.end(), datain.begin());
-	auto minMax = std::minmax(datain.begin(), datain.end());;
-	return (minMax.second - minMax.first);
+	double min = *std::min_element(datain.begin(), datain.end());
+	double max = *std::max_element(datain.begin(), datain.end());
+	return (max-min);
 
 }
 
@@ -57,7 +58,6 @@ void heuristicChangePointStepFit(std::vector<double> tofit, double TThreshold,in
 	double TVal, mean1, mean2,var1,var2;
 	int pos = 0;
 
-	double sum1, sum2;
 	//initialise point list and variance
 
 	mean1 = std::accumulate(tofit.begin(), tofit.end(), 0.0);

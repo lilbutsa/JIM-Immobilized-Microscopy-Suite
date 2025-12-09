@@ -19,7 +19,7 @@ void aggarwalStepFit(std::vector<double> tofit, double stepPenalty, int maxSteps
 	int pos = 0, minJPos = 0;
 
 	//initialise point list and variance
-	double initialVariance = calculateL2(&tofit[0], tofit.size(),mean1);
+	double initialVariance = calculateL2(&tofit[0], (int)tofit.size(),mean1);
 	means.push_back(mean1);
 	savedmeans[0] = means;
 	variance.push_back(initialVariance);
@@ -31,7 +31,7 @@ void aggarwalStepFit(std::vector<double> tofit, double stepPenalty, int maxSteps
 
 
 	//initilise proposed points and variance
-	findstepL2(tofit.data(), tofit.size(), mean1, mean2, var1, var2, pos);
+	findstepL2(tofit.data(), (int)tofit.size(), mean1, mean2, var1, var2, pos);
 	proposedpoints.push_back(pos);
 	proposedvar1.push_back(var1);
 	proposedvar2.push_back(var2);
@@ -64,7 +64,7 @@ void aggarwalStepFit(std::vector<double> tofit, double stepPenalty, int maxSteps
 
 
 		//calculate new proposed point right side
-		int newSize = minSection >= points.size() - 1 ? tofit.size() - points[minSection] : points[minSection + 1] - points[minSection];//If its the last step go to the end of data
+		size_t newSize = minSection >= points.size() - 1 ? tofit.size() - points[minSection] : points[minSection + 1] - points[minSection];//If its the last step go to the end of data
 		findstepL2(&tofit[points[minSection]], newSize, mean1, mean2, var1, var2, pos);
 		pos += points[minSection];
 		proposedpoints[minSection] = pos;

@@ -48,8 +48,8 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 
 	//find search positions for each ring
 	std::vector<std::vector<int>> foregroundSearchPos, midgroundSearchPos, backgroundSearchPos;
-	for (int i = -ceil(backgroundDist); i <= ceil(backgroundDist);i++)
-		for (int j = -ceil(backgroundDist); j <= ceil(backgroundDist);j++)
+	for (int i = (int)(-ceil(backgroundDist)); i <= (int)ceil(backgroundDist);i++)
+		for (int j = (int)(-ceil(backgroundDist)); j <= (int)ceil(backgroundDist);j++)
 			if (i * i + j * j <= boundaryDist * boundaryDist + 0.000001)foregroundSearchPos.push_back({ i * i + j * j,i,j });
 			else if (i * i + j * j <= backinnerradius * backinnerradius + 0.000001)midgroundSearchPos.push_back({ i * i + j * j,i,j });
 			else if (i * i + j * j <= backgroundDist * backgroundDist + 0.000001)backgroundSearchPos.push_back({ i * i + j * j,i,j });
@@ -179,10 +179,10 @@ std::vector<std::vector<int>> transformPosition(std::vector<double> alignIn, std
 			if (yout < 0)yout = 0;
 			if (xout > imageWidth - 1) xout = imageWidth - 1;
 			if (yout > imageHeight - 1)yout = imageHeight - 1;
-			singleLine.push_back(floor(xout) + floor(yout) * imageWidth);
-			singleLine.push_back(ceil(xout) + floor(yout) * imageWidth);
-			singleLine.push_back(floor(xout) + ceil(yout) * imageWidth);
-			singleLine.push_back(ceil(xout) + ceil(yout) * imageWidth);
+			singleLine.push_back((int)(floor(xout) + floor(yout) * imageWidth));
+			singleLine.push_back((int)(ceil(xout) + floor(yout) * imageWidth));
+			singleLine.push_back((int)(floor(xout) + ceil(yout) * imageWidth));
+			singleLine.push_back((int)(ceil(xout) + ceil(yout) * imageWidth));
 		}
 		sort(singleLine.begin(), singleLine.end());
 		singleLine.erase(unique(singleLine.begin(), singleLine.end()), singleLine.end());

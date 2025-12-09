@@ -25,13 +25,13 @@
 #include "BLTiffIO.h"
 #include "BLImageTransform.h"
 
-void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const uint32_t& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string & alignedStackNameBase) {
+void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const float& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string & alignedStackNameBase) {
 	//get image info
 	const uint32_t imageWidth = is[0]->imageWidth;
 	const uint32_t imageHeight = is[0]->imageHeight;
-	const uint32_t imagePoints = imageWidth * imageHeight;
-	const uint32_t numOfFrames = is[0]->numOfFrames;
-	const uint32_t numOfChan = is.size();
+	const uint64_t imagePoints = imageWidth * imageHeight;
+	const uint64_t numOfFrames = is[0]->numOfFrames;
+	const uint64_t numOfChan = is.size();
 	
 	std::vector<float> imaget(imagePoints, 0.0), combimage(imagePoints, 0.0);
 	std::vector<std::vector<float>> allChans(numOfChan, std::vector<float>(imagePoints, 0.0));
@@ -86,7 +86,7 @@ void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::
 
 	}
 
-	float divisor = numOfFrames;
+	float divisor = (float)numOfFrames;
 	for (int chancount = 0; chancount < numOfChan; chancount++)
 		std::transform(outputImage[chancount].begin(), outputImage[chancount].end(), outputImage[chancount].begin(), [divisor](float val) { return val / divisor; });
 	
@@ -120,7 +120,7 @@ std::vector< std::vector<float>> findAlignment(std::vector< std::vector<float>>&
 			float hmaxscale = maxscale;
 			float hmaxangle = maxangle;
 
-			for (double scale = hmaxscale - 0.1 * deltain; scale <= hmaxscale + 0.10001 * deltain; scale = scale + 0.01 * deltain)for (double angle = hmaxangle - 5.0 * deltain; angle <= hmaxangle + 5.0001 * deltain; angle = angle + 0.5 * deltain) {
+			for (float scale = hmaxscale - 0.1f * deltain; scale <= hmaxscale + 0.10001f * deltain; scale = scale + 0.01f * deltain)for (float angle = hmaxangle - 5.0f * deltain; angle <= hmaxangle + 5.0001f * deltain; angle = angle + 0.5f * deltain) {
 
 				transformclass.transform(prealignmentReference[chancount], imagein, 0, 0, angle, scale);
 				alignclass.alignIm2(imagein);

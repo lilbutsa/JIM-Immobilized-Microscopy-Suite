@@ -73,41 +73,39 @@ public:
 
 
 
-std::vector<std::vector<int> > binaryToPositions(const std::vector<uint8_t> binary,const int imageWidth, const int imageHeight) {
+std::vector<std::vector<uint64_t> > binaryToPositions(const std::vector<uint8_t> binary,const uint32_t imageWidth, const uint32_t imageHeight) {
 
-	std::vector<std::vector<int> > positions;
+	std::vector<std::vector<uint64_t> > positions;
 
-	std::vector<uint16_t>posImage(binary.size(), 0);
+	std::vector<uint32_t>posImage(binary.size(), 0);
 
 	const std::vector<int> xedges = { -1,0,1,-1,1,-1,0,1 };
 	const std::vector<int> yedges = { -1,-1,-1,0,0,1,1,1 };
 
-	int count = 0;
-	for (int i = 0;i < binary.size();i++)
+	uint32_t count = 0;
+	for (uint64_t i = 0;i < binary.size();i++)
 		if (binary[i] > 0 && posImage[i]==0) {
 			count++;
-			std::vector<int> newROI = { i };
+			std::vector<uint64_t> newROI = { i };
 
 			posImage[i] = count;
 
-			for (int j = 0;j < newROI.size();j++) {
-				int xIn = newROI[j] % imageWidth;
-				int yIn = newROI[j] / imageWidth;
+			for (size_t j = 0;j < newROI.size();j++) {
+				size_t xIn = newROI[j] % imageWidth;
+				size_t yIn = newROI[j] / imageWidth;
 
 
 				for (int k = 0;k < xedges.size();k++) {
-					int xIn2 = xIn + xedges[k];
-					int yIn2 = yIn + yedges[k];
-					int posIn = xIn2 + yIn2 * imageWidth;
+					int xIn2 = (int)xIn + xedges[k];
+					int yIn2 = (int)yIn + yedges[k];
+					uint64_t posIn = xIn2 + yIn2 * imageWidth;
 
-					if (xIn2 > -1 && xIn2 < imageWidth && yIn2 > -1 && yIn2 < imageHeight && binary[posIn] > 0 && posImage[posIn] == 0) {
+					if (xIn2 > -1 && xIn2 < (int)imageWidth && yIn2 > -1 && yIn2 < (int)imageHeight && binary[posIn] > 0 && posImage[posIn] == 0) {
 						newROI.push_back(posIn);
 						posImage[posIn] = count;
 					}
 
-
 				}
-
 
 			}
 
@@ -150,13 +148,12 @@ public:
 };
 
 
-void componentMeasurements(std::vector<std::vector<int> >& pos /*positions vector*/, int imagewidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected) {
-	measurementresults = std::vector < measurementsClass>(pos.size());
-	std::vector<float> xpos, ypos;//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x end 1, y end 1, x end 2, y end 2,X bounding Box Min, X Bounding Box Max,Y bounding Box Min, Y Bounding Box Max,Nearest Neighbour
+void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions vector*/, int imagewidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected) {
+	measurementresults = std::vector < measurementsClass>(pos.size());//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x end 1, y end 1, x end 2, y end 2,X bounding Box Min, X Bounding Box Max,Y bounding Box Min, Y Bounding Box Max,Nearest Neighbour
+	std::vector<float> xpos, ypos;
 	std::vector<float> vx2, vy2;
 	float x2, y2, xy;
-	float max, max2, min;
-	int maxpos;
+	float max, min;
 
 	//create knn for each for each ROI
 	std::vector<nearestNeighbour> ROIKNNs;
@@ -166,7 +163,7 @@ void componentMeasurements(std::vector<std::vector<int> >& pos /*positions vecto
 		xpos.resize(pos[i].size());
 		ypos.resize(pos[i].size());
 		for (int j = 0; j < pos[i].size(); j++) {
-			xpos[j] = pos[i][j] % imagewidth; ypos[j] = (int)(pos[i][j] / imagewidth);
+			xpos[j] = (float)(pos[i][j] % imagewidth); ypos[j] = (float)((int)(pos[i][j] / imagewidth));
 		}
 		//x and y centre of mass
 		*(measurementresults[i].xCentre) = (float)std::accumulate(std::begin(xpos), std::end(xpos), 0.0) / xpos.size();
@@ -179,13 +176,13 @@ void componentMeasurements(std::vector<std::vector<int> >& pos /*positions vecto
 
 
 		//best fit ellipse
-		x2 = std::inner_product(xpos.begin(), xpos.end(), xpos.begin(), 0.0) / xpos.size();
-		y2 = std::inner_product(ypos.begin(), ypos.end(), ypos.begin(), 0.0) / ypos.size();
-		xy = std::inner_product(xpos.begin(), xpos.end(), ypos.begin(), 0.0) / xpos.size();
+		x2 = (float)std::inner_product(xpos.begin(), xpos.end(), xpos.begin(), 0.0) / xpos.size();
+		y2 = (float)std::inner_product(ypos.begin(), ypos.end(), ypos.begin(), 0.0) / ypos.size();
+		xy = (float)std::inner_product(xpos.begin(), xpos.end(), ypos.begin(), 0.0) / xpos.size();
 
 		*(measurementresults[i].eccentricity) = ((x2 - y2) * (x2 - y2) + 4 * xy * xy) / ((x2 + y2) * (x2 + y2));//Eccentricity from https://docs.baslerweb.com/visualapplets/files/manuals/content/examples%20imagemoments.html
 
-		float mainAxisAngle = 0.5 * atan2f(2*xy,(x2-y2));//theta = 1/2*np.arctan2(2*mu11/mu00, (mu20 - mu02)/mu00) from https://ojskrede.github.io/inf4300/notes/week_05/ 
+		float mainAxisAngle = 0.5f * atan2f(2*xy,(x2-y2));//theta = 1/2*np.arctan2(2*mu11/mu00, (mu20 - mu02)/mu00) from https://ojskrede.github.io/inf4300/notes/week_05/ 
 
 		*(measurementresults[i].xMajorAxis) = cosf(mainAxisAngle);//x main axis
 		*(measurementresults[i].yMajorAxis) = sinf(mainAxisAngle);//y main axis
@@ -214,12 +211,12 @@ void componentMeasurements(std::vector<std::vector<int> >& pos /*positions vecto
 		*(measurementresults[i].yEnd2LinFit) = *(measurementresults[i].yCentre) + *(measurementresults[i].yMajorAxis) * max;
 
 
-		*(measurementresults[i].count) = xpos.size();
+		*(measurementresults[i].count) = (float)(xpos.size());
 
 
 		//Pixel Position of the max intensity
 		max = 0;
-		maxpos = 0;
+		uint64_t maxpos = 0;
 		for (int j = 0; j < pos[i].size(); j++) {
 			if (imagef[pos[i][j]] > max) {
 				max = imagef[pos[i][j]];
@@ -227,8 +224,8 @@ void componentMeasurements(std::vector<std::vector<int> >& pos /*positions vecto
 			}
 		}
 
-		*(measurementresults[i].xMaxPos) = maxpos % imagewidth;
-		*(measurementresults[i].yMaxPos) = (int)(maxpos / imagewidth);
+		*(measurementresults[i].xMaxPos) = (float)(maxpos % imagewidth);
+		*(measurementresults[i].yMaxPos) = (float)((int)(maxpos / imagewidth));
 
 		//max distance from linear. note xpos and y pos have subtracted their COM
 		//dist = abs(x*yvec-y*xvec)

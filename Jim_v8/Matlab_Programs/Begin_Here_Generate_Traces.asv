@@ -31,13 +31,6 @@ matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate
 %% 1) Select the input tiff file and Create a Folder for results
 additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
 
-[sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
-
-%Set JIM folder here if you have moved the generate traces file away from
-%its normal location
-%sysConst.JIM = 'C:\Users\jameswa\Google Drive\Jim\Jim_Compressed_v2';
-
-
 %Default directory for input file selector e.g.
 %sysVar.defaultFolder = 'G:\My_Jim';
 sysVar.defaultFolder = [fileparts(sysConst.JIM) filesep 'Examples_To_Run' filesep]; %by default it will go to the example files
@@ -46,30 +39,17 @@ sysVar.defaultFolder = [fileparts(sysConst.JIM) filesep 'Examples_To_Run' filese
 sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
 
 %Don't Touch From Here
-
-
-sysConst.fileEXE = '"';
-if ismac
-    sysConst.JIM = [fileparts(sysConst.JIM),'/c++_Base_Programs/Mac/'];
-    source = dir([sysConst.JIM,'/*']);
-    for j=1:length(source)
-        cmd = ['chmod +x "',sysConst.JIM,source(j).name,'"'];
-        system(cmd);
+if exist('Tiff_Channel_Splitter')~=3
+    [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%get JIM Folder
+    sysConst.JIM = [fileparts(sysConst.JIM),'/c++_Base_Programs/Matlab/'];
+    if(exist(sysConst.JIM)==7)
+        addpath(sysConst.JIM);
+    else
+        errordlg('JIMs Matlab mex files could not be found. Please select the \\c++_Base_Programs\\Matlab\\ folder in the JIM directory'); 
+        sysConst.JIM = uigetdir('*','Select the c++_Base_Programs\\Matlab folder'); % open the dialog box to select the folder for JIM programs
+        addpath(sysConst.JIM);
     end
-    sysConst.JIM = ['"',sysConst.JIM];
-    
-elseif ispc
-    sysConst.JIM = ['"',fileparts(sysConst.JIM),'\c++_Base_Programs\Windows\'];
-    sysConst.fileEXE = '.exe"';
-else
-    sysConst.JIM = ['"',fileparts(sysConst.JIM),'/c++_Base_Programs/Linux/'];
 end
-if(~exists(sysConst.JIM))
-    errordlg('JIMs c++ Base Programs could not be automatically found. Please select the \\c++_Base_Programs\\ folder and operating systems subfolder'); 
-    sysConst.JIM = uigetdir('*','Select the c++_Base_Programs\\[operating system] folder'); % open the dialog box to select the folder for JIM programs
-    sysConst.JIM=[sysConst.JIM,filesep];
-end
-
 
 [sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image sysVar.file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
 
@@ -100,14 +80,12 @@ imStackStartFrame = 1; % Part of the image stack can be completely ignored for a
 imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
 
 %Transform channels so they roughly overlay each other
-imStackChannelsToTransform = '2 3';% If no channels need to be transformed set channelsToTransform = '', otherwise channel numbers spearated by spaces '2 3' for channels 2 and 3;
-imStackVerticalFlipChannel = '0 0';% For each channel to be transformed put 1 to flip that channel or 0 to not. eg. '1 0' to flip channel 2 but not 3.
-imStackHorizontalFlipChannel = '1 0';% Same as vertical
-imStackRotateChannel = '0 180';%rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel
-
+imStackChannelTransforms = [0 0 0;0 0 0;0 0 0];
 
 % Don't touch from here
- 
+
+Tiff_Channel_Splitter(['"',workingDir,'Raw_Image_Stack',files,'"'], completeName, imStackNumberOfChannels,imStackStartFrame,imStackEndFrame,imStackChannelTransforms,true,imStackDisableMetadata,imStackMultipleFiles)
+ %%
 if (length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackVerticalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackHorizontalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackRotateChannel,"%f")) )
         errordlg('Check that channelsToTransform, VerticalFlipChannel, HorizontalFlipChannel and RotateChannel all have the same number of parameters.','Error Inputting Parameters. channelsToTransform should be the list of channels that need to be transformed. VerticalFlipChannel and HorizontalFlipChannel should state whether the respective channel should (1) or shouldnt (0) be flipped. rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel'); 
 end
@@ -742,7 +720,7 @@ sysVar.fileName=[sysVar.fileName,filesep];
 if filesInSubFolders
     sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); % find everything in the input folder
     sysVar.allFolders = sysVar.allFolders(arrayfun(@(x) isdir(cell2mat(x)),sysVar.allFolders));
-    sysVar.allFolders = sysVar.allFolders(3:end);
+    sysVar.allFolders = sysVar.allFolders(~startsWith(sysVar.allFolders, {[sysVar.fileName '.']}));
 else
     sysVar.allFolders = {sysVar.fileName};
 end

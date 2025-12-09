@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, int startFrame, int endFrame, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, double maxShift, bool outputAligned);
+int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, int startFrame, int endFrame, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned);
 //Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 
 class MexFunction : public matlab::mex::Function {
@@ -28,7 +28,7 @@ public:
         std::vector<std::vector<float>> alignments(dims[0], std::vector<float>(dims[1], 0));
         for (int i = 0;i < dims[0];i++)for (int j = 0;j < dims[1];j++)alignments[i][j] = (float)TransformMat[i][j];
         bool skipIndependentDrifts = inputs[inputs.size() - minNumOfInputs + 5][0];
-        double maxShift = inputs[inputs.size() - minNumOfInputs + 6][0];
+        float maxShift = inputs[inputs.size() - minNumOfInputs + 6][0];
         bool outputAligned = inputs[inputs.size() - minNumOfInputs + 7][0];
 
         Align_Channels(filebase, inputFiles, startFrame, endFrame, alignments, skipIndependentDrifts, maxShift, outputAligned);

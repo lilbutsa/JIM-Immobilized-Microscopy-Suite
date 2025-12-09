@@ -16,6 +16,10 @@ void rotateImage(std::vector< std::vector<uint16_t>>& imageio, int angle);
 
 int Tiff_Channel_Splitter(std::string fileBase, std::vector<std::string>& inputfiles, int numOfChan, int startFrame, int endFrame, std::vector<std::vector<int>>& tranformations,bool bBigTiff, bool bmetadata,bool bDetectMultifiles) {
 
+	BLTiffIO::MultiTiffInput mymulti(inputfiles[0]);
+
+	return 0;
+
 	std::vector<BLTiffIO::TiffInput*> vis;
 	int startFramein, endFramein;
 
@@ -34,8 +38,6 @@ int Tiff_Channel_Splitter(std::string fileBase, std::vector<std::string>& inputf
 
 
 	vis.resize(inputfiles.size());
-
-
 
 	for (int i = 0; i < vis.size(); i++) {
 		vis[i] = new BLTiffIO::TiffInput(inputfiles[i], bmetadata);

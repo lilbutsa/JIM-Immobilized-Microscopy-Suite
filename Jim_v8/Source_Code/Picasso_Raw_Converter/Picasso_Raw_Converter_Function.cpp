@@ -34,5 +34,5 @@ int Picasso_Raw_Converter(std::string outputName, std::string fileIn) {
 	}
 	ofs.close();
 
-
+	return 0;
 }

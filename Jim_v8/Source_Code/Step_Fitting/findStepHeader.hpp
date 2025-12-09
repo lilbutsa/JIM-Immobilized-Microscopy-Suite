@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-void findstepL2(double* datain, int vecsize, double& mean1, double& mean2, double& L2_1, double& L2_2, int& pos);
+void findstepL2(double* datain, size_t vecsize, double& mean1, double& mean2, double& L2_1, double& L2_2, int& pos);
 void findstepTTest(double* datain, int vecsize, double& mean1, double& mean2, int& pos, double& maxTVal);
 double calculateL2(double* datain, int vecsize, double& mean);
 double approxNoiseStdDev(std::vector<std::vector<double>> dataIn);

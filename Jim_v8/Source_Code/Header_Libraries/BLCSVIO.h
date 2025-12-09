@@ -48,11 +48,11 @@ namespace BLCSVIO {
 
 			std::string s = line;
 			size_t n = std::count(s.begin(), s.end(), ',');
-			int numofcolumns = n + 1;
+			size_t numofcolumns = n + 1;
 
 			headerLine.resize(numofcolumns);
 			std::istringstream ss(line);
-			for (int i = 0; i < numofcolumns; i++)getline(ss, headerLine[i], ',');
+			for (size_t i = 0; i < numofcolumns; i++)getline(ss, headerLine[i], ',');
 
 			char c1;  // to eat the commas
 			std::vector<vectortype> dataline(numofcolumns);
@@ -60,7 +60,7 @@ namespace BLCSVIO {
 			tableout.clear();
 			while (getline(myfile, line)) {
 				std::istringstream ss(line);  // note we use istringstream, we don't need the o part of stringstream
-				for (int i = 0; i < numofcolumns - 1; i++)ss >> dataline[i] >> c1;
+				for (size_t i = 0; i < numofcolumns - 1; i++)ss >> dataline[i] >> c1;
 				ss >> dataline[numofcolumns - 1];
 				tableout.push_back(dataline);
 				std::cout << tableout.size()<<" " << dataline.size() << "\n";
@@ -89,16 +89,16 @@ namespace BLCSVIO {
 
 			std::string s = line;
 			size_t n = std::count(s.begin(), s.end(), ',');
-			int numofcolumns = n + 1;
+			size_t numofcolumns = n + 1;
 
 			headerLine.resize(numofcolumns);
 			std::istringstream ss(line);
-			for (int i = 0; i < numofcolumns; i++)getline(ss, headerLine[i], ',');
+			for (size_t i = 0; i < numofcolumns; i++)getline(ss, headerLine[i], ',');
 
 
 			char c1;  // to eat the commas
 			size_t fixpos;
-			int streampos;
+			size_t streampos;
 			std::vector<vectortype> dataline(numofcolumns);
 			tableout.clear();
 			while (getline(myfile, line)) {

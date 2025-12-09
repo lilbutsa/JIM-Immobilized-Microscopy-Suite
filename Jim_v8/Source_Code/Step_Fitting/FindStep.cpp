@@ -3,7 +3,7 @@
 #include <functional>
 #include <algorithm>
 
-void findstepL2(double* datain, int vecsize, double& mean1, double& mean2, double& L2_1, double& L2_2, int& pos) {
+void findstepL2(double* datain, size_t vecsize, double& mean1, double& mean2, double& L2_1, double& L2_2, int& pos) {
 	
 	if (vecsize < 2) {
 		mean1 = datain[0];

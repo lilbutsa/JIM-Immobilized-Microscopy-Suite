@@ -17,8 +17,8 @@ void _lss_g1(
 /*****************************************************************************/
 int nnls(
     std::vector<std::vector<double>>& a,
-    int m,
-    int n,
+    size_t m,
+    size_t n,
     double* b,
     double* x,
     double* rnorm,
@@ -39,14 +39,14 @@ int nnls(
     /* Initialize the arrays INDEX[] and X[] */
     for (int ni = 0; ni < n; ni++) { x[ni] = 0.; index[ni] = ni; }
     int iz1 = 0;
-    int iz2 = n - 1;
+    int iz2 = (int)n - 1;
     int nsetp = 0;
     int npp1 = 0;
 
     /* Main loop; quit if all coefficients are already in the solution or
        if M cols of A have been triangulated */
     double up = 0.0;
-    int itmax; if (n < 3) itmax = n * 3; else itmax = n * n;
+    int itmax; if (n < 3) itmax = (int)n * 3; else itmax = (int)n * (int)n;
     int iter = 0;
     int k, j = 0, jj = 0;
     while (iz1 <= iz2 && nsetp < m) {
@@ -79,7 +79,7 @@ int nnls(
                near linear dependence. */
             double asave = a[j][npp1];
             up = 0.0;
-            _lss_h12(1, npp1, npp1 + 1, m, &a[j][0], 1, &up, NULL, 1, 1, 0);
+            _lss_h12(1, npp1, npp1 + 1, (int)m, &a[j][0], 1, &up, NULL, 1, 1, 0);
             double unorm = 0.0;
             if (nsetp != 0) for (int mi = 0; mi < nsetp; mi++) unorm += a[j][mi] * a[j][mi];
             unorm = sqrt(unorm);
@@ -88,7 +88,7 @@ int nnls(
                 /* Col j is sufficiently independent. Copy B into ZZ, update ZZ
                    and solve for ztest ( = proposed new value for X[j] ) */
                 for (int mi = 0; mi < m; mi++) zz[mi] = b[mi];
-                _lss_h12(2, npp1, npp1 + 1, m, &a[j][0], 1, &up, zz, 1, 1, 1);
+                _lss_h12(2, npp1, npp1 + 1, (int)m, &a[j][0], 1, &up, zz, 1, 1, 1);
                 double ztest = zz[npp1] / a[j][npp1];
                 /* See if ztest is positive */
                 if (ztest > 0.) break;
@@ -108,9 +108,9 @@ int nnls(
         if (iz1 <= iz2)
             for (int jz = iz1; jz <= iz2; jz++) {
                 jj = index[jz];
-                _lss_h12(2, nsetp - 1, npp1, m, &a[j][0], 1, &up, &a[jj][0], 1, m, 1);
+                _lss_h12(2, nsetp - 1, npp1, (int)m, &a[j][0], 1, &up, &a[jj][0], 1, (int)m, 1);
             }
-        if (nsetp != m) for (int mi = npp1; mi < m; mi++) a[j][mi] = 0.;
+        if (nsetp != m) for (int mi = npp1; mi < (int)m; mi++) a[j][mi] = 0.;
         w[j] = 0.;
 
         /* Solve the triangular system; store the solution temporarily in Z[] */

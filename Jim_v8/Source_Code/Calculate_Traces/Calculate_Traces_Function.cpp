@@ -77,21 +77,21 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 
 	BLTiffIO::TiffInput imclass(inputfile);
 
-	int imageDepth = imclass.imageDepth;
-	int imageWidth = imclass.imageWidth;
-	int imageHeight = imclass.imageHeight;
-	int imagePoints = imageWidth * imageHeight;
-	int totnumofframes = imclass.numOfFrames;
+	uint32_t imageDepth = imclass.imageDepth;
+	uint32_t imageWidth = imclass.imageWidth;
+	uint32_t imageHeight = imclass.imageHeight;
+	uint64_t imagePoints = imageWidth * imageHeight;
+	uint64_t totnumofframes = imclass.numOfFrames;
 
-	std::vector< std::vector<int> > labelledpos(3000, std::vector<int>(1000, 0));
+	std::vector< std::vector<size_t> > labelledpos(3000, std::vector<size_t>(1000, 0));
 	BLCSVIO::readVariableWidthCSV(ROIfile, labelledpos,headerLine);
 	labelledpos.erase(labelledpos.begin());
 
-	std::vector< std::vector<int> > backgroundpos(3000, std::vector<int>(1000, 0));
+	std::vector< std::vector<size_t> > backgroundpos(3000, std::vector<size_t>(1000, 0));
 	BLCSVIO::readVariableWidthCSV(backgroundfile, backgroundpos,headerLine);
 	backgroundpos.erase(backgroundpos.begin());
 
-	int numoffits = labelledpos.size();
+	size_t numoffits = labelledpos.size();
 
 	std::vector< std::vector<double> > results;
 	if(veboseoutput)results = std::vector< std::vector<double> >(totnumofframes*numoffits, std::vector<double>(20, 0));//region num, frame no, x centre, y centre,  total,  mean, std dev, median,min, max, num of points, background total, back mean, back std dev, back median,back min,back max, back num of points, total- (back mean *num of points),total- (back median *num of points)
@@ -103,13 +103,13 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 	std::vector< std::vector<float> > image(imageWidth, std::vector<float>(imageHeight));
 	std::vector< std::vector<float> > ROIdata(labelledpos.size()), backgroundData(labelledpos.size());
 	
-	for (int i = 0; i < labelledpos.size(); i++) {
+	for (size_t i = 0; i < labelledpos.size(); i++) {
 		ROIdata[i] = std::vector<float>(labelledpos[i].size());
 		backgroundData[i] = std::vector<float>(backgroundpos[i].size());
 	}
 
 	int xdrift = 0, ydrift = 0, xin, yin;
-	float mean, stddev, min, max;
+	float mean, stddev;
 	double median, xmid, ymid,totfluor;
 
 	std::vector<double> gausresult, xyztoadd(3);
@@ -119,15 +119,15 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 
 	//cout << "num of fits = " << numoffits << "\n";
 
-	for (int imagecount = 0; imagecount < totnumofframes; imagecount++) {
+	for (size_t imagecount = 0; imagecount < totnumofframes; imagecount++) {
 		//cout << "Fitting Frame Number " << imagecount << endl;
 		imclass.read2dImage(imagecount,image);
 		if (bdrifts) {
-			xdrift = round(tableofdrifts[imagecount][0]);
-			ydrift = round(tableofdrifts[imagecount][1]);
+			xdrift = (int)round(tableofdrifts[imagecount][0]);
+			ydrift = (int)round(tableofdrifts[imagecount][1]);
 		}
 
-		for (int fitcount = 0; fitcount < numoffits; fitcount++) {
+		for (size_t fitcount = 0; fitcount < numoffits; fitcount++) {
 			xmid = 0;
 			ymid = 0;
 			excludedcount = 0;
@@ -136,7 +136,7 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 				yin = (int)(labelledpos[fitcount][i] / imageWidth) - ydrift;
 				xmid += xin;
 				ymid += yin;
-				if (xin >= 0 && xin < imageWidth && yin >= 0 && yin < imageHeight) ROIdata[fitcount][i-excludedcount] = image[xin][yin]; 
+				if (xin >= 0 && xin < (int)imageWidth && yin >= 0 && yin < (int)imageHeight) ROIdata[fitcount][i-excludedcount] = image[xin][yin]; 
 				else excludedcount++;
 			}
 
@@ -144,13 +144,13 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 			ymid *= 1.0 / labelledpos[fitcount].size();
 
 			if (veboseoutput) {
-				results[imagecount + fitcount*totnumofframes][0] = fitcount;
-				results[imagecount + fitcount*totnumofframes][1] = imagecount;
+				results[imagecount + fitcount*totnumofframes][0] = (double)fitcount;
+				results[imagecount + fitcount*totnumofframes][1] = (double)imagecount;
 				results[imagecount + fitcount*totnumofframes][2] = xmid;
 				results[imagecount + fitcount*totnumofframes][3] = ymid;
 			}
 
-			pointcount = ROIdata[fitcount].size() - excludedcount;
+			pointcount = (int)ROIdata[fitcount].size() - excludedcount;
 
 			meanAndStdDev(ROIdata[fitcount], mean, stddev);
 
@@ -172,14 +172,14 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 			}
 
 			excludedcount = 0;
-			for (int i = 0; i < backgroundpos[fitcount].size(); i++) {
+			for (size_t i = 0; i < backgroundpos[fitcount].size(); i++) {
 				xin = backgroundpos[fitcount][i] % imageWidth - xdrift;
 				yin = (int)(backgroundpos[fitcount][i] / imageWidth) - ydrift;
-				if (xin >= 0 && xin < imageWidth && yin >= 0 && yin < imageHeight)backgroundData[fitcount][i- excludedcount] = image[xin][yin];
+				if (xin >= 0 && xin < (int)imageWidth && yin >= 0 && yin < (int)imageHeight)backgroundData[fitcount][i- excludedcount] = image[xin][yin];
 				else excludedcount++;
 			}
 
-			backcount = backgroundData[fitcount].size() - excludedcount;
+			backcount = (int)backgroundData[fitcount].size() - excludedcount;
 
 			meanAndStdDev(backgroundData[fitcount], mean, stddev);
 
@@ -213,4 +213,6 @@ int Calculate_Traces(std::string output,std::string inputfile, std::string ROIfi
 	BLCSVIO::writeCSV(output + "_Fluorescent_Intensities.csv", amplitudevals, "Each row is a particle. Each column is a Frame\n");
 	BLCSVIO::writeCSV(output + "_Fluorescent_Backgrounds.csv", backgroundvals, "Each row is the mean background surrounding the particle. Each column is a Frame\n");
 	
+	return 0;
+
 }

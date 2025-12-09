@@ -87,7 +87,7 @@ public:
 
     int xAlign, yAlign;
     float quadFitX, quadFitY;
-    const float pi = 3.1415926;
+    const float pi = 3.1415926f;
     float maxCCVal;
 
     inline alignImages_32f(int16_t imageWidthIn, uint16_t imageHeightIn) : imageWidth(imageWidthIn), imageHeight(imageHeightIn) {
@@ -134,8 +134,8 @@ public:
         searchPositions.clear();
         float xmax = std::max(std::min(maxDist, ((float)imageWidth) / 2), (float)0);
         float ymax = std::max(std::min(maxDist, ((float)imageHeight) / 2), (float)0);
-        for (int i = -ceil(xmax); i <= ceil(xmax);i++)
-            for (int j = -ceil(ymax); j <= ceil(ymax);j++)
+        for (int i = (int)(-ceil(xmax)); i <= (int)ceil(xmax);i++)
+            for (int j = (int)(-ceil(ymax)); j <= (int)(ceil(ymax));j++)
                 if (i * i + j * j <= maxDist * maxDist + 0.000001)searchPositions.push_back({ (i < 0 ? imageWidth + i : i) + imageWidth * (j < 0 ? imageHeight + j : j),i,j });
 
     }
@@ -235,15 +235,15 @@ public:
 
 
 class imageTransform_32f {
-    uint16_t imageWidth, imageHeight, imagePoints;
+    size_t imageWidth, imageHeight, imagePoints;
 
     float xcentre, ycentre;
 
 public:
 
-    inline imageTransform_32f(int16_t imageWidthIn, uint16_t imageHeightIn) : imageWidth(imageWidthIn), imageHeight(imageHeightIn) {
-        xcentre = imageWidth / 2.0;
-        ycentre = imageHeight / 2.0;
+    inline imageTransform_32f(size_t imageWidthIn, size_t imageHeightIn) : imageWidth(imageWidthIn), imageHeight(imageHeightIn) {
+        xcentre = imageWidth / 2.0f;
+        ycentre = imageHeight / 2.0f;
         imagePoints = imageWidth * imageHeight;
     };
 
@@ -252,8 +252,8 @@ public:
 
         output.resize(imagePoints);
 
-        const float cosVal = cos(angle * 3.14159 / 180.0) / scale;
-        const float sinVal = sin(angle * 3.14159 / 180.0) / scale;
+        const float cosVal = (float)cos(angle * 3.14159 / 180.0) / scale;
+        const float sinVal = (float)sin(angle * 3.14159 / 180.0) / scale;
         const float xConst = xcentre * (1 - cosVal) + ycentre * sinVal+ xOffset;
         const float yConst = -xcentre * sinVal + ycentre * (1 - cosVal)+ yOffset;
 
@@ -263,21 +263,21 @@ public:
             float xout = i * cosVal - j * sinVal + xConst;
             float yout = i * sinVal + j * cosVal + yConst;
 
-            int xInt = floor(xout);
-            int yInt = floor(yout);
+            int xInt = (int)floor(xout);
+            int yInt = (int)floor(yout);
 
             float xRem = xout - xInt;
             float yRem = yout - yInt;
 
-            int xInt2 = (xInt < 0 ? 0 : (xInt > imageWidth - 1 ? imageWidth - 1 : xInt));
-            int yInt2 = (yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
+            int xInt2 = (int)(xInt < 0 ? 0 : (xInt > imageWidth - 1 ? imageWidth - 1 : xInt));
+            int yInt2 = (int)(yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
             vectortype f00 = input[xInt2 + yInt2 * imageWidth];
-            yInt2 = (yInt + 1 < 0 ? 0 : (yInt + 1 > imageHeight - 1 ? imageHeight - 1 : yInt + 1));
+            yInt2 = (int)(yInt + 1 < 0 ? 0 : (yInt + 1 > imageHeight - 1 ? imageHeight - 1 : yInt + 1));
             vectortype f01 = input[xInt2 + yInt2 * imageWidth];
-            xInt2 = (xInt + 1 < 0 ? 0 : (xInt + 1 > imageWidth - 1 ? imageWidth - 1 : xInt + 1));
-            yInt2 = (yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
+            xInt2 = (int)(xInt + 1 < 0 ? 0 : (xInt + 1 > imageWidth - 1 ? imageWidth - 1 : xInt + 1));
+            yInt2 = (int)(yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
             vectortype f10 = input[xInt2 + yInt2 * imageWidth];
-            yInt2 = (yInt + 1 < 0 ? 0 : (yInt + 1 > imageHeight - 1 ? imageHeight - 1 : yInt + 1));
+            yInt2 = (int)(yInt + 1 < 0 ? 0 : (yInt + 1 > imageHeight - 1 ? imageHeight - 1 : yInt + 1));
             vectortype f11 = input[xInt2 + yInt2 * imageWidth];
 
             output[i + j * imageWidth] = f00+(f10-f00)*xRem+(f01-f00)*yRem+(f11-f10-f01+f00)*xRem*yRem;
@@ -295,21 +295,21 @@ public:
             float xout = i + xOffset;
             float yout = j + yOffset;
 
-            int xInt = floor(xout);
-            int yInt = floor(yout);
+            int xInt = (int)floor(xout);
+            int yInt = (int)floor(yout);
 
             float xRem = xout - xInt;
             float yRem = yout - yInt;
 
-            int xInt2 = (xInt < 0 ? 0 : (xInt > imageWidth - 1 ? imageWidth - 1 : xInt));
-            int yInt2 = (yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
+            int xInt2 = (int)(xInt < 0 ? 0 : (xInt > imageWidth - 1 ? imageWidth - 1 : xInt));
+            int yInt2 = (int)(yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
             vectortype f00 = input[xInt2 + yInt2 * imageWidth];
-            yInt2 = (yInt+1 < 0 ? 0 : (yInt+1 > imageHeight - 1 ? imageHeight - 1 : yInt+1));
+            yInt2 = (int)(yInt+1 < 0 ? 0 : (yInt+1 > imageHeight - 1 ? imageHeight - 1 : yInt+1));
             vectortype f01 = input[xInt2 + yInt2 * imageWidth];
-            xInt2 = (xInt+1 < 0 ? 0 : (xInt+1 > imageWidth - 1 ? imageWidth - 1 : xInt+1));
-            yInt2 = (yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
+            xInt2 = (int)(xInt+1 < 0 ? 0 : (xInt+1 > imageWidth - 1 ? imageWidth - 1 : xInt+1));
+            yInt2 = (int)(yInt < 0 ? 0 : (yInt > imageHeight - 1 ? imageHeight - 1 : yInt));
             vectortype f10 = input[xInt2 + yInt2 * imageWidth];
-            yInt2 = (yInt + 1 < 0 ? 0 : (yInt + 1 > imageHeight - 1 ? imageHeight - 1 : yInt + 1));
+            yInt2 = (int)(yInt + 1 < 0 ? 0 : (yInt + 1 > imageHeight - 1 ? imageHeight - 1 : yInt + 1));
             vectortype f11 = input[xInt2 + yInt2 * imageWidth];
 
             output[i + j * imageWidth] = f00 + (f10 - f00) * xRem + (f01 - f00) * yRem + (f11 - f10 - f01 + f00) * xRem * yRem;

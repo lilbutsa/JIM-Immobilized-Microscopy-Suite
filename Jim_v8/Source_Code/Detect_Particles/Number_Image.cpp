@@ -34,13 +34,13 @@ using namespace std;
 
 void numberimage(std::vector< std::vector<float> >& filteredcents, std::vector<uint8_t>& fn, int iw,int ih) {
 	for (int i = 0; i < filteredcents.size(); i++) {
-		int xc = round(filteredcents[i][0]);
-		int y0 = round(filteredcents[i][1]) - 2;
+		int xc = (int)round(filteredcents[i][0]);
+		int y0 = (int)round(filteredcents[i][1]) - 2;
 
 		if (y0 < 0)y0 = 0;
 		if (y0 > ih - 6)y0 = ih - 6;
 
-		int numofdigits = ceil(log10(i + 2));
+		int numofdigits = (int)ceil(log10(i + 2));
 
 		if (xc - 2 * numofdigits + 1 < 0)xc = 2 * numofdigits - 1;
 		if (xc + 2 * (numofdigits - 1) + 4 > iw)xc = iw - 2 * (numofdigits - 1) - 4;

@@ -13,7 +13,6 @@ void stasiStepFit(std::vector<double> tofit, double minTVal, int maxSteps, std::
 	double TVal, mean1, mean2;
 	int pos = 0;
 
-	double sum1, sum2;
 	//initialise point list and variance
 
 	mean1 = std::accumulate(std::begin(tofit), std::end(tofit), 0.0f);

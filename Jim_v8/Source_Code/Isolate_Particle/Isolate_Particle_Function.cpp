@@ -10,13 +10,13 @@ int Isolate_Particle(std::string outputfile, std::vector<std::string> inputfiles
 
 
 	std::vector<BLTiffIO::TiffInput*> vcinput(inputfiles.size());
-	for (int i = 0; i < inputfiles.size(); i++)vcinput[i] = new BLTiffIO::TiffInput(inputfiles[i]);
+	for (size_t i = 0; i < inputfiles.size(); i++)vcinput[i] = new BLTiffIO::TiffInput(inputfiles[i]);
 	
-	int imageDepth = vcinput[0]->imageDepth;
-	int imageWidth = vcinput[0]->imageWidth;
-	int imageHeight = vcinput[0]->imageHeight;
-	int imagePoints = imageWidth * imageHeight;
-	int totnumofframes = vcinput[0]->numOfFrames;
+	uint32_t imageDepth = vcinput[0]->imageDepth;
+	uint32_t imageWidth = vcinput[0]->imageWidth;
+	uint32_t imageHeight = vcinput[0]->imageHeight;
+	uint64_t imagePoints = imageWidth * imageHeight;
+	uint64_t totnumofframes = vcinput[0]->numOfFrames;
 
 	average = (average - 1) / 2;
 
@@ -28,17 +28,17 @@ int Isolate_Particle(std::string outputfile, std::vector<std::string> inputfiles
 
 	particle = std::max(0, std::min(particle, (int)measurements.size())); 
 	start = std::max(start, 0);
-	end = std::min(end, totnumofframes);
+	end = std::min(end, (int)totnumofframes);
 
 	std::vector<float> image1(imagePoints), alignedimage(imagePoints, 0.0);
 
-	uint32_t numOutputImages = floor(((end - start) / delta) + 1);
-	uint32_t outputStart = (measurements[particle - 1][14] - 3) + (measurements[particle - 1][16] - 3) * imageWidth;
-	uint32_t outputWidth = measurements[particle - 1][15] - measurements[particle - 1][14] + 7;
-	uint32_t outputHeight = measurements[particle - 1][17] - measurements[particle - 1][16] + 7;
+	uint32_t numOutputImages = (uint32_t)floor(((end - start) / delta) + 1);
+	uint32_t outputStart = (uint32_t)((measurements[particle - 1][14] - 3) + (measurements[particle - 1][16] - 3) * imageWidth);
+	uint32_t outputWidth = (uint32_t)(measurements[particle - 1][15] - measurements[particle - 1][14] + 7);
+	uint32_t outputHeight = (uint32_t)(measurements[particle - 1][17] - measurements[particle - 1][16] + 7);
 	uint32_t outputImagePoints = outputWidth * outputHeight;
 	uint32_t outputMontageWidth = (outputWidth + 2) * numOutputImages;
-	uint32_t outputMontagePoints = (outputWidth + 2) * (outputHeight + 2) * numOutputImages * inputfiles.size();
+	uint32_t outputMontagePoints = (outputWidth + 2) * (outputHeight + 2) * numOutputImages * (uint32_t)inputfiles.size();
 
 	std::vector<float> montage(outputMontagePoints, 65000);
 
@@ -48,7 +48,6 @@ int Isolate_Particle(std::string outputfile, std::vector<std::string> inputfiles
 
 	std::vector<float> translated(imagePoints);
 	int CountImAveraged;
-	float transxoffset, transyoffset;
 
 	imageTransform_32f transformclass(imageWidth, imageHeight);
 	std::vector<float> imagein(imagePoints), imaget(imagePoints), singleFrame(outputImagePoints);
@@ -67,7 +66,7 @@ int Isolate_Particle(std::string outputfile, std::vector<std::string> inputfiles
 		}
 		//BLTiffIO::TiffOutput tiffout(fileOutName, imageWidth, imageHeight, imageDepth, false);
 
-		for (int imcount = 0; imcount < numOutputImages; imcount++) {
+		for (size_t imcount = 0; imcount < numOutputImages; imcount++) {
 			std::vector<float> meanimage(imagePoints, 0.0);
 			CountImAveraged = 0;
 			for (int avcount = -average; avcount <= average; avcount++) {
@@ -156,5 +155,5 @@ int Isolate_Particle(std::string outputfile, std::vector<std::string> inputfiles
 
 	for (int i = 0; i < inputfiles.size(); i++)delete vcinput[i];
 
-
+	return 0;
 }

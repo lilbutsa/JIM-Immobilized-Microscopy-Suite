@@ -13,7 +13,6 @@ int Tiff_Channel_Splitter(string fileBase, vector<string>& inputfiles, int numOf
 
 int main(int argc, char* argv[])
 {
-	std::cout << "TIFF CHANNEL SPLITTER\n";
 
 
 	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
@@ -36,7 +35,7 @@ int main(int argc, char* argv[])
 	bool bBigTiff = false;
 	bool bDetectMultifiles = false;
 	vector< vector<int>> tranformations;
-	int startFrame = 1, endFrame = -1, startFramein, endFramein;
+	int startFrame = 1, endFrame = -1;
 	vector<string> inputfiles;
 
 	try {
@@ -64,19 +63,19 @@ int main(int argc, char* argv[])
 			if (std::string(argv[i]) == "-NumberOfChannels") {
 				if (i + 1 >= argc)throw std::invalid_argument("No Number of Channels Value");
 				try { numOfChan = stoi(argv[i + 1]); }
-				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Number of channels\nInput :" + std::string(argv[i + 1]) + "\n"); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid Number of channels\nInput :" + std::string(argv[i + 1]) + "\n"+e.what() + "\n"); }
 				std::cout << "Number of channels set to " << numOfChan << " \n";
 			}
 			if (std::string(argv[i]) == "-StartFrame") {
 				if (i + 1 >= argc)throw std::invalid_argument("No Number for Start Frame");
 				try { startFrame = stoi(argv[i + 1]); }
-				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid start frame\nInput :" + std::string(argv[i + 1]) + "\n"); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid start frame\nInput :" + std::string(argv[i + 1]) + "\n" + e.what() + "\n"); }
 				std::cout << "Start Frame set to " << startFrame << " \n";
 			}
 			if (std::string(argv[i]) == "-EndFrame") {
 				if (i + 1 >= argc)throw std::invalid_argument("No Number for End Frame");
 				try { endFrame = stoi(argv[i + 1]); }
-				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid end frame\nInput :" + std::string(argv[i + 1]) + "\n"); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid end frame\nInput :" + std::string(argv[i + 1]) + "\n" + e.what() + "\n"); }
 				std::cout << "End Frame set to " << endFrame << " \n";
 			}
 			if (std::string(argv[i]) == "-BigTiff") bBigTiff = true;
@@ -95,7 +94,7 @@ int main(int argc, char* argv[])
 					transformArguments.push_back(stoi(inputStr));
 				}
 
-				int channelsToTransform = transformArguments.size();
+				size_t channelsToTransform = transformArguments.size();
 				if (channelsToTransform % 4 != 0)throw std::invalid_argument("Invalid Number of transform parameters.\n Four parameters required per channel:\n[Channels to transform] [Vertical Flip each channel (0 = no, 1 = yes)] [Horizontal Flip each channel (0 = no, 1 = yes)] [Rotate each channel clockwise (0, 90, 180 or 270)]");
 				tranformations = vector<vector<int>>(channelsToTransform / 4, vector<int>(4, 0));
 				try {
@@ -111,7 +110,7 @@ int main(int argc, char* argv[])
 						std::cout << "\n";
 					}
 				}
-				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid transform input\nInput :" + std::string(argv[i + 1]) + "\n"); }
+				catch (const std::invalid_argument & e) { throw std::invalid_argument("Invalid transform input\nInput :" + std::string(argv[i + 1]) + "\n" + e.what() + "\n"); }
 			}
 
 		}

@@ -52,7 +52,7 @@ int Expand_Shapes(std::string output, std::string foregroundposfile, std::string
 int main(int argc, char *argv[])
 {
 
-	float boundaryDist = 4.1, backgroundDist = 20, backinnerradius = 0;
+	float boundaryDist = 4.1f, backgroundDist = 20.0f, backinnerradius = 0.0f;
 
 	bool bExtraBackground = false, bChannelAlignment = false;
 	std::string extraBackgroundFileName = "", channelAlignmentFileName = "";

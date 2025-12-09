@@ -4,7 +4,7 @@
 #include <numeric>
 #include "BLCSVIO.h"
 
-int nnls(std::vector<std::vector<double>>& a, int m, int n, double* b, double* x, double* rnorm, double* wp, double* zzp, int* indexp);
+int nnls(std::vector<std::vector<double>>& a, size_t m, size_t n, double* b, double* x, double* rnorm, double* wp, double* zzp, int* indexp);
 
 int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleachFrame) {
 
@@ -18,7 +18,7 @@ int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleac
 
     BLCSVIO::readVariableWidthCSV(inputfile, traces, headerLine);
 
-    int m = traces[0].size();
+    size_t m = traces[0].size();
 
     std::cout << traces.size() << " Traces " << m << " Frames\n";
 
@@ -29,7 +29,7 @@ int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleac
 
     std::vector < std::vector<double>> aMat(m, std::vector<double>(m, 0.0));
     std::vector < std::vector<double>> aMatHold(m, std::vector<double>(m, 0.0));
-    for (int i = 0;i < m;i++) for (int j = i;j < m;j++)aMatHold[i][j] = exp((double)-1.0 * (j - i) / meanBleachFrame);
+    for (size_t i = 0;i < m;i++) for (size_t j = i;j < m;j++)aMatHold[i][j] = exp((double)-1.0 * (j - i) / meanBleachFrame);
 
     double rnorm;
     std::vector<double> wp(m), zzp(m);
@@ -50,9 +50,6 @@ int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleac
     BLCSVIO::writeCSV(fileBase + "_Bleach_Fit.csv", bleachFit, headerLine);
     BLCSVIO::writeCSV(fileBase + "_Bleach_Corrected.csv", bleachCorrected, headerLine);
 
-
-
-
-
+    return 0;
 
 }

@@ -11,25 +11,25 @@ int Mean_of_Frames(std::string outputfile, std::vector<std::string> inputfiles, 
 	std::vector<BLTiffIO::TiffInput*> vcinput(inputfiles.size());
 	for (int i = 0; i < inputfiles.size(); i++)vcinput[i] = new BLTiffIO::TiffInput(inputfiles[i]);
 
-	int imageDepth = vcinput[0]->imageDepth;
-	int imageWidth = vcinput[0]->imageWidth;
-	int imageHeight = vcinput[0]->imageHeight;
-	int imagePoints = imageWidth * imageHeight;
-	int totnumofframes = vcinput[0]->numOfFrames;
+	uint64_t imageDepth = vcinput[0]->imageDepth;
+	uint64_t imageWidth = vcinput[0]->imageWidth;
+	uint64_t imageHeight = vcinput[0]->imageHeight;
+	uint64_t imagePoints = imageWidth * imageHeight;
+	uint64_t totnumofframes = vcinput[0]->numOfFrames;
 
 
 
 	//fix ends and percents
 
-	for (int j = 0; j < inputfiles.size(); j++) {
+	for (uint64_t j = 0; j < inputfiles.size(); j++) {
 		if (bPercent) {
-			start[j] = round((1 + (totnumofframes - 1) * start[j] / 100.0));
-			end[j] = round((1+(totnumofframes-1) * end[j]/100.0));
+			start[j] = (int) round((1 + (totnumofframes - 1) * start[j] / 100.0));
+			end[j] = (int) round((1+(totnumofframes-1) * end[j]/100.0));
 		}
 		
 		if (!bPercent && end[j] < 0)end[j] = totnumofframes + end[j] + 1;
 		if (!bPercent && start[j] < -1)start[j] = totnumofframes + start[j] + 1;
-		end[j] = std::min(end[j], totnumofframes);
+		end[j] = std::min(end[j], (int)totnumofframes);
 		start[j] = std::max(start[j], 0);
 		std::cout << "Calculating mean of channel " << j + 1 <<" from frame "<< start[j] << " ending at frame " << end[j] << "\n";
 	}

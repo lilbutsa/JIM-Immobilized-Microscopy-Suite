@@ -40,24 +40,24 @@
 
 inline void writeChannelAlignment(std::string outputfile, std::vector< std::vector< float>>& alignments,int imageWidth, int imageHeight) {
 
-	int numchan = alignments.size();
+	size_t numchan = alignments.size();
 
 	std::vector< std::vector<float> > channelalignment(numchan, std::vector<float>(11, 0.0));
 
-	for (int i = 0; i < numchan; i++) {
-		channelalignment[i][0] = i+2;
+	for (size_t i = 0; i < numchan; i++) {
+		channelalignment[i][0] = i+2.0f;
 		channelalignment[i][1] = alignments[i][2];
 		channelalignment[i][2] = alignments[i][3];
 		channelalignment[i][3] = alignments[i][0];
 		channelalignment[i][4] = alignments[i][1];
 
-		channelalignment[i][5] = cos(alignments[i][2] * 3.14159 / 180.0) / alignments[i][3];
-		channelalignment[i][6] = -sin(alignments[i][2] * 3.14159 / 180.0) / alignments[i][3];
-		channelalignment[i][7] = sin(alignments[i][2] * 3.14159 / 180.0) / alignments[i][3];
-		channelalignment[i][8] = cos(alignments[i][2] * 3.14159 / 180.0) / alignments[i][3];
+		channelalignment[i][5] = (float)cos(alignments[i][2] * 3.14159 / 180.0) / alignments[i][3];
+		channelalignment[i][6] = (float)(-sin(alignments[i][2] * 3.14159 / 180.0)) / alignments[i][3];
+		channelalignment[i][7] = (float)sin(alignments[i][2] * 3.14159 / 180.0) / alignments[i][3];
+		channelalignment[i][8] = (float)cos(alignments[i][2] * 3.14159 / 180.0) / alignments[i][3];
 
-		channelalignment[i][9] = imageWidth / 2.0;
-		channelalignment[i][10] = imageHeight / 2.0;
+		channelalignment[i][9] = imageWidth / 2.0f;
+		channelalignment[i][10] = imageHeight / 2.0f;
 	}
 
 
@@ -71,10 +71,10 @@ inline void writeDrifts(std::string outputfile, const std::vector< std::vector< 
 	BLCSVIO::writeCSV(myFileName, driftsout, "X Drift, Y Drift\n");
 
 	for (int chancount = 0; chancount < alignment.size(); chancount++) {
-		float x1 = cos(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
-		float y1 = -sin(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
-		float x2 = sin(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
-		float y2 = cos(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
+		float x1 = (float)cos(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
+		float y1 = (float)(-sin(alignment[chancount][2] * 3.14159 / 180.0)) / alignment[chancount][3];
+		float x2 = (float)sin(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
+		float y2 = (float)cos(alignment[chancount][2] * 3.14159 / 180.0) / alignment[chancount][3];
 		//std::cout << "transform = " << chancount << " " << x1 << " " <<y1 << " " << x2 << " " << y2 << "\n";
 
 		std::vector<std::vector<float>> transformedDrifts = driftsout;

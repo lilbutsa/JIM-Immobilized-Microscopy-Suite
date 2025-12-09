@@ -25,7 +25,7 @@
 #include "BLFlagParser.h"
 #include <stdexcept> 
 
-int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, int startFrame, int endFrame, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, double maxShift, bool outputAligned);
+int Align_Channels(std::string fileBase, std::vector<std::string>& inputfiles, int startFrame, int endFrame, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned);
 
 
 int main(int argc, char *argv[])
