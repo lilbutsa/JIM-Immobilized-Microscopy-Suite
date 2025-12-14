@@ -4,37 +4,34 @@
 #include <iostream>
 #include <vector>
 
-int Tiff_Channel_Splitter(std::string fileBase, std::vector<std::string>& inputfiles, int numOfChan, int startFrame, int endFrame, std::vector<std::vector<int>>& tranformations, bool bBigTiff, bool bmetadata, bool bDetectMultifiles);
+int Tiff_Channel_Splitter(std::string inputfile, std::vector<std::vector<int>>& tranformations, bool bmetadata, int numOfChan, bool bAcrossMultifiles);
 
 
-//Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
+//Standard input : (std::string inputfile, std::vector<std::vector<int>>& tranformations, bool bmetadata, int numOfChan, bool bAcrossMultifiles)
+
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 9;
+    const int minNumOfInputs = 5;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
-        std::cout << "Starting Program\n";
         checkArguments(outputs, inputs);
         matlab::data::CharArray filebaseChar = inputs[0];
-        std::string filebase = filebaseChar.toAscii();
-        std::vector<std::string> inputFiles;
-        for (int i = 0;i < inputs.size() - minNumOfInputs+1;i++) {
-            filebaseChar = inputs[i+1];
-            inputFiles.push_back(filebaseChar.toAscii());
-        }
-        
-        int NumberOfChannels = inputs[inputs.size() - minNumOfInputs+2][0];
-        int startFrame = inputs[inputs.size() - minNumOfInputs+3][0];
-        int endFrame = inputs[inputs.size() - minNumOfInputs+4][0];
-        matlab::data::TypedArray<double> TransformMat = inputs[inputs.size() - minNumOfInputs+5];
-        matlab::data::ArrayDimensions dims = TransformMat.getDimensions();
-        std::vector<std::vector<int>> Transform(dims[0], std::vector<int>(dims[1], 0));
-        for (int i = 0;i < dims[0];i++)for (int j = 0;j < dims[1];j++)Transform[i][j] = (int)TransformMat[i][j];
-        bool bBigTiff = inputs[inputs.size() - minNumOfInputs+6][0];
-        bool bmetadata = inputs[inputs.size() - minNumOfInputs+7][0];
-        bool bDetectMultifiles = inputs[inputs.size() - minNumOfInputs+8][0];
+        std::string inputFile = filebaseChar.toAscii();
 
-        Tiff_Channel_Splitter(filebase, inputFiles, NumberOfChannels, startFrame, endFrame, Transform, bBigTiff, bmetadata, bDetectMultifiles);
-        std::cout << "Finishing Program\n";
+        std::vector<std::vector<int>> Transform;
+        if (inputs.size() >= 2) {
+            matlab::data::TypedArray<double> TransformMat = inputs[1];
+            matlab::data::ArrayDimensions dims = TransformMat.getDimensions();
+            std::vector<std::vector<int>> TransformIn(dims[0], std::vector<int>(dims[1], 0));
+            for (int i = 0; i < dims[0]; i++)for (int j = 0; j < dims[1]; j++)TransformIn[i][j] = (int)TransformMat[i][j];
+            Transform = TransformIn;
+        }
+
+        bool bmetadata = (inputs.size() >= 3 ? inputs[2][0] : true);
+        int NumberOfChannels = inputs.size() >= 4 ? inputs[3][0] : 2;
+        bool bAcrossMultifiles = false;
+        if(inputs.size() >= 5) bAcrossMultifiles =  inputs[4][0];
+
+        Tiff_Channel_Splitter(inputFile,Transform, bmetadata, NumberOfChannels, bAcrossMultifiles);
     }
 
 
@@ -44,7 +41,7 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least nine inputs required - Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar("Standard input :int Tiff_Channel_Splitter(std::string inputfile, std::vector<std::vector<int>>& tranformations, bool bmetadata, int numOfChan, bool bAcrossMultifiles);") }));
         }
 
     }

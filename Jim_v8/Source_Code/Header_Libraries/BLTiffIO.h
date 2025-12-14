@@ -712,29 +712,30 @@ namespace BLTiffIO {
 
 
 
-
-
-
-
 	class MultiTiffInput {
 
 		struct imagePos {
 			size_t file;
 			size_t ifd;
+			size_t initialized;
 		};
 
-		std::vector<BLTiffIO::TiffInput*> vimstack;
 		std::vector <std::string> inputfiles;
-		std::vector<std::string> positionNames;
+		
 		std::vector<std::vector<std::vector<std::vector<imagePos>>>> imageOrder;
 		std::vector<std::vector<size_t>> rawImageOrder;
 		size_t posCount = 0;
 
+		std::vector<std::vector<int>> orientation;
 
+	public:
+		std::vector<std::string> positionNames;
+		std::vector<BLTiffIO::TiffInput*> vimstack;
 		uint64_t maxPos = 0, maxFrame = 0, maxChan = 0, maxZ = 0;
+		std::string path,filesep;
 
 		void inline MultiTiffInput::parseMetadata(std::string inputStr) {
-			std::cout << "Detecting File order\n";
+			//std::cout << "Detecting File order\n";
 			//detect the different Positions
 			uint64_t nextPosName = inputStr.find("<Image ID=");
 			std::vector<size_t> singleLine(6, 0);
@@ -795,24 +796,23 @@ namespace BLTiffIO {
 				}
 			}
 
-
 		}
 
 
-
-
-
-
-	public:
-		inline MultiTiffInput::MultiTiffInput(std::string filenamein, bool bUseMetadata, size_t numOfChannels) {
-			std::string filesep(1, std::filesystem::path::preferred_separator);
+		inline MultiTiffInput::MultiTiffInput(std::string filenamein, std::vector<std::vector<int>> orientationIn = std::vector<std::vector<int>>(), bool bUseMetadata = true,bool bAcrossMultipleFiles = false, size_t numOfChannels = 1) {
+			std::string filesepin(1, std::filesystem::path::preferred_separator);
+			filesep = filesepin;
 
 			inputfiles.clear();
 			rawImageOrder.clear();
 			std::vector<std::string>allFiles;
 			posCount = 0;
 
-			const std::string path = std::filesystem::path(filenamein).parent_path().generic_string();
+			orientation = orientationIn;
+
+			if (std::filesystem::is_directory(std::filesystem::path(filenamein))) path = filenamein;
+			else path = std::filesystem::path(filenamein).parent_path().generic_string();
+
 			for (const auto& entry : std::filesystem::directory_iterator(path)) {
 				std::string myExt = entry.path().extension().generic_string();
 				if (myExt.find("tif") != std::string::npos || myExt.find("Tif") != std::string::npos || myExt.find("TIF") != std::string::npos) {
@@ -830,13 +830,16 @@ namespace BLTiffIO {
 
 			//Deal with no metadata being detected
 			if (inputfiles.size() == 0) {
-				std::cout << "Warning: OME metadata not found\n";
+				if(bUseMetadata) std::cout << "Warning: OME metadata not found\n";
 				positionNames.push_back(std::filesystem::path(filenamein).stem().generic_string());
-				inputfiles = allFiles;				
+				std::sort(allFiles.begin(), allFiles.end());
+				inputfiles = allFiles;
+				if(bAcrossMultipleFiles)positionNames.push_back(std::filesystem::path(allFiles[0]).stem().generic_string());
+				else for(size_t fileNo = 0; fileNo< allFiles.size();fileNo++)positionNames.push_back(std::filesystem::path(allFiles[fileNo]).stem().generic_string());
 			}
 
 
-			std::cout << positionNames.size() << " positions detected, split across " << inputfiles.size() << "files\n";
+			std::cout << positionNames.size() << " positions detected, split across " << inputfiles.size() << " files\n";
 			for (size_t i = 0; i < positionNames.size(); i++)std::cout << "Position " << i + 1 << " filename = " << positionNames[i] << "\n";
 
 			//Check if files exist and open the image stack files 
@@ -851,27 +854,29 @@ namespace BLTiffIO {
 				}
 			}
 
+
 			if (rawImageOrder.size() > 0) {//for data with metadata
 				// Sort image positions for reading
 				maxPos = 0; maxFrame = 0; maxChan = 0; maxZ = 0;
 
 				for (const auto& row : rawImageOrder) {
-					maxPos = std::max(maxPos, row[0]);
-					maxFrame = std::max(maxFrame, row[1]);
-					maxChan = std::max(maxChan, row[2]);
-					maxZ = std::max(maxZ, row[3]);
+					maxPos = std::max(maxPos, row[0]+1);
+					maxFrame = std::max(maxFrame, row[1]+1);
+					maxChan = std::max(maxChan, row[2]+1);
+					maxZ = std::max(maxZ, row[3]+1);
 				}
 
 				imageOrder = std::vector<std::vector<std::vector<std::vector<imagePos>>>>(
-					maxPos + 1,
+					maxPos,
 					std::vector<std::vector<std::vector<imagePos>>>(
-						maxFrame + 1,
+						maxFrame,
 						std::vector<std::vector<imagePos>>(
-							maxChan + 1,
-							std::vector<imagePos>(maxZ + 1)
+							maxChan,
+							std::vector<imagePos>(maxZ)
 						)
 					)
 				);
+
 				//write in each position
 				for (const auto& row : rawImageOrder) {
 					size_t pos = row[0];
@@ -881,29 +886,129 @@ namespace BLTiffIO {
 					size_t ifd = row[4];
 					size_t file = row[5];
 
-					imageOrder[pos][frame][chan][z] = imagePos{ file, ifd };
+					imageOrder[pos][frame][chan][z] = imagePos{ file, ifd, 1 };
 				}
 			}
 			else {//without metadata
-				maxPos = 1; maxFrame = 0; maxChan = numOfChannels; maxZ = 1;
+				maxPos = bAcrossMultipleFiles ? 1 : vimstack.size();
+				maxFrame = 0; maxChan = numOfChannels; maxZ = 1;
 				
-				for (size_t i = 0; i < vimstack.size(); i++)maxFrame += vimstack[i]->numOfFrames;
+				for (size_t i = 0; i < vimstack.size(); i++)
+					if (bAcrossMultipleFiles)maxFrame += vimstack[i]->numOfFrames;
+					else maxFrame = std::max(maxFrame, vimstack[i]->numOfFrames);
 				maxFrame = maxFrame / maxChan;
 
-				imageOrder = std::vector<std::vector<std::vector<std::vector<imagePos>>>>(1,std::vector<std::vector<std::vector<imagePos>>>(maxFrame,std::vector<std::vector<imagePos>>(
-							1,std::vector<imagePos>(1))));
+				imageOrder = std::vector<std::vector<std::vector<std::vector<imagePos>>>>(maxPos,std::vector<std::vector<std::vector<imagePos>>>(maxFrame,std::vector<std::vector<imagePos>>(maxChan,
+							std::vector<imagePos>(maxZ))));
 
-				size_t count;
-				for (size_t i = 0; i < vimstack.size(); i++)for (size_t j = 0; j < vimstack[i]->numOfFrames; j++) {
-					size_t framein = count / maxChan;
-					size_t chanin = count % maxChan;
-					imageOrder[0][framein][chanin][0] = imagePos{ i, j };
+				if (bAcrossMultipleFiles) {
+					size_t count = 0;
+					for (size_t i = 0; i < vimstack.size(); i++) {
+						for (size_t j = 0; j < vimstack[i]->numOfFrames; j++) {
+							size_t framein = count / maxChan;
+							size_t chanin = count % maxChan;
+							imageOrder[0][framein][chanin][0] = imagePos{ i, j, 1 };
+							count++;
+						}
+					}
 				}
+				else {
+					for (size_t i = 0; i < vimstack.size(); i++) {
+						for (size_t j = 0; j < vimstack[i]->numOfFrames; j++) {
+							size_t framein = j / maxChan;
+							size_t chanin = j % maxChan;
+							imageOrder[i][framein][chanin][0] = imagePos{ i, j, 1 };
+						}
+					}
+				}
+
 			}
 
 
 
 	};
+
+	template <typename vectortype>
+	inline void vertFlip2dImage(std::vector< std::vector<vectortype>>& imageio) {
+
+		std::vector<std::vector<vectortype>> imageout(imageio.size(), std::vector<uint16_t>(imageio[0].size(), (uint16_t)0));
+		size_t imageHeight = imageio[0].size();
+
+		for (size_t i = 0; i < imageio.size(); i++)for (size_t j = 0; j < imageio[0].size(); j++)imageout[i][imageHeight - j - 1] = imageio[i][j];
+		imageio = imageout;
+
+	}
+
+	template <typename vectortype>
+	inline void vertFlip1dImage(std::vector<vectortype>& imageio, size_t imageWidth) {
+
+		std::vector<vectortype> imageout(imageio.size(),(vectortype)0);
+		size_t imageHeight = imageio.size()/ imageWidth;
+
+		for (size_t i = 0; i < imageWidth; i++)for (size_t j = 0; j < imageHeight; j++)imageout[i+(imageHeight - j - 1)*imageWidth] = imageio[i+j*imageWidth];
+		imageio = imageout;
+
+	}
+
+	template <typename vectortype>
+	inline void horzFlip2dImage(std::vector< std::vector<vectortype>>& imageio) {
+
+		std::vector<std::vector<vectortype>> imageout(imageio.size(), std::vector<vectortype>(imageio[0].size(), (vectortype)0));
+		size_t imageWidth = imageio.size();
+
+		for (size_t i = 0; i < imageio.size(); i++)for (size_t j = 0; j < imageio[0].size(); j++)imageout[imageWidth - 1 - i][j] = imageio[i][j];
+		imageio = imageout;
+
+	}
+
+	template <typename vectortype>
+	inline void horzFlip1dImage(std::vector<vectortype>& imageio, size_t imageWidth) {
+
+		std::vector<vectortype> imageout(imageio.size(), (vectortype)0);
+		size_t imageHeight = imageio.size() / imageWidth;
+
+		for (size_t i = 0; i < imageWidth; i++)for (size_t j = 0; j < imageHeight; j++)imageout[imageWidth - 1 - i+j * imageWidth] = imageio[i+j * imageWidth];
+		imageio = imageout;
+
+	}
+
+
+	template <typename vectortype>
+	inline void rotate2dImage(std::vector< std::vector<vectortype>>& imageio, int angle) {
+		size_t imageWidth = imageio.size();
+		size_t imageHeight = imageio[0].size();
+
+		if (angle == 180) {
+			std::vector<std::vector<vectortype>> imageout(imageio.size(), std::vector<vectortype>(imageio[0].size(), (vectortype)0));
+			for (size_t i = 0; i < imageWidth; i++)for (size_t j = 0; j < imageHeight; j++)imageout[imageWidth - 1 - i][imageHeight - 1 - j] = imageio[i][j];
+			imageio = imageout;
+		}
+		else if (angle == 90) {
+			std::vector<std::vector<vectortype>> imageout(imageio[0].size(), std::vector<vectortype>(imageio.size(), (vectortype)0));
+			for (size_t i = 0; i < imageWidth; i++)for (size_t j = 0; j < imageHeight; j++)imageout[imageHeight - 1 - j][i] = imageio[i][j];
+			imageio = imageout;
+		}
+		else if (angle == 270) {
+			std::vector<std::vector<vectortype>> imageout(imageio[0].size(), std::vector<vectortype>(imageio.size(), (vectortype)0));
+			for (size_t i = 0; i < imageWidth; i++)for (size_t j = 0; j < imageHeight; j++)imageout[j][imageWidth - 1 - i] = imageio[i][j];
+			imageio = imageout;
+		}
+	}
+
+	template <typename vectortype>
+	inline void rotate1dImage(std::vector<vectortype>& imageio, int angle, size_t imageWidth) {
+
+		std::vector<vectortype> imageout(imageio.size(), (vectortype)0);
+		size_t imageHeight = imageio.size() / imageWidth;
+
+		if (angle == 180) for (size_t i = 0; i < imageio.size(); i++)for (size_t j = 0; j < imageio[0].size(); j++)imageout[imageWidth - 1 - i+(imageHeight - 1 - j) * imageWidth] = imageio[i+j * imageWidth];
+		else if (angle == 90) for (size_t i = 0; i < imageio.size(); i++)for (size_t j = 0; j < imageio[0].size(); j++)imageout[imageHeight - 1 - j+[i * imageWidth] = imageio[i+j * imageWidth];
+		else if (angle == 270)for (size_t i = 0; i < imageio.size(); i++)for (size_t j = 0; j < imageio[0].size(); j++)imageout[j+(imageWidth - 1 - i) * imageWidth] = imageio[i+j * imageWidth];
+
+		imageio = imageout;
+
+	}
+
 
 	inline MultiTiffInput::~MultiTiffInput() {
 		for (size_t i = 0; i < inputfiles.size(); i++)if (vimstack[i] != NULL)delete vimstack[i];
@@ -911,22 +1016,50 @@ namespace BLTiffIO {
 	};
 
 	template <typename vectortype>
-	void read1dImage(size_t pos, size_t frame, size_t chan, size_t z, std::vector<vectortype>& imageout) {
-		if (pos <= maxPos && frame <= maxFrame &&
-			chan <= maxChan && z <= maxZ) {
+	int read1dImage(size_t pos, size_t frame, size_t chan, size_t z, std::vector<vectortype>& imageout) {
+		if (pos < maxPos && frame < maxFrame &&chan < maxChan && z < maxZ ) {
 			imagePos imagePosIn = imageOrder[pos][frame][chan][z];
-			vimstack[imagePosIn.file]->read1dImage(imagePosIn.ifd, imageout);
+			if (imagePosIn.initialized == 1) {
+				vimstack[imagePosIn.file]->read1dImage(imagePosIn.ifd, imageout);
+				if (orientation.size() > chan && orientation[chan][0] == 1)vertFlip1DImage(imageout, vimstack[imagePosIn.file]->imageWidth);
+				if (orientation.size() > chan && orientation[chan][1] == 1)vertFlip1DImage(imageout, vimstack[imagePosIn.file]->imageWidth);
+				if (orientation.size() > chan && orientation[chan][2] != 0)rotate1DImage(imageout, orientation[chan][2], vimstack[imagePosIn.file]->imageWidth);
+				return 0;
+			}
 		}
+		return 1;
 	}
 
 	template <typename vectortype>
-	void read2dImage(size_t pos, size_t frame, size_t chan, size_t z, std::vector < std::vector<vectortype>>& imageout) {
+	int read2dImage(size_t pos, size_t frame, size_t chan, size_t z, std::vector < std::vector<vectortype>>& imageout) {
+		if (pos < maxPos && frame < maxFrame &&
+			chan < maxChan && z < maxZ) {
+			imagePos imagePosIn = imageOrder[pos][frame][chan][z];
+			if (imagePosIn.initialized == 1) {
+				vimstack[imagePosIn.file]->read2dImage(imagePosIn.ifd, imageout);
+				if (orientation.size() > chan && orientation[chan][0] == 1)vertFlip2DImage(imageout);
+				if (orientation.size() > chan && orientation[chan][1] == 1)vertFlip2DImage(imageout);
+				if (orientation.size() > chan && orientation[chan][2] != 0)rotate2DImage(imageout, orientation[chan][2]);
+				return 0;
+			}
+		}
+		return 1;
+	}
+
+	int imageInfo(size_t pos, size_t frame, size_t chan, size_t z, size_t& imageWidth, size_t& imageHeight, size_t& imageDepth) {
 		if (pos <= maxPos && frame <= maxFrame &&
 			chan <= maxChan && z <= maxZ) {
 			imagePos imagePosIn = imageOrder[pos][frame][chan][z];
-			vimstack[imagePosIn.file]->read2dImage(imagePosIn.ifd, imageout);
+			if (imagePosIn.initialized == 1) {
+				imageWidth = vimstack[imagePosIn.file]->imageWidth;
+				imageHeight = vimstack[imagePosIn.file]->imageHeight;
+				imageDepth = vimstack[imagePosIn.file]->imageDepth;
+				return 0;
+			}
 		}
+		return 1;
 	}
+
 
 	};
 

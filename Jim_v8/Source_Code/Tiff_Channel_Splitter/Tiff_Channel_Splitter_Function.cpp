@@ -14,162 +14,34 @@ void vertFlipImage(std::vector< std::vector<uint16_t>>& imageio);
 void horzFlipImage(std::vector< std::vector<uint16_t>>& imageio);
 void rotateImage(std::vector< std::vector<uint16_t>>& imageio, int angle);
 
-int Tiff_Channel_Splitter(std::string fileBase, std::vector<std::string>& inputfiles, int numOfChan, int startFrame, int endFrame, std::vector<std::vector<int>>& tranformations,bool bBigTiff, bool bmetadata,bool bDetectMultifiles) {
 
-	BLTiffIO::MultiTiffInput mymulti(inputfiles[0]);
+int Tiff_Channel_Splitter(std::string inputfile,  std::vector<std::vector<int>>& orientation, bool bmetadata, int numOfChan, bool bAcrossMultifiles) {
 
-	return 0;
-
-	std::vector<BLTiffIO::TiffInput*> vis;
-	int startFramein, endFramein;
-
-	if (bDetectMultifiles) {
-		std::string path = std::filesystem::path(inputfiles[0]).parent_path().generic_string();
-		inputfiles.clear();
-		for (const auto& entry : std::filesystem::directory_iterator(path)) {
-			std::string myExt = entry.path().extension().generic_string();
-			if (myExt.find("tif") != std::string::npos || myExt.find("Tif") != std::string::npos || myExt.find("TIF") != std::string::npos) {
-				inputfiles.push_back(entry.path().generic_string());
-				std::cout << entry.path().generic_string() << "\n";
-			}
-		}
-	}
-
-
-
-	vis.resize(inputfiles.size());
-
-	for (int i = 0; i < vis.size(); i++) {
-		vis[i] = new BLTiffIO::TiffInput(inputfiles[i], bmetadata);
-		if (vis[i]->bigtiff)bBigTiff = true;
-	}
-	if (inputfiles.size() > 1)bBigTiff = true;
-
-	int imageDepth = vis[0]->imageDepth;
-	int imageWidth = vis[0]->imageWidth;
-	int imageHeight = vis[0]->imageHeight;
-
-	if (bBigTiff) std::cout << "Outputting Big Tiff\n";
-
+	size_t imageWidth, imageHeight, imageDepth;
 	std::vector<std::vector<uint16_t>> image;
-	bool horFlip = false, vertFlip = false;
-	int rotate = 0;
-
-	if (bmetadata && vis[0]->OMEmetadataDetected) {
-		std::cout << "OME metadata Detected\n";
-		std::vector < std::vector<std::vector<int>>> stackorderout;
-		getStackOrder(vis, stackorderout);
 
 
-
-		for (int i = 0; i < stackorderout.size(); i++) {
-			horFlip = false; vertFlip = false; int rotate = 0;
-			for (int j = 0; j < tranformations.size(); j++)if (tranformations[j][0] - 1 == i) {
-				vertFlip = tranformations[j][1] == 1;
-				horFlip = tranformations[j][2] == 1;
-				rotate = tranformations[j][3];
-			}
-
-			std::string outputfilename = fileBase + "_Channel_" + std::to_string(i + 1) + ".tif";
-			std::cout << "Writing out " << outputfilename << "\n";
-
-			BLTiffIO::TiffOutput* output;
-			if (rotate == 90 || rotate == 270)output = new BLTiffIO::TiffOutput(outputfilename, imageHeight, imageWidth, imageDepth, bBigTiff);
-			else output = new BLTiffIO::TiffOutput(outputfilename, imageWidth, imageHeight, imageDepth, bBigTiff);
-
-			if (startFrame < 1)startFramein = stackorderout[i].size() + startFrame;
-			else startFramein = startFrame - 1;
-
-			if (endFrame < 1)endFramein = stackorderout[i].size() + endFrame + 1;
-			else endFramein = endFrame;
-			endFramein = std::min(endFramein, (int)stackorderout[i].size());
-
-			for (int j = startFramein; j < endFramein; j++) {
-				if (stackorderout[i][j][0] == -1) {
-					std::cout << "Warning image " << j + 1 << " of channel " << i + 1 << " not found\n"; continue;
+	BLTiffIO::MultiTiffInput mymulti(inputfile, bmetadata, bAcrossMultifiles,numOfChan);
+	
+	for (size_t posCount = 0; posCount < mymulti.maxPos; posCount++) {
+		std::string myFolderName = mymulti.path + mymulti.filesep + mymulti.positionNames[posCount];
+		if(!std::filesystem::exists(myFolderName))std::filesystem::create_directories(myFolderName);
+		for (size_t chanCount = 0; chanCount < mymulti.maxChan; chanCount++) {
+			std::string outputfilename = myFolderName+ mymulti.filesep+ "Raw_Image_Stack_Channel_" + std::to_string(chanCount + 1) + ".tif";
+			std::cout << "Writing : " << outputfilename << "\n";
+			if (mymulti.imageInfo(posCount, 0, chanCount, 0, imageWidth, imageHeight, imageDepth) == 0) {//check if the channel exists
+				BLTiffIO::TiffOutput outputFile(outputfilename, imageWidth, imageHeight, imageDepth, true);
+				for (size_t frameCount = 0; frameCount < mymulti.maxFrame; frameCount++) {
+					if (mymulti.read2dImage(posCount, frameCount, chanCount, 0, image) == 0) {//check the image exists
+						if(orientation.size()>chanCount && orientation[chanCount][0]==1)vertFlipImage(image);
+						if (orientation.size() > chanCount && orientation[chanCount][1] == 1)vertFlipImage(image);
+						if (orientation.size() > chanCount && orientation[chanCount][2] != 0)rotateImage(image, orientation[chanCount][2]);
+						outputFile.write2dImage(image);
+					}
 				}
-				vis[stackorderout[i][j][0]]->read2dImage(stackorderout[i][j][1], image);
-				if (vertFlip)vertFlipImage(image);
-				if (horFlip)horzFlipImage(image);
-				if (rotate != 0)rotateImage(image, rotate);
-
-				output->write2dImage(image);
-			}
-			delete output;
-		}
-
-	}
-	else {
-
-		if (bmetadata == true) std::cout << "OME metadata was NOT Detected\n";
-		int totnumofframes = 0;
-		for (int i = 0; i < vis.size(); i++) {
-			totnumofframes += vis[i]->numOfFrames;
-			if (vis[i]->imageDepth != imageDepth || vis[i]->imageHeight != imageHeight || vis[i]->imageWidth != imageWidth) {
-				std::cout << "All Images Must Be the same size " << "\n";
-				return 2;
 			}
 		}
-
-		int framesperchannel = totnumofframes / numOfChan;
-		std::cout << "Total Number of Frames : " << totnumofframes << "\n";
-		std::cout << "Frames Per Channel : " << framesperchannel << "\n";
-
-
-		for (int i = 0; i < numOfChan; i++) {
-			horFlip = false; vertFlip = false; int rotate = 0;
-			for (int j = 0; j < tranformations.size(); j++)if (tranformations[j][0] - 1 == i) {
-				vertFlip = tranformations[j][1] == 1;
-				horFlip = tranformations[j][2] == 1;
-				rotate = tranformations[j][3];
-			}
-			//cout << i + 1 << " " << vertFlip << " " << horFlip << " " << rotate << "\n";
-
-
-			std::string outputfilename = fileBase + "_Channel_" + std::to_string(i + 1) + ".tif";
-			std::cout << "Writing out " << outputfilename << "\n";
-
-			BLTiffIO::TiffOutput* output;
-			if (rotate == 90 || rotate == 270)output = new BLTiffIO::TiffOutput(outputfilename, imageHeight, imageWidth, imageDepth, bBigTiff);
-			else output = new BLTiffIO::TiffOutput(outputfilename, imageWidth, imageHeight, imageDepth, bBigTiff);
-
-			if (startFrame < 1)startFramein = framesperchannel + startFrame;
-			else startFramein = startFrame - 1;
-
-			if (endFrame < 1)endFramein = framesperchannel + endFrame + 1;
-			else endFramein = endFrame;
-			endFramein = std::min(endFramein, (int)framesperchannel);
-
-
-			for (int j = startFramein * numOfChan + i; j < endFramein * numOfChan; j = j + numOfChan) {
-				int imageNumber = j;
-				int fileNumber = 0;
-				while (imageNumber >= (vis[fileNumber]->numOfFrames)) {
-					imageNumber = imageNumber - (vis[fileNumber]->numOfFrames);
-					fileNumber++;
-				}
-				//std::cout << fileNumber<<" " << vis[fileNumber]->numOfFrames << "\n";
-
-				vis[fileNumber]->read2dImage(imageNumber, image);
-
-				if (vertFlip)vertFlipImage(image);
-				if (horFlip)horzFlipImage(image);
-				if (rotate != 0)rotateImage(image, rotate);
-
-				output->write2dImage(image);
-
-				//std::cout << imageNumber << " " << vis[fileNumber]->numOfFrames << " " << j << " " << fileNumber << "\n";
-			}
-			delete output;
-		}
 	}
-
-	for (int i = 0; i < vis.size(); i++) {
-		delete vis[i];
-	}
-
-
 
 	return 0;
-
 }

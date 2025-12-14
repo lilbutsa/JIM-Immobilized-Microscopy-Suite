@@ -29,11 +29,8 @@ fclose(sysVar.fid);
 matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
-additionalExtensionsToRemove = 0; %remove extra .ome from working folder name if you want to
-
 %Default directory for input file selector e.g.
-%sysVar.defaultFolder = 'G:\My_Jim';
-sysVar.defaultFolder = [fileparts(sysConst.JIM) filesep 'Examples_To_Run' filesep]; %by default it will go to the example files
+sysVar.defaultFolder = 'F:\';
 
 % Change the overlay colours for colourblind as desired. In RGB, values from 0 to 1
 sysVar.overlayColour = [[1, 0, 0];[0, 1, 0];[0, 0, 1]];
@@ -51,97 +48,32 @@ if exist('Tiff_Channel_Splitter')~=3
     end
 end
 
-[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Image sysVar.file',sysVar.defaultFolder);%Open the Dialog box to select the initial sysVar.file to analyze
-
-completeName = [sysVar.pathName,sysVar.fileName];
-[sysVar.fileNamein,sysVar.name,~] = fileparts(completeName);%get the name of the tiff image
-for j=1:additionalExtensionsToRemove
-    sysVar.workingDir = [sysVar.fileNamein,filesep,sysVar.name];
-    [sysVar.fileNamein,sysVar.name,~] = fileparts(sysVar.workingDir);
-end
-workingDir = [sysVar.fileNamein,filesep,sysVar.name,filesep];
-
-if ~exist(workingDir, 'dir')
-   mkdir(workingDir)%make a subfolder with that name
-end
-
-
-completeName = ['"',completeName,'" '];
+sysVar.fileName = uigetdir('*','Select the Parameter File'); % open the dialog box to select the folder for batch files
+sysVar.fileName=[sysVar.fileName,filesep];
 
 
 %% 2) Organise Image Stack into channels 
-imStackMultipleFiles = false ; % choose this if you're stack is split over multiple tiff files (i.e. >4Gb)
 
-imStackNumberOfChannels = 3; % Input the number of channels in the data
-
-imStackDisableMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
-
-imStackStartFrame = 1; % Part of the image stack can be completely ignored for all downstream analysis, set to 1 to start from the first frame
-imStackEndFrame = -1; % Last frame to take. Negative numbers go from the end of the stack, so set to -1 to take the entire stack.
-
-%Transform channels so they roughly overlay each other
+%Transform channels so they roughly overlay each othereg
+% [Chan1 Vert Flip,Chan1 Horz Flip, Chan 1 Rotate;
+%[Chan2 Vert Flip,Chan2 Horz Flip, Chan 2 Rotate]
+% 1 to flip, 0 to not, rotate = 0,90,180,270
 imStackChannelTransforms = [0 0 0;0 0 0;0 0 0];
+
+imStackMetadata = true ; % Images are usually split using embedded OME metadata but can be disabled if this causes problems
+imStackNumberOfChannels = 3; % Input the number of channels in the data
+imStackMultipleFiles = false ; % choose this if you don't have metadata and you're stack is split over multiple tiff files (i.e. >4Gb)
 
 % Don't touch from here
 
-Tiff_Channel_Splitter(['"',workingDir,'Raw_Image_Stack',files,'"'], completeName, imStackNumberOfChannels,imStackStartFrame,imStackEndFrame,imStackChannelTransforms,true,imStackDisableMetadata,imStackMultipleFiles)
- %%
-if (length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackVerticalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackHorizontalFlipChannel,"%f")) || length(sscanf(imStackChannelsToTransform,"%f"))>length(sscanf(imStackRotateChannel,"%f")) )
-        errordlg('Check that channelsToTransform, VerticalFlipChannel, HorizontalFlipChannel and RotateChannel all have the same number of parameters.','Error Inputting Parameters. channelsToTransform should be the list of channels that need to be transformed. VerticalFlipChannel and HorizontalFlipChannel should state whether the respective channel should (1) or shouldnt (0) be flipped. rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel'); 
-end
+Tiff_Channel_Splitter(completeName,imStackChannelTransforms,imStackMetadata,imStackNumberOfChannels,imStackMultipleFiles);
 
-
-sysVar.allChannelNames = ''; % make a list of all channels that need aligning (everything above channel 1)
-for j = 1:imStackNumberOfChannels
-sysVar.allChannelNames = [sysVar.allChannelNames,' "',workingDir,'Raw_Image_Stack_Channel_',num2str(j),'.tif"'];
-end
-
-if ischar(imStackChannelsToTransform)==false
-    imStackChannelsToTransform = num2str(imStackChannelsToTransform);
-end
-
-if ischar(imStackVerticalFlipChannel)==false
-    imStackVerticalFlipChannel = num2str(imStackVerticalFlipChannel);
-end
-
-if ischar(imStackHorizontalFlipChannel)==false
-    imStackHorizontalFlipChannel = num2str(imStackHorizontalFlipChannel);
-end
-
-if ischar(imStackRotateChannel)==false
-    imStackRotateChannel = num2str(imStackRotateChannel);
-end
-
-sysVar.cmd = [sysConst.JIM,'Tiff_Channel_Splitter',sysConst.fileEXE,' "',workingDir,'Raw_Image_Stack" ',completeName,'-NumberOfChannels ',num2str(imStackNumberOfChannels),' -StartFrame ',num2str(imStackStartFrame),' -EndFrame ',num2str(imStackEndFrame)];
-
-if imStackMultipleFiles
-    sysVar.cmd = [ sysVar.cmd ,' -DetectMultipleFiles'];
-end
-
-if ~isempty(imStackChannelsToTransform)    
-     sysVar.cmd = [ sysVar.cmd ,' -Transform ',imStackChannelsToTransform,' ',imStackVerticalFlipChannel,' ',imStackHorizontalFlipChannel,' ',imStackRotateChannel];
-end
-
-if(imStackDisableMetadata)
-     sysVar.cmd = [ sysVar.cmd ,' -DisableMetadata'];
-end
-
-sysVar.returnVal = system(sysVar.cmd);
-
-if length(dir([workingDir,'Raw_Image_Stack_*.tif']))~= imStackNumberOfChannels
-    imStackNumberOfChannels = length(dir([workingDir,'Raw_Image_Stack_*.tif']));
-    errordlg(['Metadata detected ' num2str(imStackNumberOfChannels) ' Channels. imStackNumberOfChannels has been changed to this value'],'Difference in Channels Detected'); 
-end
-if sysVar.returnVal==1
-    errordlg('Check that channelsToTransform, VerticalFlipChannel, HorizontalFlipChannel and RotateChannel all have the same number of parameters.','Error Inputting Parameters. channelsToTransform should be the list of channels that need to be transformed. VerticalFlipChannel and HorizontalFlipChannel should state whether the respective channel should (1) or shouldnt (0) be flipped. rotate should either be 0, 90 180 or 270 for the angle to rotate each selected channel'); 
-elseif sysVar.returnVal~=0
-    errordlg('An unknown error has occured while organising channels. See console for details','Error During Channel Splitting'); 
-end
-
-
+%Detect all folder made that have the raw stacks in them
 
 disp('Organization completed');
-
+%%
+[sysVar.fileName,sysVar.pathName] = fileparts(allFiles{x})
+sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); 
 %% 3) Align Channels and Calculate Drifts
 alignStartFrame = 12;% Select reference frames where there is signal in all channels at the same time start frame from 1
 alignEndFrame = 12;% 
@@ -154,19 +86,17 @@ alignMaxShift = 30; % Limit the mamximum distance that the program will shift im
 alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
-%Parameters for Manual Alignment
-alignManually = false ; % Manually set the alignment between the multiple channels, If set to false the program will try to automatically find an alignment
-alignXOffset = '0';
-alignYOffset = '0';
-alignRotationAngle = '0';
-alignScalingFactor = '1';
+%Parameters for Manual Alignment [x y rotation scale]
+alignment = [0 0 0 1];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
 displayMax = 0.99;
 
 %Don't touch from here
-
+%Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe, Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
+Align_Channels()
+%%
 if (alignManually && (length(split(alignXOffset))<imStackNumberOfChannels-1 || length(split(alignYOffset))<imStackNumberOfChannels-1 || length(split(alignRotationAngle))<imStackNumberOfChannels-1 || length(split(alignScalingFactor))<imStackNumberOfChannels-1))
         errordlg('alignXOffset,alignYOffset,alignRotationAngle and alignScalingFactor each require one value for each channel that needs to be aligned to channel 1, separated by a space. e.g. ''5 -5'' for 3 channel data'); 
 end
