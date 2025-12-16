@@ -68,7 +68,7 @@
 
 class alignImages_32f {
 
-    uint16_t imageWidth, imageHeight, imagePoints;
+    int64_t imageWidth, imageHeight, imagePoints;
 
     pocketfft::shape_t shape_in;
     pocketfft::stride_t stride_in, stride_out;
@@ -77,22 +77,22 @@ class alignImages_32f {
 
     float forwardFactor, backwardFactor;
 
-    std::vector<std::vector<int>> searchPositions;
+    std::vector<std::vector<int64_t>> searchPositions;
 public:
     std::vector<float> realDataOut, cc;
 
     std::vector<std::complex<float>> complexDataOut, fftCh1, fftCh2Rotated, fftCh2, fftcc;
 
-    std::vector<int> minPos;
+    std::vector<int64_t> minPos;
 
     int xAlign, yAlign;
     float quadFitX, quadFitY;
     const float pi = 3.1415926f;
     float maxCCVal;
 
-    inline alignImages_32f(int16_t imageWidthIn, uint16_t imageHeightIn) : imageWidth(imageWidthIn), imageHeight(imageHeightIn) {
+    inline alignImages_32f(int64_t imageWidthIn, int64_t imageHeightIn) : imageWidth(imageWidthIn), imageHeight(imageHeightIn) {
         imagePoints = imageWidth * imageHeight;
-        shape_in = pocketfft::shape_t{ imageWidth,imageHeight };                                              // dimensions of the input shape
+        shape_in = pocketfft::shape_t{ (size_t)imageWidth,(size_t)imageHeight };                                              // dimensions of the input shape
 
         ptrdiff_t strideWidth = sizeof(float) * imageWidth;
         stride_in = pocketfft::stride_t{ sizeof(float),strideWidth };                    // must have the size of each element. Must have size() equal to shape_in.size()
@@ -128,19 +128,23 @@ public:
 
     inline void alignLoadIm1(std::vector<float>& dataIm1, float maxDist) {
         fftCh1.resize(imagePoints);
+
+
         pocketfft::r2c(shape_in, stride_in, stride_out, axes, pocketfft::FORWARD, dataIm1.data(), fftCh1.data(), forwardFactor);
         std::transform(fftCh1.begin(), fftCh1.end(), fftCh1.begin(), [](const std::complex<float>& c) -> std::complex<float> { return std::conj(c); });
 
         searchPositions.clear();
         float xmax = std::max(std::min(maxDist, ((float)imageWidth) / 2), (float)0);
         float ymax = std::max(std::min(maxDist, ((float)imageHeight) / 2), (float)0);
-        for (int i = (int)(-ceil(xmax)); i <= (int)ceil(xmax);i++)
-            for (int j = (int)(-ceil(ymax)); j <= (int)(ceil(ymax));j++)
+
+        for (int64_t i = (int64_t)(-ceil(xmax)); i <= (int64_t)ceil(xmax);i++)
+            for (int64_t j = (int64_t)(-ceil(ymax)); j <= (int64_t)(ceil(ymax));j++)
                 if (i * i + j * j <= maxDist * maxDist + 0.000001)searchPositions.push_back({ (i < 0 ? imageWidth + i : i) + imageWidth * (j < 0 ? imageHeight + j : j),i,j });
 
     }
 
     inline void alignWithLogLoadIm1(std::vector<float>& dataIm1, float maxDist, float gaussStdDev) {
+
         alignLoadIm1(dataIm1, maxDist);
 
         for (int i = 0;i < imagePoints;i++) {
@@ -170,7 +174,7 @@ public:
 
         pocketfft::c2r(shape_in, stride_out, stride_in, axes, pocketfft::BACKWARD, fftCh2Rotated.data(), realDataOut.data(), backwardFactor);
 
-        minPos = *max_element(searchPositions.begin(), searchPositions.end(), [&](std::vector<int> i, std::vector<int> j) { return realDataOut[i[0]] < realDataOut[j[0]];});
+        minPos = *max_element(searchPositions.begin(), searchPositions.end(), [&](std::vector<int64_t> i, std::vector<int64_t> j) { return realDataOut[i[0]] < realDataOut[j[0]];});
 
 
         xAlign = -minPos[1];

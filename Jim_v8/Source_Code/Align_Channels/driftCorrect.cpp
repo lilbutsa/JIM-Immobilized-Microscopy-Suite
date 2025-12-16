@@ -25,43 +25,47 @@
 #include "BLTiffIO.h"
 #include "BLImageTransform.h"
 
-void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const float& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string & alignedStackNameBase) {
+void driftCorrect(BLTiffIO::MultiTiffInput& input,size_t posIn, int chanIn, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const float& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string & alignedStackNameBase) {
 	//get image info
-	const uint32_t imageWidth = is[0]->imageWidth;
-	const uint32_t imageHeight = is[0]->imageHeight;
-	const uint64_t imagePoints = imageWidth * imageHeight;
-	const uint64_t numOfFrames = is[0]->numOfFrames;
-	const uint64_t numOfChan = is.size();
+	size_t imageWidth, imageHeight, imageDepth, numOfChan,numOfFrames,numOfZ;
+	input.imageInfo(posIn, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrames, numOfZ);
+	size_t imagePoints = imageWidth * imageHeight;
 	
 	std::vector<float> imaget(imagePoints, 0.0), combimage(imagePoints, 0.0);
 	std::vector<std::vector<float>> allChans(numOfChan, std::vector<float>(imagePoints, 0.0));
 	drifts = std::vector<std::vector<float>>(numOfFrames, std::vector<float>(2, 0.0));
 	outputImage = std::vector<std::vector<float>>(numOfChan, std::vector<float>(imagePoints, 0.0));
 
+	bool bigTiff = false;
+	if((size_t)2000000000 / imagePoints < numOfFrames)bigTiff = true;
+
+
+	size_t chanStart = chanIn < 0 ? 0 : chanIn;
+	size_t chanEnd = chanIn < 0 ? numOfChan : chanIn+1;
+
 	//aligned stack output if required
 	std::vector<BLTiffIO::TiffOutput*>  outputstack;
 	if (alignedStackNameBase.empty() == false) {
-		for (int chancount = 0; chancount < numOfChan; chancount++) {
+		for (int chancount = chanStart; chancount < chanEnd; chancount++) {
 			std::string filenameOut = alignedStackNameBase + "_Channel_" + std::to_string(chancount + 1) + "_Aligned_Stack.tiff";
-			outputstack.push_back(new BLTiffIO::TiffOutput(filenameOut, imageWidth, imageHeight, 16, is[0]->bigtiff));
+			outputstack.push_back(new BLTiffIO::TiffOutput(filenameOut, imageWidth, imageHeight, 16, bigTiff));
 		}
 	}
-
 	imageTransform_32f transformclass(imageWidth, imageHeight);
-
 	alignImages_32f alignclass(imageWidth, imageHeight);
+
 	alignclass.alignWithLogLoadIm1(referenceImage, maxShift, 5);
 
-
 	for (int imcount = 0; imcount < numOfFrames; imcount++) {
+		//std::cout << " Imcount = " << imcount << "\n";
 		//make a combined image of all channels
-		for (int chancount = 0; chancount < numOfChan; chancount++) {
-			if (chancount == 0) {
-				is[chancount]->read1dImage(imcount, allChans[0]);
-				combimage = allChans[0];
+		for (int chancount = chanStart; chancount < chanEnd; chancount++) {
+			if (chancount == chanStart) {
+				input.read1dImage(posIn, imcount, chancount, 0, allChans[chancount]);
+				combimage = allChans[chancount];
 			}
 			else {
-				is[chancount]->read1dImage(imcount, imaget);
+				input.read1dImage(posIn, imcount, chancount, 0, imaget);
 				transformclass.transform(imaget, allChans[chancount], -alignment[chancount - 1][0], -alignment[chancount - 1][1], alignment[chancount - 1][2], alignment[chancount - 1][3]);
 				std::transform(combimage.begin(), combimage.end(), allChans[chancount].begin(), combimage.begin(), std::plus<float>());//add transformed image to combined image
 			}
@@ -74,8 +78,9 @@ void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::
 		drifts[imcount][1] = alignclass.quadFitY;
 		//drifts[imcount][0] = alignclass.xAlign;
 		//drifts[imcount][1] = alignclass.yAlign;
+		//std::cout << imcount << " " << alignclass.xAlign << " " << alignclass.yAlign << " " << alignclass.quadFitX << " " << alignclass.quadFitY << " " << "\n";
 
-		for (int chancount = 0; chancount < numOfChan; chancount++) {
+		for (int chancount = chanStart; chancount < chanEnd; chancount++) {
 			//add align to mean aligned image for each channel
 			transformclass.translate(allChans[chancount], imaget, -drifts[imcount][0], -drifts[imcount][1]);
 			std::transform(outputImage[chancount].begin(), outputImage[chancount].end(), imaget.begin(), outputImage[chancount].begin(), std::plus<float>());
@@ -87,7 +92,7 @@ void driftCorrect(std::vector<BLTiffIO::TiffInput*> is, const std::vector< std::
 	}
 
 	float divisor = (float)numOfFrames;
-	for (int chancount = 0; chancount < numOfChan; chancount++)
+	for (int chancount = chanStart; chancount < chanEnd; chancount++)
 		std::transform(outputImage[chancount].begin(), outputImage[chancount].end(), outputImage[chancount].begin(), [divisor](float val) { return val / divisor; });
 	
 }

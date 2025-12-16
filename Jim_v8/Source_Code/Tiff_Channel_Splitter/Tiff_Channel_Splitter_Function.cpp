@@ -21,23 +21,23 @@ int Tiff_Channel_Splitter(std::string inputfile,  std::vector<std::vector<int>>&
 	std::vector<std::vector<uint16_t>> image;
 
 
-	BLTiffIO::MultiTiffInput mymulti(inputfile, bmetadata, bAcrossMultifiles,numOfChan);
+	BLTiffIO::MultiTiffInput mymulti(inputfile, orientation,bmetadata, bAcrossMultifiles,numOfChan);
 	
 	for (size_t posCount = 0; posCount < mymulti.maxPos; posCount++) {
 		std::string myFolderName = mymulti.path + mymulti.filesep + mymulti.positionNames[posCount];
 		if(!std::filesystem::exists(myFolderName))std::filesystem::create_directories(myFolderName);
-		for (size_t chanCount = 0; chanCount < mymulti.maxChan; chanCount++) {
+		size_t numOfChan, numOfFrame, numOfZ;
+		mymulti.imageInfo(posCount, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ);
+		for (size_t chanCount = 0; chanCount < numOfChan; chanCount++) {
 			std::string outputfilename = myFolderName+ mymulti.filesep+ "Raw_Image_Stack_Channel_" + std::to_string(chanCount + 1) + ".tif";
 			std::cout << "Writing : " << outputfilename << "\n";
-			if (mymulti.imageInfo(posCount, 0, chanCount, 0, imageWidth, imageHeight, imageDepth) == 0) {//check if the channel exists
-				BLTiffIO::TiffOutput outputFile(outputfilename, imageWidth, imageHeight, imageDepth, true);
-				for (size_t frameCount = 0; frameCount < mymulti.maxFrame; frameCount++) {
-					if (mymulti.read2dImage(posCount, frameCount, chanCount, 0, image) == 0) {//check the image exists
-						if(orientation.size()>chanCount && orientation[chanCount][0]==1)vertFlipImage(image);
-						if (orientation.size() > chanCount && orientation[chanCount][1] == 1)vertFlipImage(image);
-						if (orientation.size() > chanCount && orientation[chanCount][2] != 0)rotateImage(image, orientation[chanCount][2]);
-						outputFile.write2dImage(image);
-					}
+			BLTiffIO::TiffOutput outputFile(outputfilename, imageWidth, imageHeight, imageDepth, true);
+			for (size_t frameCount = 0; frameCount < numOfFrame; frameCount++) {
+				if (mymulti.read2dImage(posCount, frameCount, chanCount, 0, image) == 0) {//check the image exists
+					if(orientation.size()>chanCount && orientation[chanCount][0]==1)vertFlipImage(image);
+					if (orientation.size() > chanCount && orientation[chanCount][1] == 1)vertFlipImage(image);
+					if (orientation.size() > chanCount && orientation[chanCount][2] != 0)rotateImage(image, orientation[chanCount][2]);
+					outputFile.write2dImage(image);
 				}
 			}
 		}
