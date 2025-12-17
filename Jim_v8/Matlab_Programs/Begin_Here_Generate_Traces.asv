@@ -48,11 +48,11 @@ if exist('Tiff_Channel_Splitter')~=3
     end
 end
 
-sysVar.fileName = uigetdir('*','Select the Parameter File'); % open the dialog box to select the folder for batch files
-sysVar.fileName=[sysVar.fileName,filesep];
+inputFolder = uigetdir('*','Select the Folder containing your data'); % open the dialog box to select the folder for batch files
+inputFolder=[inputFolder,filesep];
 
 
-%% 2) Organise Image Stack into channels 
+%% 2) Organise Folder into Image Stacks and channels 
 
 %Transform channels so they roughly overlay each othereg
 % [Chan1 Vert Flip,Chan1 Horz Flip, Chan 1 Rotate;
@@ -66,14 +66,13 @@ imStackMultipleFiles = false ; % choose this if you don't have metadata and you'
 
 % Don't touch from here
 
-Tiff_Channel_Splitter(completeName,imStackChannelTransforms,imStackMetadata,imStackNumberOfChannels,imStackMultipleFiles);
+Tiff_Channel_Splitter(inputFolder,imStackChannelTransforms,imStackMetadata,imStackNumberOfChannels,imStackMultipleFiles);
 
 %Detect all folder made that have the raw stacks in them
 
 disp('Organization completed');
 %%
-[sysVar.fileName,sysVar.pathName] = fileparts(allFiles{x})
-sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); 
+sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(completeName),'UniformOutput',false); 
 %% 3) Align Channels and Calculate Drifts
 alignStartFrame = 12;% Select reference frames where there is signal in all channels at the same time start frame from 1
 alignEndFrame = 12;% 
@@ -170,6 +169,8 @@ detectPercent = false; % Set to false if specifying start and end frames in fram
 detectionStartFrame = '1 -5 1'; %first frame of the reference region for detection for each channel
 detectionEndFrame = '5 -1 5'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
+
+detectionRange = [1 5;-5 -1;1 5];
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
 detectWeights = '1 1 1';
 

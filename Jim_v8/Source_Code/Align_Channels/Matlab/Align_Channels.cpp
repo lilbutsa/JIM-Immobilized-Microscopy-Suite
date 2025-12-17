@@ -26,7 +26,7 @@ public:
         float maxShift = inputs[6][0];
         bool outputAligned = inputs[7][0];
 
-        Align_Channels(filebase, inputFiles, startFrame, endFrame, alignments, skipIndependentDrifts, maxShift, outputAligned);
+        Align_Channels(fileName,startFrame, endFrame, position, alignments, skipIndependentDrifts, maxShift, outputAligned);
         std::cout << "Finished Aligning\n";
     }
 

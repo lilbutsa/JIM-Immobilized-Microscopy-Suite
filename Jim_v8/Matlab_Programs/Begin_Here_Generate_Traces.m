@@ -165,9 +165,9 @@ disp('Alignment completed');
 %% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = false ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-detectPercent = false; % Set to false if specifying start and end frames in frame number or true to specify as a percent of stack length between 0 and 100.  
 detectionStartFrame = '1 -5 1'; %first frame of the reference region for detection for each channel
 detectionEndFrame = '5 -1 5'; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
 detectWeights = '1 1 1';
