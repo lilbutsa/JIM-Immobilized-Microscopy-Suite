@@ -1,32 +1,32 @@
 clear
 %% 0) (Optional) Load parameters into this script
-
-[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Parameter File');
-completeName = [sysVar.pathName,sysVar.fileName];
-sysVar.paramtab = readtable(completeName,'Format','%s%s');
-sysVar.paramtab = sysVar.paramtab(2:end,:);
-sysVar.paramtab = table2cell(sysVar.paramtab);
-[sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
-sysVar.line = splitlines(fileread([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m']));
-
-sysVar.paramIsString = [7 8 9 10 17 18 19 20 22 23 24 41 42 43];
-
-for i=1:length(sysVar.paramtab)
-    sysVar.toreplace = find(contains(sysVar.line,sysVar.paramtab{i,1},'IgnoreCase',true),1);
-    sysVar.linein = sysVar.line{sysVar.toreplace};
-    if ismember(i, sysVar.paramIsString)
-        sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ''' sysVar.paramtab{i,2} '''' sysVar.linein(strfind(sysVar.linein,';'):end)];
-    else
-        sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ' sysVar.paramtab{i,2} sysVar.linein(strfind(sysVar.linein,';'):end)];
-
-    end
-end
-sysVar.fid = fopen([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],'w');
-for i=1:size(sysVar.line,1)
-    fprintf(sysVar.fid,'%s\n',sysVar.line{i});
-end
-fclose(sysVar.fid);
-matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
+% 
+% [sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Parameter File');
+% completeName = [sysVar.pathName,sysVar.fileName];
+% sysVar.paramtab = readtable(completeName,'Format','%s%s');
+% sysVar.paramtab = sysVar.paramtab(2:end,:);
+% sysVar.paramtab = table2cell(sysVar.paramtab);
+% [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
+% sysVar.line = splitlines(fileread([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m']));
+% 
+% sysVar.paramIsString = [7 8 9 10 17 18 19 20 22 23 24 41 42 43];
+% 
+% for i=1:length(sysVar.paramtab)
+%     sysVar.toreplace = find(contains(sysVar.line,sysVar.paramtab{i,1},'IgnoreCase',true),1);
+%     sysVar.linein = sysVar.line{sysVar.toreplace};
+%     if ismember(i, sysVar.paramIsString)
+%         sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ''' sysVar.paramtab{i,2} '''' sysVar.linein(strfind(sysVar.linein,';'):end)];
+%     else
+%         sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ' sysVar.paramtab{i,2} sysVar.linein(strfind(sysVar.linein,';'):end)];
+% 
+%     end
+% end
+% sysVar.fid = fopen([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],'w');
+% for i=1:size(sysVar.line,1)
+%     fprintf(sysVar.fid,'%s\n',sysVar.line{i});
+% end
+% fclose(sysVar.fid);
+% matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
 %Default directory for input file selector e.g.
@@ -48,7 +48,7 @@ if exist('Tiff_Channel_Splitter')~=3
     end
 end
 
-inputFolder = uigetdir('*','Select the Folder containing your data'); % open the dialog box to select the folder for batch files
+inputFolder = uigetdir(sysVar.defaultFolder,'Select the Folder containing your data'); % open the dialog box to select the folder for batch files
 inputFolder=[inputFolder,filesep];
 
 
@@ -286,6 +286,8 @@ imshow(sysVar.combinedImage);
 disp('Finished Expanding ROIs');
 
 %% 8) Calculate Traces
+
+%Don't touch from here
 chanCount = 1;
 while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'])>0
     Calculate_Traces(inputFolder,positionToAnalyse, chanCount, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(chanCount),'.csv'])
@@ -359,7 +361,7 @@ disp('Finished Generating Traces');
 % fprintf(sysVar.fileID, sysVar.variableString);
 % fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =4; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber =3; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 6;%Set to zero to just have frames
 montage.timeUnits = 's'; % Unit to use for x axis 
 

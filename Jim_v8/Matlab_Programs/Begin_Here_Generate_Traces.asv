@@ -1,32 +1,32 @@
 clear
 %% 0) (Optional) Load parameters into this script
-
-[sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Parameter File');
-completeName = [sysVar.pathName,sysVar.fileName];
-sysVar.paramtab = readtable(completeName,'Format','%s%s');
-sysVar.paramtab = sysVar.paramtab(2:end,:);
-sysVar.paramtab = table2cell(sysVar.paramtab);
-[sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
-sysVar.line = splitlines(fileread([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m']));
-
-sysVar.paramIsString = [7 8 9 10 17 18 19 20 22 23 24 41 42 43];
-
-for i=1:length(sysVar.paramtab)
-    sysVar.toreplace = find(contains(sysVar.line,sysVar.paramtab{i,1},'IgnoreCase',true),1);
-    sysVar.linein = sysVar.line{sysVar.toreplace};
-    if ismember(i, sysVar.paramIsString)
-        sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ''' sysVar.paramtab{i,2} '''' sysVar.linein(strfind(sysVar.linein,';'):end)];
-    else
-        sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ' sysVar.paramtab{i,2} sysVar.linein(strfind(sysVar.linein,';'):end)];
-
-    end
-end
-sysVar.fid = fopen([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],'w');
-for i=1:size(sysVar.line,1)
-    fprintf(sysVar.fid,'%s\n',sysVar.line{i});
-end
-fclose(sysVar.fid);
-matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
+% 
+% [sysVar.fileName,sysVar.pathName] = uigetfile('*','Select the Parameter File');
+% completeName = [sysVar.pathName,sysVar.fileName];
+% sysVar.paramtab = readtable(completeName,'Format','%s%s');
+% sysVar.paramtab = sysVar.paramtab(2:end,:);
+% sysVar.paramtab = table2cell(sysVar.paramtab);
+% [sysConst.JIM,~,~] = fileparts(matlab.desktop.editor.getActiveFilename);%Find the location of this script (should be in Jim\Matlab_Programs)
+% sysVar.line = splitlines(fileread([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m']));
+% 
+% sysVar.paramIsString = [7 8 9 10 17 18 19 20 22 23 24 41 42 43];
+% 
+% for i=1:length(sysVar.paramtab)
+%     sysVar.toreplace = find(contains(sysVar.line,sysVar.paramtab{i,1},'IgnoreCase',true),1);
+%     sysVar.linein = sysVar.line{sysVar.toreplace};
+%     if ismember(i, sysVar.paramIsString)
+%         sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ''' sysVar.paramtab{i,2} '''' sysVar.linein(strfind(sysVar.linein,';'):end)];
+%     else
+%         sysVar.line{sysVar.toreplace} = [sysVar.linein(1:strfind(sysVar.linein,'=')) ' ' sysVar.paramtab{i,2} sysVar.linein(strfind(sysVar.linein,';'):end)];
+% 
+%     end
+% end
+% sysVar.fid = fopen([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],'w');
+% for i=1:size(sysVar.line,1)
+%     fprintf(sysVar.fid,'%s\n',sysVar.line{i});
+% end
+% fclose(sysVar.fid);
+% matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
 %% 1) Select the input tiff file and Create a Folder for results
 %Default directory for input file selector e.g.
@@ -48,7 +48,7 @@ if exist('Tiff_Channel_Splitter')~=3
     end
 end
 
-inputFolder = uigetdir('*','Select the Folder containing your data'); % open the dialog box to select the folder for batch files
+inputFolder = uigetdir(sysVar.defaultFolder,'Select the Folder containing your data'); % open the dialog box to select the folder for batch files
 inputFolder=[inputFolder,filesep];
 
 
@@ -286,6 +286,8 @@ imshow(sysVar.combinedImage);
 disp('Finished Expanding ROIs');
 
 %% 8) Calculate Traces
+
+%Don't touch from here
 chanCount = 1;
 while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'])>0
     Calculate_Traces(inputFolder,positionToAnalyse, chanCount, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(chanCount),'.csv'])
@@ -365,8 +367,8 @@ montage.timeUnits = 's'; % Unit to use for x axis
 
 %don't touch from here
 
-if ~exist([allPositionFolders{positionToAnalyse} 'Examples' filesep], 'dir')
-    mkdir([allPositionFolders{positionToAnalyse} 'Examples' filesep])%make a subfolder with that name
+if ~exist([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep], 'dir')
+    mkdir([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep])%make a subfolder with that name
 end
 
 sysVar.measures = csvread([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Measurements.csv'],1);
@@ -448,9 +450,9 @@ end
 h = annotation('textbox',[0.5,0.08,0,0],'string',['Time (',montage.timeUnits,')'],'FontSize',14,'EdgeColor',"none",'FitBoxToText',true,'HorizontalAlignment','center','FontWeight','bold');
 movegui(sysVar.fig);
 %set(findobj(gcf,'type','axes'),'FontName','Myriad Pro','FontSize',9,'LineWidth', 1.5);
-print([allPositionFolders{positionToAnalyse} 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
-print([allPositionFolders{positionToAnalyse} 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
-savefig(sysVar.fig,[allPositionFolders{positionToAnalyse} 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
+print([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-dpng', '-r600');
+print([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)], '-depsc', '-r600');
+savefig(sysVar.fig,[allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 
 %% 11)Extract Individual Trace and montage
 montage.traceNo = 285;
@@ -532,7 +534,7 @@ savefig(sysVar.fig,[allPositionFolders{positionToAnalyse} 'Examples' filesep 'Ex
 %
 %
 %% 1) Detect files for batch
-filesInSubFolders = true; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = false; % Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 
 sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
@@ -550,19 +552,19 @@ sysConst.NumberOfFiles=size(sysVar.allFolders,1);
 disp(['There are ',num2str(sysConst.NumberOfFiles),' folders to analyse']);
 
 %% 2) Batch Analyse
-overwritePreviouslyAnalysed = true;
 
 for i=1:sysConst.NumberOfFiles
     
-    completeName =  sysVar.allFolders{i};
+    inputFolder =  sysVar.allFolders{i};
     
-    
-    disp(['Analysing ',completeName]);
+    disp(['Analysing ',inputFolder]);
 
     Align_Channels(inputFolder,alignStartFrame,alignEndFrame,0,alignment,false,alignMaxShift,alignOutputStacks);
     Mean_of_Frames(inputFolder,0,detectionStartFrame,detectionEndFrame,detectUsingMaxProjection,detectWeights);
+    allPositionFolders = strip(strsplit(fileread([inputFolder 'PositionNameList.csv']),'\n'));
+    allPositionFolders = allPositionFolders(:,1:end-1);
 
-    for positionToAnalyse = 1:posnum
+    for positionToAnalyse = 1:length(allPositionFolders);
         Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff, 'MinDistFromEdge',detectMinEdgeDist,'MinCount',detectMinCount,'MaxCount',detectMaxCount,'MinEccentricity',detectMinEccentricity,'MaxEccentricity',detectMaxEccentricity,'MinSeparation',detectMinSeparation); % Run the program Find_Particles.exe with the users values and write the output to the results sysVar.file with the prefix Detected_
         if additionBackgroundDetect
             Mean_of_Frames(inputFolder,positionToAnalyse,additionalBackgroundStartFrame,additionalBackgroundEndFrame,additionBackgroundUseMaxProjection,additionalBackgroundWeights);
@@ -580,154 +582,6 @@ for i=1:sysConst.NumberOfFiles
     end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-    % 3.2) Create folder for results
-    [fileNamein,name,~] = fileparts(completeName);%get the name of the tiff image
-    pathName = [fileNamein,filesep];
-    
-    for j=1:additionalExtensionsToRemove
-        allPositionFolders{positionToAnalyse} = [fileNamein,filesep,name];
-        [fileNamein,name,~] = fileparts(allPositionFolders{positionToAnalyse});
-    end
-    allPositionFolders{positionToAnalyse} = [fileNamein,filesep,name,filesep];
-    
-    if ~exist(allPositionFolders{positionToAnalyse}, 'dir')
-        mkdir(allPositionFolders{positionToAnalyse})%make a subfolder with that name
-    end
-    
-    if (exist([allPositionFolders{positionToAnalyse},'Channel_1_Fluorescent_Intensities.csv'],'file')==2 && overwritePreviouslyAnalysed==false)
-        disp(['Skipping ',completeName,' - Analysis already exists']);
-        continue
-    end
-    
-    if imStackMultipleFiles
-        completeName = arrayfun(@(x)['"',pathName,x.name,'" '],dir(pathName)','UniformOutput',false);
-        completeName = completeName(contains(completeName,'.tif','IgnoreCase',true));
-        completeName = horzcat(completeName{:});
-    else
-        completeName = ['"',completeName,'" '];
-    end
-
-
-    
-   % 3.3) Split File into individual channels 
-    
-    cmd = [sysConst.JIM,'Tiff_Channel_Splitter',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Raw_Image_Stack" ',completeName,'-NumberOfChannels ',num2str(imStackNumberOfChannels),' -StartFrame ',num2str(imStackStartFrame),' -EndFrame ',num2str(imStackEndFrame)];
-
-    if ~isempty(imStackChannelsToTransform)    
-         cmd = [ cmd ,' -Transform ',imStackChannelsToTransform,' ',imStackVerticalFlipChannel,' ',imStackHorizontalFlipChannel,' ',imStackRotateChannel];
-    end
-
-    if(imStackDisableMetadata)
-         cmd = [ cmd ,' -DisableMetadata'];
-    end
-
-    system(cmd);
-    
-    % 3.4) Align Channels and Calculate Drifts 
-
-    allChannelNames = ''; % make a list of all channels that need aligning (everything above channel 1)
-    for j = 1:imStackNumberOfChannels
-        allChannelNames = [allChannelNames,' "',allPositionFolders{positionToAnalyse},'Raw_Image_Stack_Channel_',num2str(j),'.tif"'];
-    end
-
-    cmd = [sysConst.JIM,'Align_Channels',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Alignment"',allChannelNames,' -Start ',num2str(alignStartFrame),' -End ',num2str(alignEndFrame),' -Iterations ',num2str(alignIterations),' -MaxShift ',num2str(alignMaxShift)];
-
-    if alignManually
-        cmd = [cmd,' -Alignment ',alignXOffset,' ',alignYOffset,' ',alignRotationAngle,' ',alignScalingFactor];
-    elseif imStackNumberOfChannels>1
-        cmd = [cmd,' -MaxIntensities ',alignMaxIntensities,' -SNRCutoff ',num2str(alignSNRCutoff)];
-    end
-
-%     if alignOutputStacks
-%         cmd = [cmd,' -OutputAligned '];
-%     end
-
-    system(cmd);
-
-
-    % make submean
-    cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Alignment_Channel_To_Channel_Alignment.csv" "',allPositionFolders{positionToAnalyse},'Alignment_Channel_1.csv" "',allPositionFolders{positionToAnalyse},'Image_For_Detection"',allChannelNames,' -Start ',detectionStartFrame,' -End ',detectionEndFrame,' -Weights ',detectWeights];
-    if detectUsingMaxProjection
-        cmd = [cmd,' -MaxProjection'];
-    end
-    if detectPercent
-    	cmd = [cmd,' -Percent'];
-    end
-
-    system(cmd);
-    
-    % 3.5) Detect Particles
-
-    cmd = [sysConst.JIM,'Detect_Particles',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Image_For_Detection_Partial_Mean.tiff" "',allPositionFolders{positionToAnalyse},'Detected" -BinarizeCutoff ', num2str(detectionCutoff),' -minLength ',num2str(detectMinLength),' -maxLength ',num2str(detectMaxLength),' -minCount ',num2str(detectMinCount),' -maxCount ',num2str(detectMaxCount),' -minEccentricity ',num2str(detectMinEccentricity),' -maxEccentricity ',num2str(detectMaxEccentricity),' -left ',num2str(detectLeftEdge),' -right ',num2str(detectRightEdge),' -top ',num2str(detectTopEdge),' -bottom ',num2str(detectBottomEdge),' -maxDistFromLinear ',num2str(detectMaxDistFromLinear),' -minSeparation ',num2str(detectMinSeparation)]; % Run the program Find_Particles.exe with the users values and write the output to the results sysVar.file with the prefix Detected_
-    system(cmd)
-    
-    %background Detect
-    if additionBackgroundDetect
-
-        cmd = [sysConst.JIM,'Mean_of_Frames',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Alignment_Channel_To_Channel_Alignment.csv" "',allPositionFolders{positionToAnalyse},'Alignment_Channel_1.csv" "',allPositionFolders{positionToAnalyse},'Background"',allChannelNames,' -Start ',additionalBackgroundStartFrame,' -End ',additionalBackgroundEndFrame,' -Weights ',additionalBackgroundWeights];
-        if additionBackgroundUseMaxProjection
-            cmd = [cmd,' -MaxProjection'];
-        end 
-        if additionBackgroundPercent
-            cmd = [cmd,' -Percent'];
-        end
-
-        system(cmd);
-
-        cmd = [sysConst.JIM,'Detect_Particles',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Background_Partial_Mean.tiff" "',allPositionFolders{positionToAnalyse},'Background_Detected" -BinarizeCutoff ', num2str(additionBackgroundCutoff)]; % Run the program Find_Particles.exe with the users values and write the output to the reults sysVar.file with the prefix Detected_
-        system(cmd);
-    end
-
-
-    % 3.7) Fit areas around each shape 
-
-    cmd = [sysConst.JIM,'Expand_Shapes',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Detected_Filtered_Positions.csv" "',allPositionFolders{positionToAnalyse},'Detected_Positions.csv" "',allPositionFolders{positionToAnalyse},'Expanded" -boundaryDist ', num2str(expandForegroundDist),' -backgroundDist ',num2str(expandBackOuterDist),' -backInnerRadius ',num2str(expandBackInnerDist)];
-    if additionBackgroundDetect
-        cmd = [cmd,' -extraBackgroundFile "',allPositionFolders{positionToAnalyse},'Background_Detected_Positions.csv"'];
-    end
-    if imStackNumberOfChannels > 1
-        cmd = [cmd,' -channelAlignment "',allPositionFolders{positionToAnalyse},'Alignment_Channel_To_Channel_Alignment.csv"'];
-    end
-    
-    system(cmd);
-
-    % 3.8) Calculate amplitude for each frame for each channel
-    
-    for j = 1:imStackNumberOfChannels
-        cmd = [sysConst.JIM,'Calculate_Traces',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Raw_Image_Stack_Channel_',num2str(j),'.tif" "',allPositionFolders{positionToAnalyse},'Expanded_ROI_Positions_Channel_',num2str(j),'.csv" "',allPositionFolders{positionToAnalyse},'Expanded_Background_Positions_Channel_',num2str(j),'.csv" "',allPositionFolders{positionToAnalyse},'Channel_',num2str(j),'" -Drift "',allPositionFolders{positionToAnalyse},'Alignment_Channel_',num2str(j),'.csv"'];
-        if traceVerboseOutput
-            cmd = [cmd,' -Verbose'];
-        end  
-        system(cmd);    
-    end
-    
-    if stepfitEnable
-        cmd = [sysConst.JIM,'Step_Fitting',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Channel_',num2str(stepfitChannel),'_Fluorescent_Intensities.csv','" "',allPositionFolders{positionToAnalyse},'Channel_',num2str(stepfitChannel),'" -TThreshold ',num2str(stepfitThreshold)];
-        system(cmd);
-    end
-    
-    fileID = fopen([allPositionFolders{positionToAnalyse},'Trace_Generation_Variables.csv'],'w');
-    fprintf(fileID, sysConst.variableString);
-    fclose(fileID);
-    
-    %Delete working files
-    if deleteWorkingImageStacks
-        for j=1:imStackNumberOfChannels
-            delete([allPositionFolders{positionToAnalyse},'Raw_Image_Stack_Channel_',num2str(j),'.tif']);
-        end
-    end
 end
 
 disp('Batch Process Completed');
@@ -738,8 +592,6 @@ sysVar.outputFolder = [sysVar.outputFolder,filesep];
 
 sysVar.outputFile = [arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Intensities.csv']),'UniformOutput',false);
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Fluorescent_Backgrounds.csv']),'UniformOutput',false);
-    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepMeans.csv']),'UniformOutput',false);
-    arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_StepPoints.csv']),'UniformOutput',false);
     arrayfun(@(x)[x.folder,filesep,x.name],dir([sysVar.fileName '**' filesep '*_Detected_Filtered_Measurements.csv']),'UniformOutput',false);];
 disp([num2str(length(sysVar.outputFile)) ' files to copy']);
 
