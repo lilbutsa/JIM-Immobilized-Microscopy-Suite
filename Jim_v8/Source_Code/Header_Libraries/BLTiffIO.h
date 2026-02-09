@@ -800,7 +800,7 @@ namespace BLTiffIO {
 		}
 
 
-		inline MultiTiffInput::MultiTiffInput(std::string filenamein, std::vector<std::vector<int>> orientationIn = std::vector<std::vector<int>>(), bool bUseMetadata = true,bool bAcrossMultipleFiles = false, size_t numOfChannels = 1,bool filesSplitByChannelIn=false) {
+		inline MultiTiffInput::MultiTiffInput(std::string filenamein, size_t numOfChannels = 1, bool filesSplitByChannelIn = false, std::vector<std::vector<int>> orientationIn = std::vector<std::vector<int>>(), bool bUseMetadata = true,bool bAcrossMultipleFiles = false) {
 			std::string filesepin(1, std::filesystem::path::preferred_separator);
 			filesep = filesepin;
 
@@ -951,7 +951,7 @@ namespace BLTiffIO {
 	};
 
 	template <typename vectortype>
-	int read1dImage(size_t pos, size_t frame, size_t chan, size_t z, std::vector<vectortype>& imageout) {
+	int read1dImage(const size_t pos, const  size_t frame, const  size_t chan, const size_t z, std::vector<vectortype>& imageout) {
 		if (pos < maxPos && frame < maxFrame &&chan < maxChan && z < maxZ ) {
 			imagePos imagePosIn = imageOrder[pos][frame][chan][z];
 			if (imagePosIn.initialized == 1) {
@@ -985,7 +985,7 @@ namespace BLTiffIO {
 	}
 
 	template <typename vectortype>
-	int read2dImage(size_t pos, size_t frame, size_t chan, size_t z, std::vector < std::vector<vectortype>>& imageout) {
+	int read2dImage(const size_t pos, const size_t frame, const  size_t chan, const  size_t z, std::vector < std::vector<vectortype>>& imageout) {
 		if (pos < maxPos && frame < maxFrame &&
 			chan < maxChan && z < maxZ) {
 			imagePos imagePosIn = imageOrder[pos][frame][chan][z];

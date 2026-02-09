@@ -3,57 +3,44 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include "BLMatlabParser.h"
 
-int Mean_of_Frames(std::string outputfile, std::vector<std::string> inputfiles, std::string driftfile, std::string alignfile, std::vector<int> start, std::vector<int> end, bool bPercent, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize);
+
+
+int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "");
 
 //Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 10;
+    const int minNumOfInputs = 6;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
-        std::cout << "Starting Program\n";
+        //std::cout << "Starting Program\n";
         checkArguments(outputs, inputs);
-        matlab::data::CharArray filebaseChar = inputs[0];
-        std::string filebase = filebaseChar.toAscii();
-        std::vector<std::string> inputFiles;
-        for (int i = 0;i < inputs.size() - minNumOfInputs + 1;i++) {
-            filebaseChar = inputs[i + 1];
-            inputFiles.push_back(filebaseChar.toAscii());
+        std::vector<int> start, end, bvMaxProject;
+        std::vector<float>  weights;
+
+
+        std::string fileName = parseStringMatlab(inputs,0);
+        int positionIn = inputs[1][0];
+        parse1DMatlabArray(inputs,2, start);
+        parse1DMatlabArray(inputs,3, end);
+        parse1DMatlabArray(inputs,4, bvMaxProject);
+        parse1DMatlabArray(inputs,5, weights);
+
+        bool bNormalize = true;
+        std::string driftfile = "", alignfile = "";
+
+        for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
+            std::string optionArg = parseStringMatlab(inputs, paramcount);
+            if (optionArg == "Normalize") bNormalize = inputs[paramcount + 1][0];
+            else if (optionArg == "DriftFile")driftfile = parseStringMatlab(inputs, paramcount + 1);
+            else if (optionArg == "AlignFile")alignfile = parseStringMatlab(inputs, paramcount + 1);
         }
-        filebaseChar = inputs[inputs.size() - minNumOfInputs + 2];
-        std::string driftfile = filebaseChar.toAscii();
-        filebaseChar = inputs[inputs.size() - minNumOfInputs + 3];
-        std::string alignfile = filebaseChar.toAscii();
-
-        matlab::data::TypedArray<double> TransformMat = inputs[inputs.size() - minNumOfInputs + 5];
-        matlab::data::ArrayDimensions dims = TransformMat.getDimensions();
-        std::vector<int> start(dims[0], 0);
-        for (int i = 0;i < dims[0];i++)start[i]= (int)TransformMat[i][0];
-
-        TransformMat = inputs[inputs.size() - minNumOfInputs + 6];
-        dims = TransformMat.getDimensions();
-        std::vector<int> end(dims[0], 0);
-        for (int i = 0;i < dims[0];i++)end[i] = (int)TransformMat[i][0];
-
-        bool bPercent = inputs[inputs.size() - minNumOfInputs + 7][0];
-
-        TransformMat = inputs[inputs.size() - minNumOfInputs + 8];
-        dims = TransformMat.getDimensions();
-        std::vector<int> bvMaxProject(dims[0], 0);
-        for (int i = 0;i < dims[0];i++)bvMaxProject[i] = (int)TransformMat[i][0];
 
 
-        TransformMat = inputs[inputs.size() - minNumOfInputs + 9];
-        dims = TransformMat.getDimensions();
-        std::vector<float> weights(dims[0], 0);
-        for (int i = 0;i < dims[0];i++)weights[i] = (float)TransformMat[i][0];
+        Mean_of_Frames(fileName, positionIn, start, end, bvMaxProject, weights, bNormalize, driftfile, alignfile);
 
-        bool bNormalize = inputs[inputs.size() - minNumOfInputs + 10][0];
-
-
-        Mean_of_Frames(filebase, inputFiles, driftfile, alignfile, start, end, bPercent, bvMaxProject, weights, bNormalize);
-
-        std::cout << "Finishing Program\n";
     }
 
 
@@ -61,9 +48,20 @@ public:
         std::shared_ptr<matlab::engine::MATLABEngine> matlabPtr = getEngine();
         matlab::data::ArrayFactory factory;
 
+        std::string errormsg = "Mean_of_Frames\nDescription:\nThis program generates a combined reference image from a range of frames across multiple imaging channels.\nIt applies drift correction, channel alignment, and optional normalization.\n";
+            errormsg += "Call:\n Mean_of_Frames(folderName,positionIn,start, end, maxProject,weights)\n";
+            errormsg += "Variables:\n-folderName:eg.\n";
+            errormsg += "start: array with the start frame for each channel. First frame is 1. Needs a value for each channel. Negative values go from endeg.for three channel data [2 -4 5]. Channel 1 would start from the 2nd frame, channel 2 from the 4th last frame and channel 3 from frame 5 \n";
+            errormsg += "end: array with the end frame for each channel. Same as start, First frame is 1. Needs a value for each channel. Negative values go back from the last frame. \n";
+            errormsg += "maxProject: array with the weight for each channel. Needs a value for each channel. e.g. [0.5 1.5 3] will multiply channels 1 by 0.5, 2 by 1.5 and 3 by 3 before they are added.\n";
+            errormsg += "weights: array with the weight for each channel. Needs a value for each channel. e.g. [0.5 1.5 3] will multiply channels 1 by 0.5, 2 by 1.5 and 3 by 3 before they are added.\n";
+            errormsg += "Options: \nNormalize: (true or false) whether to normalize all images before mulitplying by weight and summing.(default = true)\n";
+            errormsg += "DriftFile: manually set the csv file used for drift correction\n";
+            errormsg += "AlignFile: manually set the csv file used for channel alignment\n";
+
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least nine inputs required - int Mean_of_Frames(std::string outputfile, std::vector<std::string> inputfiles, std::string driftfile, std::string alignfile, std::vector<int> start, std::vector<int> end, bool bPercent, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar(errormsg) }));
         }
 
     }

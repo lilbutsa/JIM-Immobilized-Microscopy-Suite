@@ -25,7 +25,7 @@
 #include "BLFlagParser.h"
 #include <stdexcept> 
 
-int Align_Channels(std::string fileName, int startFrame, int endFrame, size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned);
+int Align_Channels(std::string fileName, int startFrame, int endFrame, size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned, int numOfChannels = 1, bool filesSplitByChannelIn = false);
 
 
 int main(int argc, char *argv[])
@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 		std::cout << "-OutputAligned (Default false) Save the aligned image stacks\n";
 		std::cout << "-SkipIndependentDrifts (Default false) Only Generate combined drifts, For Channel to Channel alignment use the reference frames\n";
 		std::cout << "-Alignment Manually input the alignment between channels. Requires 4 values per extra channel (x offset ch2, ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n";
+		std::cout << "-NumberOfChannels i (Default i = 2) Sets the number of channels to split the file into. Only used if no OME metadata is present. \n";
 		return 0;
 	}
 
@@ -48,7 +49,7 @@ int main(int argc, char *argv[])
 	int numInputFiles = 0;
 	std::vector<BLTiffIO::TiffInput*> is;//input stack
 	bool inputalignment = false,skipIndependentDrifts = false;
-	int start = 1, end = -1, position = 0;
+	int start = 1, end = -1, position = 0, numOfChan = 2;
 	std::vector<std::vector<float>> alignments;
 	std::vector<std::vector<float>> drifts;
 	float maxShift = FLT_MAX;
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 	alignments = std::vector<std::vector<float>>();
 	std::vector<float> alignmentArguments;
 
-	std::vector<std::pair<std::string, int*>> intFlags = {{"Start", &start},{"End", &end},{"Position", &position} };
+	std::vector<std::pair<std::string, int*>> intFlags = {{"Start", &start},{"End", &end},{"Position", &position},{"NumberOfChannels", &numOfChan} };
 	std::vector<std::pair<std::string, float*>> floatFlags = {{"MaxShift", &maxShift} };
 	std::vector<std::pair<std::string, bool*>> boolFlags = { {"OutputAligned", &outputAligned}, {"SkipIndependentDrifts", &skipIndependentDrifts} };
 	std::vector<std::pair<std::string, std::vector<float>*>> vecFlags = { {"Alignment", &alignmentArguments} };

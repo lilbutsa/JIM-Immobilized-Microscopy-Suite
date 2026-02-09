@@ -6,17 +6,37 @@
 void driftCorrect(BLTiffIO::MultiTiffInput& input, size_t posIn, int chanIn, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const float& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string& alignedStackNameBase);
 std::vector< std::vector<float>> findAlignment(std::vector< std::vector<float>>& prealignmentReference, uint32_t imageWidth, uint32_t imageHeight, float maxShift);
 
-int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned)
+int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned, int numOfChannels = 1,bool filesSplitByChannelIn = false)
 {
+	/*
+	std::cout <<"filename = "<< fileName << "\n";
+	std::cout << "startFrame = " << startFrame << "\n";
+	std::cout << "endFrame = " << endFrame << "\n";
+	std::cout << "positionIn = " << positionIn << "\n";
+	std::cout << "alignments = \n";
+	for (int i = 0; i < alignments.size(); i++) {
+		for (int j = 0; j < alignments[i].size(); j++)std::cout << alignments[i][j] << " ";
+		std::cout << "\n";
+	}
+	std::cout << "skipIndependentDrifts = " << skipIndependentDrifts << "\n";
+	std::cout << "maxShift = " << maxShift << "\n";
+	std::cout << "outputAligned = " << outputAligned << "\n";
+	std::cout << "numOfChannels = " << numOfChannels << "\n";
+	std::cout << "filesSplitByChannelIn = " << filesSplitByChannelIn << "\n";
+	*/
 
 	//Aim only open each file twice (thrice if auto alignment)
 	//once to make sub average, once to align everything
 	//also removing initial full stack as it requires a full read
-	BLTiffIO::MultiTiffInput allFiles(fileName);
+	BLTiffIO::MultiTiffInput allFiles(fileName, numOfChannels, filesSplitByChannelIn);
 
 
 	size_t totalPositions = allFiles.positionNames.size();
 	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan,numOfFrame,numOfZ;
+
+	std::vector<std::string> allFolderNames;
+	for (size_t posCount = 0; posCount < totalPositions; posCount++)allFolderNames.push_back(allFiles.path + allFiles.filesep+allFiles.positionNames[posCount]);
+	BLCSVIO::writeStringList(allFiles.path + allFiles.filesep + "PositionNameList.csv", allFolderNames);
 
 	for (size_t posCount = (positionIn == 0 ? 0 : positionIn-1); posCount < (positionIn == 0 ? totalPositions : positionIn); posCount++) {
 
@@ -33,7 +53,7 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 		imageTransform_32f transformclass(imageWidth, imageHeight);
 
 		//make output image files
-		std::string myFolderName = allFiles.path + allFiles.filesep + allFiles.positionNames[posCount];
+		std::string myFolderName = allFiles.path + allFiles.filesep+ allFiles.positionNames[posCount];
 		if (!std::filesystem::exists(myFolderName))std::filesystem::create_directories(myFolderName);
 		std::string fileBase = myFolderName + allFiles.filesep + "Aligned";
 
@@ -49,7 +69,7 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 				allFiles.read1dImage(posCount, imcount, chancount, 0, imagein);
 				std::transform(prealignmentReference[chancount].begin(), prealignmentReference[chancount].end(), imagein.begin(), prealignmentReference[chancount].begin(), std::plus<float>());
 			}
-			float divisor = (float)(endFrame - startFrame);
+			float divisor = (float)(endFrameIn - startFrameIn);
 			std::transform(prealignmentReference[chancount].begin(), prealignmentReference[chancount].end(), prealignmentReference[chancount].begin(), [divisor](float val) { return val / divisor; });
 			
 			BeforePartial.write1dImage(prealignmentReference[chancount]);
@@ -100,5 +120,6 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 
 	}
 
+	
 	return 0;
 }

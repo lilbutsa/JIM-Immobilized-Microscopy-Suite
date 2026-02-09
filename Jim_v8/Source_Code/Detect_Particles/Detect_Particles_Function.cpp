@@ -12,7 +12,7 @@ public:
 		* maxDistfromLinear, * xEnd1LinFit, * yEnd1LinFit, * xEnd2LinFit, * yEnd2LinFit, * xBoundingBoxMin, * xBoundingBoxMax, * yBoundingBoxMin, * yBoundingBoxMax, * nearestNeighbour;
 };
 
-void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions vector*/, int imagewidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected);
+void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions vector*/, size_t imageWidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected);
 void numberimage(std::vector<std::vector<float> >& filteredcents, std::vector<uint8_t>& fn, int iw, int ih);
 std::vector<std::vector<uint64_t> > binaryToPositions(const std::vector<uint8_t> binary, const uint32_t imageWidth, const uint32_t imageHeight);
 
@@ -21,7 +21,15 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 	double minEccentricity, double maxEccentricity, double minLength, double maxLength, double minCount, double maxCount, double maxDistFromLinear, bool includeSmall) {
 	//read in image for detection
 
+
 	BLTiffIO::TiffInput inputstack(inputfile);
+
+	if (fileBase == "") {
+		std::string filesepin(1, std::filesystem::path::preferred_separator);
+		std::string filesep = filesepin;
+		fileBase = std::filesystem::path(inputfile).parent_path().generic_string()+ filesep+"Detected";
+		std::cout << "Using the default file base of " << fileBase << "\n";
+	}
 
 	uint32_t imageDepth = inputstack.imageDepth;
 	uint32_t imageWidth = inputstack.imageWidth;

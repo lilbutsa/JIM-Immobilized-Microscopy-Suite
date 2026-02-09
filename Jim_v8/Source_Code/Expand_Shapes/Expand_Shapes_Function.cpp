@@ -13,6 +13,23 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	bool bExtraBackground = false;
 	if(extraBackgroundFileName!="")bExtraBackground = true;
 
+	if (channelAlignmentFileName == "") {//check folder for file
+		std::string filesepin(1, std::filesystem::path::preferred_separator);
+		std::string filesep = filesepin;
+		std::string potentialChannelAlignment = std::filesystem::path(foregroundposfile).parent_path().generic_string() + filesep + "Aligned_Channel_To_Channel_Alignment.csv";
+		if (std::filesystem::exists(potentialChannelAlignment)) {
+			channelAlignmentFileName = potentialChannelAlignment;
+			std::cout << "Using the default channel alignment file of " << potentialChannelAlignment << "\n";
+		} else std::cout << "Channel Alignment not found\n";
+	}
+
+	if (output == "") {
+		std::string filesepin(1, std::filesystem::path::preferred_separator);
+		std::string filesep = filesepin;
+		output = std::filesystem::path(foregroundposfile).parent_path().generic_string() + filesep + "Expanded";
+		std::cout << "Using the default output location " << output << "\n";
+	}
+
 	//read in foreground positions and get image size data out
 	std::vector<std::vector<int>> labelledpos(3000, std::vector<int>(1000, 0));
 	std::vector<std::string> headerLine;
@@ -26,6 +43,10 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	//make foreground image
 	std::vector<uint16_t> posImage(imagePoints, 0);
 	for (int i = 0; i < labelledpos.size(); i++)for (int j = 0; j < labelledpos[i].size(); j++)posImage[labelledpos[i][j]] = i + 1;
+
+	//BLTiffIO::TiffOutput(output + "_debug_posimage.tif", imageWidth, imageHeight, 16).write1dImage(posImage);
+
+
 
 	//read in background
 	std::vector<std::vector<int>> backgroundpos(3000, std::vector<int>(1000, 0));
@@ -44,7 +65,7 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 		extrabackgroundpos.erase(extrabackgroundpos.begin());
 		for (int i = 0; i < extrabackgroundpos.size(); i++)for (int j = 0; j < extrabackgroundpos[i].size(); j++)backgroundImage[extrabackgroundpos[i][j]] = 255;
 	}
-
+	//BLTiffIO::TiffOutput(output + "_debug_backposimage.tif", imageWidth, imageHeight, 16).write1dImage(backgroundImage);
 
 	//find search positions for each ring
 	std::vector<std::vector<int>> foregroundSearchPos, midgroundSearchPos, backgroundSearchPos;
@@ -59,9 +80,10 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	std::sort(backgroundSearchPos.begin(), backgroundSearchPos.end(), [](const std::vector<int>& a, const std::vector<int>& b) {return a[0] < b[0];});
 
 
-
 	//search around each pixel for foreground and background
 	std::vector<std::vector<int>> expandedForeground(labelledpos.size(), std::vector<int>()), expandedBackground(labelledpos.size(), std::vector<int>());
+
+	//std::vector<uint16_t> expandedForegrounddebugImage(imagePoints, 0);
 
 	for (int x = 0;x < imageWidth;x++)for (int y = 0;y < imageHeight;y++) {
 		bool notfound = true;
@@ -73,12 +95,13 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 			if (xIn >= 0 && xIn < imageWidth && yIn >= 0 && yIn < imageHeight) {
 				if (posImage[xIn + yIn * imageWidth] > 0) {//if found in the foreground points then add it to the list
 					expandedForeground[posImage[xIn + yIn * imageWidth] - 1].push_back(x + y * imageWidth);
+					//expandedForegrounddebugImage[x + y * imageWidth] = posImage[xIn + yIn * imageWidth];
 					notfound = false;
 					break;
 				}
 				else if (backgroundImage[xIn + yIn * imageWidth] > 0) {//if only found in the background points then discard
 					notfound = false;
-					break;
+					//break;
 				}
 			}
 		}
@@ -104,6 +127,9 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 			}
 		}
 	}
+
+	//BLTiffIO::TiffOutput(output + "_debug_expandimage.tif", imageWidth, imageHeight, 16).write1dImage(expandedForegrounddebugImage);
+	// 
 	//filter background positions for unique values
 	for (int i = 0; i < expandedBackground.size(); i++) {
 		sort(expandedBackground[i].begin(), expandedBackground[i].end());

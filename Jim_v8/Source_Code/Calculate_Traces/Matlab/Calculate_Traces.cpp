@@ -3,31 +3,35 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include "BLMatlabParser.h"
 
-int Calculate_Traces(std::string output, std::string inputfile, std::string ROIfile, std::string backgroundfile, std::string driftfile, bool veboseoutput);
+int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, bool veboseoutput, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
 
 
 //Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 6;
+    const int minNumOfInputs = 5;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         std::cout << "Starting Program\n";
         checkArguments(outputs, inputs);
-        matlab::data::CharArray filebaseChar = inputs[0];
-        std::string filebase = filebaseChar.toAscii();
-        filebaseChar = inputs[1];
-        std::string inputfile = filebaseChar.toAscii();
-        filebaseChar = inputs[2];
-        std::string ROIfile = filebaseChar.toAscii();
-        filebaseChar = inputs[3];
-        std::string backgroundfile = filebaseChar.toAscii();
-        filebaseChar = inputs[4];
-        std::string driftfile = filebaseChar.toAscii();
-        bool veboseoutput = inputs[5][0];
+        std::string filebase = parseStringMatlab(inputs, 0);
+        int positionIn = inputs[1][0];
+        int channelIn = inputs[2][0];
+        std::string foregroundposFile = parseStringMatlab(inputs, 3);
+        std::string backgroundposfile = parseStringMatlab(inputs, 4);
 
 
-        Calculate_Traces(filebase, inputfile, ROIfile, backgroundfile, driftfile, veboseoutput);
+        std::string driftfile = "";
+        bool verbose = false;
+
+        for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
+            std::string optionArg = parseStringMatlab(inputs, paramcount);
+            if (optionArg == "Verbose") verbose = inputs[paramcount + 1][0];
+            else if (optionArg == "Drift")driftfile = parseStringMatlab(inputs, paramcount + 1); 
+        }
+
+        Calculate_Traces(filebase, (size_t) positionIn, (size_t) channelIn, foregroundposFile, backgroundposfile, verbose, driftfile);
         std::cout << "Finishing Program\n";
     }
 

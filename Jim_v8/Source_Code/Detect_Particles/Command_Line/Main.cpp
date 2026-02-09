@@ -56,13 +56,13 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 int main(int argc, char *argv[])
 {
 
-	float binarizecutoff = 0.2f;
+
 	float minEccentricity = -0.1f, maxEccentricity = 1.1f, minLength = 0.0f, maxLength = 10000000000.0f, minCount = 0.0f, maxCount = 1000000000.0f, maxDistFromLinear = 10000000.0f;
 	bool filtering = false;
 
 	float leftminDistFromEdge = -0.1f, rightminDistFromEdge = -0.1f, topminDistFromEdge = -0.1f, bottomminDistFromEdge = -0.1f,allminDistFromEdge = -0.1f;
 
-	float minSeparation = -1000.0f;
+	float minSeparation = 0;
 
 	float gaussStdDev = -1.0f;
 	bool logStdDevChanged = false;
@@ -72,9 +72,15 @@ int main(int argc, char *argv[])
 
 	if (argc < 3) { std::cout << "could not read file name\n"; return 1; }
 	std::string inputfile = argv[1];
-	std::string output = argv[2];
+	float binarizecutoff = std::stod(argv[2]);
 
-	std::vector<std::pair<std::string, float*> >params{ std::make_pair("BinarizeCutoff", &binarizecutoff),std::make_pair("minDistFromEdge", &allminDistFromEdge),
+	std::string output = "";
+
+	std::vector<std::pair<std::string, std::string*> >stringParams{ std::make_pair("OutputFile", &output) };
+	if (BLFlagParser::parseValues(stringParams, argc, argv)) return 1;
+
+
+	std::vector<std::pair<std::string, float*> >params{ std::make_pair("minDistFromEdge", &allminDistFromEdge),
 		std::make_pair("left", &leftminDistFromEdge),std::make_pair("right", &rightminDistFromEdge),std::make_pair("top", &topminDistFromEdge),std::make_pair("bottom", &bottomminDistFromEdge),
 		std::make_pair("minEccentricity", &minEccentricity),std::make_pair("maxEccentricity", &maxEccentricity),std::make_pair("minLength", &minLength),std::make_pair("maxLength", &maxLength),
 		std::make_pair("minCount", &minCount),std::make_pair("maxCount", &maxCount),std::make_pair("maxDistFromLinear", &maxDistFromLinear),std::make_pair("minSeparation", &minSeparation),

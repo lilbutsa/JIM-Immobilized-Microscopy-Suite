@@ -3,6 +3,8 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include "BLMatlabParser.h"
 
 int Detect_Particles(std::string fileBase, std::string inputfile, double gaussStdDev, double binarizecutoff, double minSeparation, double leftminDistFromEdge, double rightminDistFromEdge, double topminDistFromEdge, double bottomminDistFromEdge,
     double minEccentricity, double maxEccentricity, double minLength, double maxLength, double minCount, double maxCount, double maxDistFromLinear, bool includeSmall);
@@ -10,33 +12,48 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 17;
+    const int minNumOfInputs = 2;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         std::cout << "Starting detection\n";
         checkArguments(outputs, inputs);
-        matlab::data::CharArray filebaseChar = inputs[0];
-        std::string filebase = filebaseChar.toAscii();
-        filebaseChar = inputs[1];
-        std::string inputfile = filebaseChar.toAscii();
 
-        double gaussStdDev = inputs[2][0];
-        double binarizecutoff = inputs[3][0];
-        double minSeparation = inputs[4][0];
-        double leftminDistFromEdge = inputs[5][0];
-        double rightminDistFromEdge = inputs[6][0];
-        double topminDistFromEdge = inputs[7][0];
-        double bottomminDistFromEdge = inputs[8][0];
-        double minEccentricity = inputs[9][0];
-        double maxEccentricity = inputs[10][0];
-        double minLength = inputs[11][0];
-        double maxLength = inputs[12][0];
-        double minCount = inputs[13][0];
-        double maxCount = inputs[14][0];
-        double maxDistFromLinear = inputs[15][0];
-        bool includeSmall = inputs[16][0];
+        std::string fileName = parseStringMatlab(inputs, 0);
+        double binarizecutoff = inputs[1][0];
+
+        std::string outputBase = "";
+
+        double gaussStdDev = 5, minSeparation = 0,leftminDistFromEdge = 0,rightminDistFromEdge = 0,topminDistFromEdge = 0,bottomminDistFromEdge = 0;
+        double minEccentricity = -0.1, maxEccentricity = 1.1, minLength = 0, maxLength = 100000000, minCount = 0, maxCount = 100000000, maxDistFromLinear = 100000000;
+        bool includeSmall = false;
+
+        for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
+            std::string optionArg = parseStringMatlab(inputs, paramcount);
+            if (optionArg == "IncludeSmall") includeSmall = inputs[paramcount + 1][0];
+            else if (optionArg == "OutputFile")outputBase = parseStringMatlab(inputs, paramcount + 1);
+            else if (optionArg == "GaussStdDev")gaussStdDev = inputs[paramcount + 1][0];
+            else if (optionArg == "MinSeparation")minSeparation = inputs[paramcount + 1][0];
+            else if (optionArg == "MinDistFromEdge") {
+                leftminDistFromEdge = inputs[paramcount + 1][0];
+                rightminDistFromEdge = inputs[paramcount + 1][0];
+                topminDistFromEdge = inputs[paramcount + 1][0];
+                bottomminDistFromEdge = inputs[paramcount + 1][0];
+            }
+            else if (optionArg == "LeftMinDistFromEdge")leftminDistFromEdge = inputs[paramcount + 1][0];
+            else if (optionArg == "RightMinDistFromEdge")rightminDistFromEdge = inputs[paramcount + 1][0];
+            else if (optionArg == "TopMinDistFromEdge")topminDistFromEdge = inputs[paramcount + 1][0];
+            else if (optionArg == "BottomMinDistFromEdge")bottomminDistFromEdge = inputs[paramcount + 1][0];
+            else if (optionArg == "MinEccentricity")minEccentricity = inputs[paramcount + 1][0];
+            else if (optionArg == "MaxEccentricity")maxEccentricity = inputs[paramcount + 1][0];
+            else if (optionArg == "MinLength")minLength = inputs[paramcount + 1][0];
+            else if (optionArg == "MaxLength")maxLength = inputs[paramcount + 1][0];
+            else if (optionArg == "MinCount")minCount = inputs[paramcount + 1][0];
+            else if (optionArg == "MaxCount")maxCount = inputs[paramcount + 1][0];
+            else if (optionArg == "MaxDistFromLinear")maxDistFromLinear = inputs[paramcount + 1][0];
+
+        }
 
 
-        Detect_Particles(filebase, inputfile, gaussStdDev, binarizecutoff, minSeparation, leftminDistFromEdge, rightminDistFromEdge, topminDistFromEdge, bottomminDistFromEdge,
+        Detect_Particles(outputBase, fileName, gaussStdDev, binarizecutoff, minSeparation, leftminDistFromEdge, rightminDistFromEdge, topminDistFromEdge, bottomminDistFromEdge,
             minEccentricity, maxEccentricity, minLength, maxLength, minCount, maxCount, maxDistFromLinear, includeSmall);
         std::cout << "Finished dectection\n";
     }

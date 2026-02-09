@@ -148,12 +148,14 @@ public:
 };
 
 
-void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions vector*/, int imagewidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected) {
+void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions vector*/, size_t imageWidth, std::vector<measurementsClass>& measurementresults, std::vector<float>& imagef, const std::vector<uint8_t>& detected) {
 	measurementresults = std::vector < measurementsClass>(pos.size());//x centre, ycentre,eccentricity,length,x vec,yvec of major axis,count, xmax pos, y max pos, maxdistfromlinear, x end 1, y end 1, x end 2, y end 2,X bounding Box Min, X Bounding Box Max,Y bounding Box Min, Y Bounding Box Max,Nearest Neighbour
 	std::vector<float> xpos, ypos;
 	std::vector<float> vx2, vy2;
 	float x2, y2, xy;
 	float max, min;
+
+	size_t imageHeight = imagef.size() / imageWidth;
 
 	//create knn for each for each ROI
 	std::vector<nearestNeighbour> ROIKNNs;
@@ -163,7 +165,7 @@ void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions 
 		xpos.resize(pos[i].size());
 		ypos.resize(pos[i].size());
 		for (int j = 0; j < pos[i].size(); j++) {
-			xpos[j] = (float)(pos[i][j] % imagewidth); ypos[j] = (float)((int)(pos[i][j] / imagewidth));
+			xpos[j] = (float)(pos[i][j] % imageWidth); ypos[j] = (float)((int)(pos[i][j] / imageWidth));
 		}
 		//x and y centre of mass
 		*(measurementresults[i].xCentre) = (float)std::accumulate(std::begin(xpos), std::end(xpos), 0.0) / xpos.size();
@@ -224,8 +226,8 @@ void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions 
 			}
 		}
 
-		*(measurementresults[i].xMaxPos) = (float)(maxpos % imagewidth);
-		*(measurementresults[i].yMaxPos) = (float)((int)(maxpos / imagewidth));
+		*(measurementresults[i].xMaxPos) = (float)(maxpos % imageWidth);
+		*(measurementresults[i].yMaxPos) = (float)((int)(maxpos / imageWidth));
 
 		//max distance from linear. note xpos and y pos have subtracted their COM
 		//dist = abs(x*yvec-y*xvec)
@@ -237,6 +239,8 @@ void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions 
 		*(measurementresults[i].maxDistfromLinear) = max;
 
 		//Bounding box
+
+
 		auto minMax = std::minmax_element(xpos.begin(), xpos.end());
 		*(measurementresults[i].xBoundingBoxMin) = *minMax.first + *(measurementresults[i].xCentre);
 		*(measurementresults[i].xBoundingBoxMax) = *minMax.second + *(measurementresults[i].xCentre);
@@ -248,11 +252,13 @@ void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions 
 		//load edge positions into KNN for next section
 		std::vector<std::vector<float>> edgePos2D;
 		for (int j = 0; j < xpos.size(); j++) {
-			if (xpos[j] == 0 || detected[xpos[j] - 1 + imagewidth * ypos[j]] == 0)edgePos2D.push_back({ xpos[j]+ *(measurementresults[i].xCentre),ypos[j] + *(measurementresults[i].yCentre) });
-			else if (xpos[j] == imagewidth-1 || detected[xpos[j] + 1 + imagewidth * ypos[j]] == 0)edgePos2D.push_back({ xpos[j] + *(measurementresults[i].xCentre),ypos[j] + *(measurementresults[i].yCentre) });
-			else if (ypos[j] == 0 || detected[xpos[j] + imagewidth * (ypos[j]-1)] == 0)edgePos2D.push_back({ xpos[j] + *(measurementresults[i].xCentre),ypos[j] + *(measurementresults[i].yCentre) });
-			else if ((ypos[j]+1) * imagewidth == detected.size() || detected[xpos[j] + imagewidth * (ypos[j]+1)] == 0)edgePos2D.push_back({ xpos[j] + *(measurementresults[i].xCentre),ypos[j] + *(measurementresults[i].yCentre) });
-		}
+			int xIn = round(xpos[j] + *(measurementresults[i].xCentre));
+			int yIn = round(ypos[j] + *(measurementresults[i].yCentre));
+			if (xIn == 0 || yIn == 0 || xIn == imageWidth - 1 || yIn == imageHeight - 1 ||
+				detected[xIn - 1 + imageWidth * yIn] == 0 || detected[xIn + 1 + imageWidth * yIn] == 0 ||
+				detected[xIn + imageWidth * (yIn - 1)] == 0 || detected[xIn + imageWidth * (yIn + 1)] == 0)edgePos2D.push_back({ (float)xIn,(float)yIn });
+
+					}
 		ROIKNNs.push_back(nearestNeighbour(edgePos2D));     
 
 	}

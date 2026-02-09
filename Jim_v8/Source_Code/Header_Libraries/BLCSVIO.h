@@ -63,7 +63,6 @@ namespace BLCSVIO {
 				for (size_t i = 0; i < numofcolumns - 1; i++)ss >> dataline[i] >> c1;
 				ss >> dataline[numofcolumns - 1];
 				tableout.push_back(dataline);
-				std::cout << tableout.size()<<" " << dataline.size() << "\n";
 			}
 
 			myfile.close();
@@ -161,6 +160,19 @@ namespace BLCSVIO {
 			for (int paramc = 1; paramc < file_out[count].size(); paramc++)strout = strout + "," + std::to_string(file_out[count][paramc]);
 			strout = strout + "\n";
 			//std::cout << strout;
+			myfile << strout;
+		}
+		myfile.close();
+	}
+
+	inline void writeStringList(const std::string& filename, std::vector<std::string> file_out)
+	{
+		std::ofstream myfile;
+		myfile.open(filename.c_str());
+		std::string strout;
+		for (int count = 0; count < file_out.size(); count++)
+		{
+			strout = file_out[count] + "\n";
 			myfile << strout;
 		}
 		myfile.close();

@@ -3,8 +3,9 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include "BLMatlabParser.h"
 
-int Align_Channels(std::string fileName, int startFrame, int endFrame, size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned);
+int Align_Channels(std::string fileName, int startFrame, int endFrame, size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned, int numOfChannels = 1, bool filesSplitByChannelIn = false);
 //Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe, Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 
 class MexFunction : public matlab::mex::Function {
@@ -13,20 +14,22 @@ public:
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         std::cout << "Starting Alignment\n";
         checkArguments(outputs, inputs);
-        matlab::data::CharArray filebaseChar = inputs[0];
-        std::string fileName = filebaseChar.toAscii();
+
+        std::vector<std::vector<float>> alignments;
+        std::string fileName = parseStringMatlab(inputs, 0);
         int startFrame = inputs[1][0];
         int endFrame = inputs[2][0];
         int position = inputs[3][0];
-        matlab::data::TypedArray<double> TransformMat = inputs[4];
-        matlab::data::ArrayDimensions dims = TransformMat.getDimensions();
-        std::vector<std::vector<float>> alignments(dims[0], std::vector<float>(dims[1], 0));
-        for (int i = 0;i < dims[0];i++)for (int j = 0;j < dims[1];j++)alignments[i][j] = (float)TransformMat[i][j];
+        parse2DMatlabArray(inputs, 4, alignments);
         bool skipIndependentDrifts = inputs[5][0];
         float maxShift = inputs[6][0];
         bool outputAligned = inputs[7][0];
+        int numberOfChannels = 1;
+        if(inputs.size()>8)numberOfChannels = inputs[8][0];
+        bool filesSplitByChannelIn = false;
+        if (inputs.size() > 9)numberOfChannels = inputs[9][0];
 
-        Align_Channels(fileName,startFrame, endFrame, position, alignments, skipIndependentDrifts, maxShift, outputAligned);
+        Align_Channels(fileName,startFrame, endFrame, position, alignments, skipIndependentDrifts, maxShift, outputAligned, numberOfChannels, filesSplitByChannelIn);
         std::cout << "Finished Aligning\n";
     }
 

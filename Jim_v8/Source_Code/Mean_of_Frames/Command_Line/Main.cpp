@@ -61,7 +61,7 @@
 #include "BLCSVIO.h"
 #include "BLFlagParser.h"
 
-int Mean_of_Frames(std::string outputfile, std::vector<std::string> inputfiles, std::string driftfile, std::string alignfile, std::vector<int> start, std::vector<int> end, bool bPercent, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize);
+int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "");
 
 
 //Input should be align file, drift file, outfile, all image files, -Start chan1 chan2...,-End chan1, chan2
@@ -69,45 +69,29 @@ int main(int argc, char *argv[])
 {
 
 
-	if (argc < 3) { std::cout << "could not read file name.\n"; return 1; }
-	std::string alignfile = argv[1];
-	std::string driftfile = argv[2];
-	std::string outputfile = argv[3];
+	if (argc < 1) { std::cout << "could not read file name.\n"; return 1; }
+	std::string fileName = argv[1];
 
-	//for (int i = 4; i < argc && std::string(argv[i]) != "-Start"&& std::string(argv[i]) != "-End"&& std::string(argv[i]) != "-MaxProjection" && std::string(argv[i]) != "-Weights"; i++) numInputFiles++;
-	int numInputFiles = 0;
-	for (int i = 4; i < argc && argv[i][0] != '-'; i++) numInputFiles++;
-	std::vector<std::string> inputfiles(numInputFiles);
-	for (int i = 0; i < numInputFiles; i++)inputfiles[i] = argv[i + 4];
-
-
-	std::vector<int> start(numInputFiles, 0);
-	std::vector<int> end(numInputFiles, 0);
-	std::vector<int> bvMaxProject(numInputFiles, 0);
-	std::vector<float> weights(numInputFiles, 1.0);
-
-	bool bSkipNormalization = false, bPercent;
-
-	std::cout << numInputFiles << " channels detected\n";
-	std::string delimiter = " ";
-
+	int position=0;
+	std::vector<int> start, end, bvMaxProject;
+	std::vector<float>weights;
+	bool bSkipNormalization = false;
+	std::string driftfile = "", alignfile = "";
 
 	std::vector<std::pair<std::string, std::vector<int>*>> vecIntFlags = { {"Start", &start},{"End", &end}, { "MaxProjection",& bvMaxProject } };
 	std::vector<std::pair<std::string, std::vector<float>*>> vecFloatFlags = { {"Weights", &weights} };
-	std::vector<std::pair<std::string, bool*>> boolFlags = { {"Percent", &bPercent}, {"NoNorm", &bSkipNormalization} };
-
-
+	std::vector<std::pair<std::string, bool*>> boolFlags = { {"NoNorm", &bSkipNormalization} };
+	std::vector<std::pair<std::string, int*>> intFlags = { {"Position", &position} };
+	std::vector<std::pair<std::string, std::string*>> stringFlags = { {"Drift", &driftfile},{"Alignment", &alignfile} };
 
 	if (BLFlagParser::parseValues(vecIntFlags, argc, argv)) return 1;
 	if (BLFlagParser::parseValues(vecFloatFlags, argc, argv)) return 1;
 	if (BLFlagParser::parseValues(boolFlags, argc, argv)) return 1;
+	if (BLFlagParser::parseValues(intFlags, argc, argv)) return 1;
+	if (BLFlagParser::parseValues(stringFlags, argc, argv)) return 1;
 
-
-
-
-	Mean_of_Frames(outputfile, inputfiles, driftfile, alignfile, start, end, bPercent, bvMaxProject, weights, !bSkipNormalization);
-
+	return Mean_of_Frames(fileName, position, start, end, bvMaxProject, weights, !bSkipNormalization, driftfile, alignfile);
 	
 	//system("PAUSE");
-	return 0;
+
 }

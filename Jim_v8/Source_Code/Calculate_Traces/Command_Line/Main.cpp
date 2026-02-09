@@ -35,15 +35,16 @@
 #include <iostream>
 #include <vector>
 
-int Calculate_Traces(std::string output, std::string inputfile, std::string ROIfile, std::string backgroundfile, std::string driftfile, bool veboseoutput);
+int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, bool veboseoutput, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
 
 int main(int argc, char *argv[])
 {
 	if (argc < 5) { std::cout << "could not read file name" << "\n"; return 1; }
 	std::string inputfile = argv[1];
-	std::string ROIfile = argv[2];
-	std::string backgroundfile = argv[3];
-	std::string output = argv[4];
+	size_t positionIn = std::stoi(argv[2]);
+	size_t channelIn = std::stoi(argv[3]);
+	std::string ROIfile = argv[4];
+	std::string backgroundfile = argv[5];
 
 	bool veboseoutput = false;
 	std::string driftfile = "";
@@ -59,5 +60,6 @@ int main(int argc, char *argv[])
 		if (std::string(argv[i]) == "-Verbose")veboseoutput = true;
 	}
 
-	return Calculate_Traces(output, inputfile, ROIfile, backgroundfile, driftfile, veboseoutput);
+
+	return Calculate_Traces(inputfile, positionIn, channelIn, ROIfile, backgroundfile, veboseoutput, driftfile);
 }

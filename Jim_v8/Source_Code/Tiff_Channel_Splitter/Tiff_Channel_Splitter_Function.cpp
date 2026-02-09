@@ -21,7 +21,7 @@ int Tiff_Channel_Splitter(std::string inputfile,  std::vector<std::vector<int>>&
 	std::vector<std::vector<uint16_t>> image;
 
 
-	BLTiffIO::MultiTiffInput mymulti(inputfile, orientation,bmetadata, bAcrossMultifiles,numOfChan);
+	BLTiffIO::MultiTiffInput mymulti(inputfile, numOfChan,false, orientation,bmetadata, bAcrossMultifiles);
 	
 	for (size_t posCount = 0; posCount < mymulti.maxPos; posCount++) {
 		std::string myFolderName = mymulti.path + mymulti.filesep + mymulti.positionNames[posCount];
