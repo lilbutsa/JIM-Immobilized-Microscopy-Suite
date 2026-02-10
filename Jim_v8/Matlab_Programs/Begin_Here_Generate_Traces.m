@@ -56,8 +56,8 @@ inputFolder=[inputFolder,filesep];
 %% 3) Align Channels and Calculate Drifts
 positionToAnalyse = 1;
 
-alignStartFrame = 12;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 12;% 
+alignStartFrame = 25;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 50;% 
 
 alignMaxShift = 30; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -68,7 +68,7 @@ alignOutputStacks = false ;
 
 %Multi Channel Alignment from here
 %Parameters for Manual Alignment [x y rotation scale]
-alignment = [0 0 0 1;0 0 0 1];
+alignment = [];%[0 0 0 1;0 0 0 1];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;

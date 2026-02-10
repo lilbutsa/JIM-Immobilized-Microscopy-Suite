@@ -106,7 +106,7 @@ std::vector< std::vector<float>> findAlignment(std::vector< std::vector<float>>&
 	imageTransform_32f transformclass(imageWidth, imageHeight);
 	alignclass.alignWithLogLoadIm1(prealignmentReference[0], maxShift, 5);
 
-	size_t numOfChan = prealignmentReference.size() + 1;
+	size_t numOfChan = prealignmentReference.size();
 
 	std::vector<std::vector<float>>alignments (numOfChan - 1, { 0,0,0,1 });
 	//find alignment for each channel
