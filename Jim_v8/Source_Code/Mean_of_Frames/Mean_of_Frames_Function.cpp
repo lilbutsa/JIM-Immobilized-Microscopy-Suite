@@ -111,30 +111,30 @@ int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, 
 		}
 
 
-		std::vector<float> alignedimage(imagePoints, 0.0);
-		std::vector< std::vector<float> > meanimage(numOfChan, std::vector<float>(imagePoints, 0.0));
+		std::vector<double> alignedimage(imagePoints, 0.0);
+		std::vector< std::vector<double> > meanimage(numOfChan, std::vector<double>(imagePoints, 0.0));
 		imageTransform_32f transformclass(imageWidth, imageHeight);
-		std::vector<float> rotimage(imagePoints), scaleimage(imagePoints);
-		std::vector<float> translated(imagePoints);
+		std::vector<double> rotimage(imagePoints), scaleimage(imagePoints);
+		std::vector<double> translated(imagePoints);
 
-		std::vector<float>Combinedmeanimage(imagePoints, 0.0);
+		std::vector<double>Combinedmeanimage(imagePoints, 0.0);
 
-		float transxoffset, transyoffset;
+		double transxoffset, transyoffset;
 		int count;
-		float divisor;
-		std::vector<float> image1(imagePoints);
-		for (int channelcount = 0; channelcount < numOfChan; channelcount++) {
+		double divisor;
+		std::vector<double> image1(imagePoints);
+		for (size_t channelcount = 0; channelcount < numOfChan; channelcount++) {
 			count = 0;
 			for (int imcount = startIn[channelcount]; imcount < endIn[channelcount]; imcount++) {
 
 
-				transxoffset = channelcount==0? -drifts[imcount][0] :(-drifts[imcount][0]) * channelalignment[channelcount - 1][5] + (-drifts[imcount][1]) * channelalignment[channelcount - 1][6];
+				transxoffset = channelcount == 0 ? -drifts[imcount][0] : (-drifts[imcount][0]) * channelalignment[channelcount - 1][5] + (-drifts[imcount][1]) * channelalignment[channelcount - 1][6];
 				transyoffset = channelcount == 0 ? -drifts[imcount][1] : (-drifts[imcount][0]) * channelalignment[channelcount - 1][7] + (-drifts[imcount][1]) * channelalignment[channelcount - 1][8];
 				allFiles.read1dImage(posCount, imcount, channelcount, 0, image1);
 				
 				transformclass.translate(image1, alignedimage, transxoffset, transyoffset);
-				if (bvMaxProject[channelcount]) std::transform(alignedimage.begin(), alignedimage.end(), meanimage[channelcount].begin(), meanimage[channelcount].begin(), [](float a, float b) { return std::max(a, b); });
-				else std::transform(alignedimage.begin(), alignedimage.end(), meanimage[channelcount].begin(), meanimage[channelcount].begin(), std::plus<float>());
+				if (bvMaxProject[channelcount]) std::transform(alignedimage.begin(), alignedimage.end(), meanimage[channelcount].begin(), meanimage[channelcount].begin(), [](double a, double b) { return std::max(a, b); });
+				else std::transform(alignedimage.begin(), alignedimage.end(), meanimage[channelcount].begin(), meanimage[channelcount].begin(), std::plus<double>());
 				
 				count++;
 				
@@ -148,12 +148,12 @@ int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, 
 
 			if (channelcount > 0) {
 				transformclass.transform(meanimage[channelcount], translated, -channelalignment[channelcount - 1][3], -channelalignment[channelcount - 1][4], channelalignment[channelcount - 1][1], channelalignment[channelcount - 1][2]);
-				std::transform(translated.begin(), translated.end(), Combinedmeanimage.begin(), Combinedmeanimage.begin(), std::plus<float>());
+				std::transform(translated.begin(), translated.end(), Combinedmeanimage.begin(), Combinedmeanimage.begin(), std::plus<double>());
 			}
-			else std::transform(meanimage[0].begin(), meanimage[0].end(), Combinedmeanimage.begin(), Combinedmeanimage.begin(), std::plus<float>());
+			else std::transform(meanimage[0].begin(), meanimage[0].end(), Combinedmeanimage.begin(), Combinedmeanimage.begin(), std::plus<double>());
 		}
 
-		if (bNormalize) std::transform(Combinedmeanimage.begin(), Combinedmeanimage.end(), Combinedmeanimage.begin(), [numOfChan](auto x) { return x / numOfChan; });
+		//if (bNormalize) std::transform(Combinedmeanimage.begin(), Combinedmeanimage.end(), Combinedmeanimage.begin(), [numOfChan](auto x) { return x / numOfChan; });
 
 
 		std::string adjustedOutputFilename = fileBase + "Image_For_Detection_Partial_Mean.tiff";

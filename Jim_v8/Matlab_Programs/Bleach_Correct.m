@@ -1,7 +1,7 @@
 %%
 clear
 %% 1) Select Input Folder
-numberOfChannels = 3;
+numberOfChannels = 2;
 
 sysVar.fileName = uigetdir(); % open the dialog box to select the folder for batch files
 sysVar.fileName=[sysVar.fileName,filesep]; 
@@ -30,8 +30,12 @@ NumberOfFiles=length(sysVar.allFiles);
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 
 %%
-bleachCorrectChannel = 1;
-meanBleachFrame = 21.06*65/10;%362*2;%
+bleachCorrectChannel = 2;
+meanBleachFrame = 27.26*10;
+
+
+allSteps = cell(NumberOfFiles,1);
+
 parfor fileNo=1:length(allData)
     
 
@@ -66,24 +70,93 @@ parfor fileNo=1:length(allData)
     fprintf(fileID, outputString);
     fclose(fileID);
 
+    correctedSteps = correctedSteps(:);
+    correctedSteps = correctedSteps(correctedSteps>0.0001);
+    allSteps{fileNo} = correctedSteps;
+
 end
 
 %%
-fileNo=1;
+fileNo=23;
 traces = csvread(allData(fileNo).intensityFileNames{bleachCorrectChannel},1);
 bleachFit = csvread(allData(fileNo).bleachFitFileNames{bleachCorrectChannel},1);
 bleachCorrected = csvread(allData(fileNo).bleachCorrectedFileNames{bleachCorrectChannel},1);
 
-traceNo = 11;
+traceNo = 150;
 figure
 hold on
 plot(traces(traceNo,:))
 plot(bleachFit(traceNo,:))
 plot(bleachCorrected(traceNo,:))
 hold off
+
 %%
-allSteps = correctedSteps(:);
-allSteps = allSteps(allSteps>0.0001);
+combinedSteps = cell2mat(allSteps);
+disp(mean(combinedSteps))
+combinedSteps = combinedSteps(combinedSteps<prctile(combinedSteps,99));
+%%
 figure
-histogram(allSteps)
-disp(mean(allSteps))
+histogram(combinedSteps)
+disp(mean(combinedSteps))
+%%
+x = 1:max(combinedSteps)/1000:max(combinedSteps);
+y = 100.*arrayfun(@(z) nnz(combinedSteps>z),x)./length(combinedSteps);
+
+by = @(b,bx)( b(1)*exp(-b(2)*bx)+b(3));             % Objective function
+OLS = @(b) sum((by(b,x) - y).^2);          % Ordinary Least Squares cost function
+opts = optimset('MaxFunEvals',50000, 'MaxIter',10000);
+bestFitParams = fminsearch(OLS, [100 1/mean(combinedSteps) 0], opts);
+
+
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 7;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+plot(x,y,'LineWidth',2)
+plot(x,by(bestFitParams,x),'--')
+
+ylim([0 100])
+xlim([0 3./bestFitParams(2)])
+xlabel('Step Height')
+ylabel('Steps Larger (%)')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+disp(1./bestFitParams(2))
+%print([saveFolder 'Step_Height_Fit'], '-dpng', '-r600');
+%print([saveFolder 'Step_Height_Fit'], '-depsc', '-r600');
+%%
+opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 7;opts.height= 5;opts.fontType= 'Myriad Pro';opts.fontSize= 9;
+    fig = figure; fig.Units= 'centimeters';fig.Position(3)= opts.width;fig.Position(4)= opts.height;
+    set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
+axes('XScale', 'log', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
+hold on
+plot(x,100-y,'LineWidth',2)
+plot(x,100-by(bestFitParams,x),'--')
+
+ylim([0 100])
+xlim([1 max(x)])
+xlabel('Step Height')
+ylabel('Steps Smaller (%)')
+hold off
+set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
+fig.PaperPositionMode   = 'auto';
+%print([saveFolder 'Log_Bleaching_Survival_Curve'], '-dpng', '-r600');
+%print([saveFolder 'Log_Bleaching_Survival_Curve'], '-depsc', '-r600');
+%%
+meanSteps = arrayfun(@(z) mean(allSteps{z}),1:NumberOfFiles);
+
+figure
+scatter(1:NumberOfFiles,meanSteps)
+%%
+figure
+hold on
+for fileNo=[1 10]
+traces = csvread(allData(fileNo).intensityFileNames{bleachCorrectChannel},1);
+bleachFit = csvread(allData(fileNo).bleachFitFileNames{bleachCorrectChannel},1);
+bleachCorrected = csvread(allData(fileNo).bleachCorrectedFileNames{bleachCorrectChannel},1);
+
+plot(mean(bleachCorrected))
+end
+hold off

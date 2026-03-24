@@ -42,6 +42,8 @@ inline void writeChannelAlignment(std::string outputfile, std::vector< std::vect
 
 	size_t numchan = alignments.size();
 
+	if (numchan == 0)return;
+
 	std::vector< std::vector<float> > channelalignment(numchan, std::vector<float>(11, 0.0));
 
 	for (size_t i = 0; i < numchan; i++) {

@@ -56,19 +56,19 @@ inputFolder=[inputFolder,filesep];
 %% 3) Align Channels and Calculate Drifts
 positionToAnalyse = 1;
 
-alignStartFrame = 25;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 50;% 
+alignStartFrame = 2;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 2;% 
 
 alignMaxShift = 30; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
 %Output the aligned image stacks. Note this is not required by JIM but can
 %be helpful for visualization. To save space, aligned stack will not output in batch
 %regarless of this value
-alignOutputStacks = false ;
+alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
 %Parameters for Manual Alignment [x y rotation scale]
-alignment = [];%[0 0 0 1;0 0 0 1];
+alignment = [0 0 0 1];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -134,11 +134,11 @@ disp('Alignment completed');
 %% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = [false false false]; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-detectionStartFrame = [1 -5 1]; %first frame of the reference region for detection for each channel
-detectionEndFrame = [5 -1 5]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = [2 2 0]; %first frame of the reference region for detection for each channel
+detectionEndFrame = [2 -1 0]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = [1 1 1];
+detectWeights = [1 1 0];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -157,7 +157,7 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 1; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 0.4; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
 detectMinEdgeDist = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases. 
@@ -209,16 +209,16 @@ imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
 %% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
-additionBackgroundDetect = true ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
+additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
-additionBackgroundUseMaxProjection = [true true true] ; %Use a max projection rather than mean. This is better for short lived blinking particles
+additionBackgroundUseMaxProjection = [false false false] ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-additionalBackgroundStartFrame = [0 0 1]; %first frame of the reference region for background detection
-additionalBackgroundEndFrame = [0 0 -1];%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundStartFrame = [0 50 50]; %first frame of the reference region for background detection
+additionalBackgroundEndFrame = [0 1 -1];%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
-additionalBackgroundWeights = [0 0 1];
+additionalBackgroundWeights = [0 3 1];
 
-additionBackgroundCutoff = 2; %Threshold for particles to be detected for background
+additionBackgroundCutoff = 1.5; %Threshold for particles to be detected for background
 
 % Visualisation saturationg percentages
 
@@ -229,7 +229,7 @@ displayMax = 0.99; % This just adjusts the contrast in the displayed image. It d
 
 if additionBackgroundDetect
     Mean_of_Frames(inputFolder,positionToAnalyse,additionalBackgroundStartFrame,additionalBackgroundEndFrame,additionBackgroundUseMaxProjection,additionalBackgroundWeights);
-    Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff,'OutputFile',[allPositionFolders{positionToAnalyse},filesep,'Background']);
+    Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],additionBackgroundCutoff,'OutputFile',[allPositionFolders{positionToAnalyse},filesep,'Background']);
 
 
     sysVar.imout = cast(imread([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff']),'double');
@@ -288,10 +288,10 @@ disp('Finished Expanding ROIs');
 %% 8) Calculate Traces
 
 %Don't touch from here
-chanCount = 1;
-while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'])>0
-    Calculate_Traces(inputFolder,positionToAnalyse, chanCount, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(chanCount),'.csv'])
-    chanCount = chanCount+1;
+whileLoopCounter = 1;%Don't change this value from 1!!! It's used for the while loop below
+while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
+    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'])
+    whileLoopCounter = whileLoopCounter+1;
 end
 
 
@@ -361,8 +361,8 @@ disp('Finished Generating Traces');
 % fprintf(sysVar.fileID, sysVar.variableString);
 % fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =3; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
-montage.timePerFrame = 6;%Set to zero to just have frames
+montage.pageNumber =4; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 's'; % Unit to use for x axis 
 
 %don't touch from here
@@ -455,7 +455,7 @@ print([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example
 savefig(sysVar.fig,[allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 
 %% 11)Extract Individual Trace and montage
-montage.traceNo = 285;
+montage.traceNo = 112;
 montage.start = 3;
 montage.end = 48;
 montage.delta = 5;
@@ -561,7 +561,7 @@ for i=1:sysConst.NumberOfFiles
 
     Align_Channels(inputFolder,alignStartFrame,alignEndFrame,0,alignment,false,alignMaxShift,alignOutputStacks);
     Mean_of_Frames(inputFolder,0,detectionStartFrame,detectionEndFrame,detectUsingMaxProjection,detectWeights);
-    allPositionFolders = strip(strsplit(fileread([inputFolder 'PositionNameList.csv']),'\n'));
+    allPositionFolders = strip(strsplit(fileread([inputFolder filesep 'PositionNameList.csv']),'\n'));
     allPositionFolders = allPositionFolders(:,1:end-1);
 
     for positionToAnalyse = 1:length(allPositionFolders);
@@ -574,10 +574,10 @@ for i=1:sysConst.NumberOfFiles
             Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv']);
         end
     
-        chanCount = 1;
-        while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'])>0
-            Calculate_Traces(inputFolder,positionToAnalyse, chanCount, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(chanCount),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(chanCount),'.csv'])
-            chanCount = chanCount+1;
+        whileLoopCounter = 1;
+        while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
+            Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'])
+            whileLoopCounter = whileLoopCounter+1;
         end
     end
 

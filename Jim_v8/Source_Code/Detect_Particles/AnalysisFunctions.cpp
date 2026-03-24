@@ -264,34 +264,35 @@ void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions 
 	}
 
 	//Once all ROIs have been measured, calculate nearest neighbour using best fit ellipse
-
-	//create KNN network for COMs
-	std::vector<std::vector<float>> COMPositions(measurementresults.size(), std::vector<float>(2, 0));
-	std::vector<float> radiuses(measurementresults.size());
-	for (int i = 0;i < measurementresults.size();i++) {
-		COMPositions[i][0] = *(measurementresults[i].xCentre);
-		COMPositions[i][1] = *(measurementresults[i].yCentre);
-		radiuses[i] = *(measurementresults[i].length);
-	}
-	nearestNeighbour myKNN(COMPositions);
-
-	for (int i = 0;i < measurementresults.size();i++) {
-		
-		myKNN.queryMinusConst(COMPositions[i], radiuses, radiuses[i]);
-		float minDist = myKNN.minDistWithoutConstants;
-		int nearestPixel = 0;
-		int count = 1;
-		while (myKNN.getDist(count) < minDist) {
-			for (int j = 0;j < ROIKNNs[i].points.size();j++) {
-				ROIKNNs[myKNN.idx[count]].query(ROIKNNs[i].points[j]);
-				if (ROIKNNs[myKNN.idx[count]].getDist(0) < minDist)minDist = ROIKNNs[myKNN.idx[count]].getDist(0);
-			}
-
-			count++;
+	if (measurementresults.size() > 1) {
+		//create KNN network for COMs
+		std::vector<std::vector<float>> COMPositions(measurementresults.size(), std::vector<float>(2, 0));
+		std::vector<float> radiuses(measurementresults.size());
+		for (int i = 0; i < measurementresults.size(); i++) {
+			COMPositions[i][0] = *(measurementresults[i].xCentre);
+			COMPositions[i][1] = *(measurementresults[i].yCentre);
+			radiuses[i] = *(measurementresults[i].length);
 		}
-		*(measurementresults[i].nearestNeighbour) = minDist;
+		nearestNeighbour myKNN(COMPositions);
+
+		for (int i = 0; i < measurementresults.size(); i++) {
+
+			myKNN.queryMinusConst(COMPositions[i], radiuses, radiuses[i]);
+			float minDist = myKNN.minDistWithoutConstants;
+			int nearestPixel = 0;
+			int count = 1;
+			while (myKNN.getDist(count) < minDist) {
+				for (int j = 0; j < ROIKNNs[i].points.size(); j++) {
+					ROIKNNs[myKNN.idx[count]].query(ROIKNNs[i].points[j]);
+					if (ROIKNNs[myKNN.idx[count]].getDist(0) < minDist)minDist = ROIKNNs[myKNN.idx[count]].getDist(0);
+				}
+
+				count++;
+			}
+			*(measurementresults[i].nearestNeighbour) = minDist;
 
 
-	}
+		}
+	} else for (int i = 0; i < measurementresults.size(); i++) *(measurementresults[i].nearestNeighbour) = std::sqrt(imageWidth*imageWidth+imageHeight*imageHeight);
 
 }

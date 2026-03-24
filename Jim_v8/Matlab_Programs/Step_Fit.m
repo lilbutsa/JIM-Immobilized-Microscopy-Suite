@@ -47,7 +47,7 @@ NumberOfFiles=length(sysVar.allFiles);
 disp(['There are ',num2str(NumberOfFiles),' files to analyse']);
 %%
 stepfitChannel = 1;
-stepfitThreshold = 4;
+stepfitThreshold = 8;
 fileToCheck = 1;
 
 

@@ -1,7 +1,7 @@
 %%
 clear
 %% 1) Select Input Folder
-filesInSubFolders = false;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
+filesInSubFolders = true;% Set this to true if each image stack is in it's own folder or false if imagestacks are directly in the main folder
 
 fileName = uigetdir('G:\My_Jim\SLO_Output','Select Folder Containing All Traces'); % open the dialog box to select the folder for batch files
 fileName=[fileName,filesep]; 
@@ -366,6 +366,7 @@ allResults(17) = baselineNormalNoiseStdDev;
 
 firstIntensities = cell2mat(allFirstFrameIntensities);
 
+
 x = 1:max(firstIntensities)/1000:4*max(firstIntensities);
 y = 100.*arrayfun(@(z) nnz(firstIntensities<z),x)./length(firstIntensities);
 
@@ -386,7 +387,8 @@ opts.Colors= get(groot,'defaultAxesColorOrder');opts.width= 9;opts.height= 5;opt
     set(fig.Children, 'FontName','Myriad Pro', 'FontSize', 9);
 axes('XScale', 'linear', 'YScale', 'linear','LineWidth',1.5, 'FontName','Myriad Pro')
 hold on
-histogram(firstIntensities,'Normalization','pdf')
+%histogram(firstIntensities,'Normalization','pdf')
+histogram(firstIntensities(firstIntensities<prctile(firstIntensities,99)),'Normalization','pdf')
 plot(x(1:end-1),0.01.*diff(by4(bestFitParams4,x))/mean(diff(x)),'LineWidth',2) 
 %plot(x(1:end-1),0.01.*diff(by4(countRatio,x))/mean(diff(x)),'LineWidth',2) 
 for i=1:4
@@ -394,7 +396,7 @@ for i=1:4
     %plot(x(1:end-1),abs(countRatio(i)).*0.01/mean(diff(x)).*diff(by3([log(i.*xZero) bestFitParams3(2) sqrt(baselineNormalNoiseStdDev^2+i*bestFitParams2(2)^2)],x)),'LineWidth',2)
 
 end
-xlim([0 prctile(firstIntensities,99.5)])
+xlim([0 prctile(firstIntensities,99)])
 leg = legend({'','Combined','Monomer','Dimer','Trimer','Tetramer'},'Location','eastoutside','Box','off','FontSize', 9);
 leg.ItemTokenSize = [15,30];
 hold off

@@ -45,6 +45,8 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 		allFiles.imageInfo(posCount, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ);
 		imagePoints = imageWidth * imageHeight;
 
+		if (numOfChan == 1)alignments = std::vector<std::vector<float>>();
+
 		size_t startFrameIn = startFrame < 0 ? numOfFrame - startFrame : startFrame-1;
 		size_t endFrameIn = endFrame < 0 ? numOfFrame - endFrame+1 : endFrame;
 
