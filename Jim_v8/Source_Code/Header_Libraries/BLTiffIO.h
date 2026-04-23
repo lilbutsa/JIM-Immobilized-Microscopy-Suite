@@ -811,34 +811,59 @@ namespace BLTiffIO {
 
 			orientation = orientationIn;
 
-			filesSplitByChannelIn = filesSplitByChannelIn;
+			filesSplitByChannel = filesSplitByChannelIn;
+			std::filesystem::path inputPath(filenamein);
+			bool inputIsDirectory = std::filesystem::is_directory(inputPath);
 
-			if (std::filesystem::is_directory(std::filesystem::path(filenamein))) path = filenamein;
-			else path = std::filesystem::path(filenamein).parent_path().generic_string();
+			if (inputIsDirectory) path = inputPath.generic_string();
+			else path = inputPath.parent_path().generic_string();
+			if (path.empty()) path = ".";
 
-			for (const auto& entry : std::filesystem::directory_iterator(path)) {
-				std::string myExt = entry.path().extension().generic_string();
-				if (myExt.find("tif") != std::string::npos || myExt.find("Tif") != std::string::npos || myExt.find("TIF") != std::string::npos) {
-					allFiles.push_back(entry.path().filename().generic_string());
-					if (bUseMetadata) {
-						std::string foundfilename = entry.path().generic_string();
-						BLTiffIO::TiffInput foundFile(foundfilename);
-						if (foundFile.OMEmetadataDetected) {
-							parseMetadata(foundFile.OMEmetadata);
-						}
+			std::vector<std::filesystem::path> candidateTiffFiles;
+			if (inputIsDirectory || bAcrossMultipleFiles) {
+				for (const auto& entry : std::filesystem::directory_iterator(path)) {
+					if (!entry.is_regular_file()) continue;
+					std::string myExt = entry.path().extension().generic_string();
+					if (myExt.find("tif") != std::string::npos || myExt.find("Tif") != std::string::npos || myExt.find("TIF") != std::string::npos) {
+						candidateTiffFiles.push_back(entry.path());
 					}
+				}
+			}
+			else {
+				candidateTiffFiles.push_back(inputPath);
+			}
 
+			std::sort(candidateTiffFiles.begin(), candidateTiffFiles.end());
+
+			for (const auto& tifPath : candidateTiffFiles) {
+				allFiles.push_back(tifPath.filename().generic_string());
+				if (bUseMetadata && std::filesystem::exists(tifPath)) {
+					std::string foundfilename = tifPath.generic_string();
+					BLTiffIO::TiffInput foundFile(foundfilename);
+					if (foundFile.OMEmetadataDetected) {
+						parseMetadata(foundFile.OMEmetadata);
+					}
 				}
 			}
 
 			//Deal with no metadata being detected
 			if (inputfiles.size() == 0) {
 				if(bUseMetadata) std::cout << "Warning: OME metadata not found\n";
-				positionNames.push_back(std::filesystem::path(filenamein).stem().generic_string());
-				std::sort(allFiles.begin(), allFiles.end());
-				inputfiles = allFiles;
-				if(bAcrossMultipleFiles)positionNames.push_back(std::filesystem::path(allFiles[0]).stem().generic_string());
-				else for(size_t fileNo = 0; fileNo< allFiles.size();fileNo++)positionNames.push_back(std::filesystem::path(allFiles[fileNo]).stem().generic_string());
+				if (inputIsDirectory || bAcrossMultipleFiles) {
+					inputfiles = allFiles;
+				}
+				else {
+					inputfiles = std::vector<std::string>{ inputPath.filename().generic_string() };
+				}
+				positionNames.clear();
+				if (bAcrossMultipleFiles || (!inputIsDirectory && !bAcrossMultipleFiles)) {
+					positionNames.push_back(inputPath.stem().generic_string());
+				}
+				else {
+					for(size_t fileNo = 0; fileNo < inputfiles.size(); fileNo++) {
+						positionNames.push_back(std::filesystem::path(inputfiles[fileNo]).stem().generic_string());
+					}
+				}
 			}
 
 
@@ -1022,7 +1047,7 @@ namespace BLTiffIO {
 	}
 
 	int imageInfo(size_t pos, size_t& imageWidth, size_t& imageHeight, size_t& imageDepth, size_t& channelCount, size_t& frameCount, size_t& zCount,size_t frame = 0, size_t chan = 0, size_t z = 0) {
-		if (pos <= maxPos && frame <= maxFrame && chan <= maxChan && z <= maxZ) {
+		if (pos < maxPos && frame < maxFrame && chan < maxChan && z < maxZ) {
 			imagePos imagePosIn = imageOrder[pos][frame][chan][z];
 			if (imagePosIn.initialized == 1) {
 				imageWidth = vimstack[imagePosIn.file]->imageWidth;
