@@ -77,6 +77,8 @@ public class PMJ_Window {
     private JButton helpButton;
     private JTextField timePerFrameBox;
     private JTextField timePerFrameUnitsBox;
+    private JButton inputAlignmentBT;
+    private JButton detectAlignmentBT;
 
 
     DisplayManager myDisplayManager;
@@ -117,7 +119,7 @@ public class PMJ_Window {
     int posNum;
     boolean outputDisplay;
 
-
+    int[] C2CalignmentX,C2CalignmentY;
 
     //parameters
     boolean driftCorrectDetect, driftCorrectTrace,displayAlignedStack,saveTraces,batchStepFit;
@@ -294,13 +296,23 @@ public class PMJ_Window {
 
             int[] chanSum = new int[totNOP];
 
+
             for (int frameNum = detectStart; frameNum < detectEnd; frameNum++) {
                 if(outputDisplay)statusText.setText("Summing Frame "+String.valueOf(detectStart+1));
                 chanSum = new int[totNOP];
                 //get sum of channels
                 for (int chanNum = chanStart; chanNum < chanEnd; chanNum++) {
                     getImage(chanNum, frameNum, posNum);
-                    for(int i=0;i<totNOP;i++)chanSum[i] += (int)rawImage16[i];
+
+                    int C2CAlignXin = (chanNum>0 && C2CalignmentX.length>=chanNum)?C2CalignmentX[chanNum-1]:0;
+                    int C2CAlignYin = (chanNum>0 && C2CalignmentY.length>=chanNum)?C2CalignmentY[chanNum-1]:0;
+
+                    for(int i=0;i<totImageWidth;i++)for(int j=0;j<totImageHeight;j++){
+                        int xIn = Math.max(0, Math.min(totImageWidth-1, i+C2CAlignXin));
+                        int yIn = Math.max(0, Math.min(totImageHeight-1, j+C2CAlignYin));
+                        chanSum[i+j*totImageWidth] += (int)rawImage16[xIn+totImageWidth*yIn];
+                    }
+
                 }
                 //align image
                 int xDrift = 0, yDrift = 0;
@@ -324,7 +336,7 @@ public class PMJ_Window {
             for(int i=-3;i<3;i++)for(int j=-3;j<3;j++){
                 getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, i, j, false);
                 aligner.align(tempImageForAlign,100);
-                System.out.println("i,j,iout,jout = "+i+","+j+","+(-aligner.maxXPos)+","+(-aligner.maxYPos));
+                //System.out.println("i,j,iout,jout = "+i+","+j+","+(-aligner.maxXPos)+","+(-aligner.maxYPos));
             }
 
             if(outputDisplay){
@@ -452,12 +464,15 @@ public class PMJ_Window {
 
             short[][] allChanRawImage16 = new short[totChanNum][totNOP];
 
+            short[] imageHold = new short[totNOP];
+
             allDrifts = new int[2][totFrameNum];
             int[] tempImageForAlign = new int[alignROILength*alignROILength];
             myFFT aligner = new myFFT(alignROILength);
             if(driftCorrectTrace) {
                 aligner.set_Reference(imageForAlignment);
             }
+
             //calculate frames used for alignment
             int chanStart = 0,chanEnd = totChanNum;
             if(alignChannel>0){
@@ -477,8 +492,12 @@ public class PMJ_Window {
                 if (outputDisplay) statusText.setText("Channel/Frame "+String.valueOf(frameNum + 1) + "/" + String.valueOf(totFrameNum));
                 //read images
                 for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
+                    int C2CAlignXin = (chanNum>0 && C2CalignmentX.length>=chanNum)?C2CalignmentX[chanNum-1]:0;
+                    int C2CAlignYin = (chanNum>0 && C2CalignmentY.length>=chanNum)?C2CalignmentY[chanNum-1]:0;
+
                     getImage(chanNum, frameNum, posNum);
-                    if (totNOP >= 0) System.arraycopy(rawImage16, 0, allChanRawImage16[chanNum], 0, totNOP);
+                    getROIImageShort(rawImage16,allChanRawImage16[chanNum], fullImageRec, C2CAlignXin, C2CAlignYin);
+
                 }
 
                 //align images
@@ -500,8 +519,8 @@ public class PMJ_Window {
                     //add aligned images to stack
                     if (outputDisplay && displayAlignedStack) {
                         for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
-                            getROIImageShort(allChanRawImage16[chanNum],rawImage16, fullImageRec, allDrifts[0][frameNum], allDrifts[1][frameNum]);
-                            imstackin.addSlice(new ShortProcessor(totImageWidth, totImageHeight, rawImage16.clone(),null));
+                            getROIImageShort(allChanRawImage16[chanNum],imageHold, fullImageRec, allDrifts[0][frameNum], allDrifts[1][frameNum]);
+                            imstackin.addSlice(new ShortProcessor(totImageWidth, totImageHeight, imageHold.clone(),null));
                         }
                     }
                 }
@@ -1056,7 +1075,13 @@ public class PMJ_Window {
                 try {
                     totImageWidth = myDataProvider.getAnyImage().getWidth();
                     totImageHeight = myDataProvider.getAnyImage().getHeight();
+                    totNOP = totImageWidth*totImageHeight;
                     fullImageRec = new Rectangle(0,0,totImageWidth,totImageHeight);
+
+                   // int logWidth = (int) Math.floor(Math.log(Math.min(totImageWidth,totImageHeight)+0.5)/Math.log(2.0));
+                   // AlignROISizeTextBox.setText(Integer.toString( (int)Math.pow(2,logWidth)));
+
+
                 } catch (java.io.IOException e1) {
                     statusText.setText("Error!!! no image detected!!! ");
                     System.out.println("Error!!! no image detected!!! ");
@@ -1085,6 +1110,103 @@ public class PMJ_Window {
                     gd.addHelp("https://jim-immobilized-microscopy-suite.readthedocs.io/en/latest/Jimbob.html");
                     gd.showDialog();
                 }
+            }
+        });
+        inputAlignmentBT.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                //if channel to channel alignment is not initialized then initialise to 0;
+                if(C2CalignmentX==null || C2CalignmentX.length<totChanNum-1) {
+                    C2CalignmentX = new int[totChanNum - 1];
+                    C2CalignmentY = new int[totChanNum - 1];
+                }
+
+                GenericDialog gd = new GenericDialog("Input Alignment", IJ.getInstance());
+
+                for(int i=0;i<totChanNum-1;i++) {
+                    gd.addNumericField("Channel "+Integer.toString(i+2)+" x: ", C2CalignmentX[i], 1);
+                    gd.addToSameRow();
+                    gd.addNumericField("y: ", C2CalignmentY[i], 1);
+                }
+
+                gd.showDialog();
+                if (gd.wasCanceled())
+                    return;
+
+                for(int i=0;i<totChanNum-1;i++) {
+                    C2CalignmentX[i] = (int)gd.getNextNumber();
+                    C2CalignmentY[i] = (int)gd.getNextNumber();
+                }
+
+
+            }
+        });
+        detectAlignmentBT.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parseParameters();
+                int C2CAlignStartFrame = 1, C2CAlignEndFrame = -1;
+                GenericDialog gd = new GenericDialog("Select Range with signal in all channels", IJ.getInstance());
+                gd.addNumericField("Start frame: ", C2CAlignStartFrame, 0);
+                gd.addNumericField("End frame: ", C2CAlignEndFrame, 0);
+                gd.showDialog();
+
+                if (gd.wasCanceled())
+                    return;
+
+                C2CAlignStartFrame = (int)gd.getNextNumber();
+                C2CAlignEndFrame = (int)gd.getNextNumber();
+
+
+
+                //add detection in here
+                ImageStack imstackin = new ImageStack(totImageWidth, totImageHeight);
+                C2CalignmentX = new int[totChanNum - 1];
+                C2CalignmentY = new int[totChanNum - 1];
+
+
+
+                myFFT aligner = new myFFT(alignROILength);
+                int[] tempImageForAlign = new int[alignROILength*alignROILength];
+                float[] tempAlignedImage = new float[totImageWidth*totImageHeight];
+
+                if(C2CAlignStartFrame<0) C2CAlignStartFrame = totFrameNum-C2CAlignStartFrame;
+                else C2CAlignStartFrame = C2CAlignStartFrame-1;
+
+                if(C2CAlignEndFrame<0) C2CAlignEndFrame = totFrameNum-C2CAlignEndFrame+1;
+                for (int chanNum = 0; chanNum < totChanNum; chanNum++) {
+
+                    int[] chanSum = new int[totNOP];
+                    for (int frameNum = C2CAlignStartFrame; frameNum < C2CAlignEndFrame; frameNum++) {
+                        getImage(chanNum, frameNum, posNum);
+                        for (int i = 0; i < totNOP; i++)chanSum[i] += (int)rawImage16[i];
+                    }
+                    //align image
+                    if (chanNum==0) {
+                        getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, 0, 0, false);
+                        aligner.set_Reference(tempImageForAlign);
+
+                        //for display
+                        getROIImageFloat(chanSum,tempAlignedImage, fullImageRec,0, 0,false);
+                    } else{
+                        getROIImageForAlign(chanSum, tempImageForAlign, alignmentRectangle, 0, 0, false);
+                        aligner.align(tempImageForAlign, alignMaxShift);
+                        C2CalignmentX[chanNum-1] = aligner.maxXPos;
+                        C2CalignmentY[chanNum-1] = aligner.maxYPos;
+
+                        //for display
+                        getROIImageFloat(chanSum,tempAlignedImage, fullImageRec,aligner.maxXPos, aligner.maxYPos,false);
+
+                    }
+                    imstackin.addSlice(new FloatProcessor(totImageWidth, totImageHeight, tempAlignedImage.clone(),null));
+                }
+
+                String alignResult = "Aligned Channels";
+                for(int i=0;i<C2CalignmentX.length;i++)alignResult = alignResult+" Channel "+Integer.toString(i+2)+" x:"+Integer.toString(C2CalignmentX[i])+" y: "+Integer.toString(C2CalignmentY[i]);
+
+                ImagePlus outputImStack = new ImagePlus(alignResult, imstackin);
+                outputImStack.show();
             }
         });
     }
