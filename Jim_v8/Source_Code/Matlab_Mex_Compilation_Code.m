@@ -1,4 +1,4 @@
-C:\Users\Jameswa\Documents\GitHub\JIM-Immobilized-Microscopy-Suite\Jim_v8\Matlab_Programs%% Save folder       
+%C:\Users\Jameswa\Documents\GitHub\JIM-Immobilized-Microscopy-Suite\Jim_v8\Matlab_Programs%% Save folder       
 sysVar.saveFolder = uigetdir(); % open the dialog box to select the folder for batch files
 sysVar.saveFolder=[sysVar.saveFolder,filesep];
 %% Source File
