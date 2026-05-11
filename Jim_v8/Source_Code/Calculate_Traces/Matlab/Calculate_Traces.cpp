@@ -5,13 +5,14 @@
 #include <vector>
 #include "BLMatlabParser.h"
 
-int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, bool veboseoutput, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
+int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, bool veboseoutput = false, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
+
 
 
 //Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 5;
+    const int minNumOfInputs = 7;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         std::cout << "Starting Program\n";
         checkArguments(outputs, inputs);
@@ -20,7 +21,8 @@ public:
         int channelIn = inputs[2][0];
         std::string foregroundposFile = parseStringMatlab(inputs, 3);
         std::string backgroundposfile = parseStringMatlab(inputs, 4);
-
+        int startFrame = inputs[5][0];
+        int endFrame = inputs[6][0];
 
         std::string driftfile = "";
         bool verbose = false;
@@ -31,7 +33,7 @@ public:
             else if (optionArg == "Drift")driftfile = parseStringMatlab(inputs, paramcount + 1); 
         }
 
-        Calculate_Traces(filebase, (size_t) positionIn, (size_t) channelIn, foregroundposFile, backgroundposfile, verbose, driftfile);
+        Calculate_Traces(filebase, (size_t) positionIn, (size_t) channelIn, foregroundposFile, backgroundposfile,startFrame,endFrame, verbose, driftfile);
         std::cout << "Finishing Program\n";
     }
 
@@ -42,7 +44,7 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least six inputs required - Standard input : Calculate_Traces(std::string output, std::string inputfile, std::string ROIfile, std::string backgroundfile, std::string driftfile, bool veboseoutput)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar("At least six inputs required - Standard input : Calculate_Traces(std::string output, std::string inputfile, std::string ROIfile, std::string backgroundfile, int startFrame, int endFrame)") }));
         }
 
     }

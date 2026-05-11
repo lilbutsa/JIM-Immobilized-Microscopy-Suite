@@ -65,7 +65,7 @@ double CalcMedian(std::vector<float> scores, int size)
 }
 
 
-int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, bool veboseoutput, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false)
+int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, bool veboseoutput = false, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false)
 {
 	BLTiffIO::MultiTiffInput allFiles(fileName, numOfChannels, filesSplitByChannelIn);
 
@@ -109,9 +109,14 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 	std::vector< std::vector<double> > results;
 	if(veboseoutput)results = std::vector< std::vector<double> >(numOfFrame *numoffits, std::vector<double>(20, 0));//region num, frame no, x centre, y centre,  total,  mean, std dev, median,min, max, num of points, background total, back mean, back std dev, back median,back min,back max, back num of points, total- (back mean *num of points),total- (back median *num of points)
 
-	std::vector< std::vector<double> > amplitudevals(numoffits, std::vector<double>(numOfFrame));
-	std::vector< std::vector<double> > backgroundvals(numoffits, std::vector<double>(numOfFrame));
-	std::vector< std::vector<double> > gausvals(numoffits, std::vector<double>(numOfFrame));
+	int startFrameIn = startFrame < 0 ? numOfFrame + startFrame : startFrame - 1;
+	int endFrameIn = endFrame < 0 ? numOfFrame + endFrame + 1 : endFrame;
+	int NOFMeasure = endFrameIn - startFrameIn;
+
+
+	std::vector< std::vector<double> > amplitudevals(numoffits, std::vector<double>(NOFMeasure));
+	std::vector< std::vector<double> > backgroundvals(numoffits, std::vector<double>(NOFMeasure));
+	std::vector< std::vector<double> > gausvals(numoffits, std::vector<double>(NOFMeasure));
 
 	std::vector< std::vector<float> > image(imageWidth, std::vector<float>(imageHeight));
 	std::vector< std::vector<float> > ROIdata(labelledpos.size()), backgroundData(labelledpos.size());
@@ -132,12 +137,14 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 
 	//cout << "num of fits = " << numoffits << "\n";
 
-	for (size_t imagecount = 0; imagecount < numOfFrame; imagecount++) {
+
+
+	for (size_t imagecount = 0; imagecount < NOFMeasure; imagecount++) {
 		//cout << "Fitting Frame Number " << imagecount << endl;
-		allFiles.read2dImage(positionIn-1,imagecount,channelIn-1,0,image);
+		allFiles.read2dImage(positionIn-1,imagecount + startFrameIn,channelIn-1,0,image);
 		if (bdrifts) {
-			xdrift = (int)round(tableofdrifts[imagecount][0]);
-			ydrift = (int)round(tableofdrifts[imagecount][1]);
+			xdrift = (int)round(tableofdrifts[imagecount+startFrameIn][0]);
+			ydrift = (int)round(tableofdrifts[imagecount + startFrameIn][1]);
 		}
 
 		for (size_t fitcount = 0; fitcount < numoffits; fitcount++) {

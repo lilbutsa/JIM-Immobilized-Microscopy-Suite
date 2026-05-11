@@ -35,7 +35,7 @@
 #include <iostream>
 #include <vector>
 
-int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, bool veboseoutput, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
+int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, bool veboseoutput = false, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
 
 int main(int argc, char *argv[])
 {
@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
 
 	bool veboseoutput = false;
 	std::string driftfile = "";
+	int startFrame = 1, endFrame = -1;
 
 	for (int i = 1; i < argc; i++) {
 		if (std::string(argv[i]) == "-Drift") {
@@ -55,11 +56,25 @@ int main(int argc, char *argv[])
 				driftfile = argv[i + 1];
 				std::cout << "Drifts imported from " << driftfile << "\n";
 			}
-			else { std::cout << "error inputting drifts" << std::endl; return 1; }
+			else { std::cout << "error inputting drifts\n" ; return 1; }
+		}
+		if (std::string(argv[i]) == "-startFrame") {
+			if (i + 1 < argc) {
+				startFrame = std::stoi(argv[i + 1]);
+				std::cout << "Traces starting from frame " << startFrame << "\n";
+			}
+			else { std::cout << "error inputting start Frame \n" ; return 1; }
+		}
+		if (std::string(argv[i]) == "-endFrame") {
+			if (i + 1 < argc) {
+				endFrame = std::stoi(argv[i + 1]);
+				std::cout << "Traces ending at frame " << endFrame << "\n";
+			}
+			else { std::cout << "error inputting end Frame \n"; return 1; }
 		}
 		if (std::string(argv[i]) == "-Verbose")veboseoutput = true;
 	}
 
 
-	return Calculate_Traces(inputfile, positionIn, channelIn, ROIfile, backgroundfile, veboseoutput, driftfile);
+	return Calculate_Traces(inputfile, positionIn, channelIn, ROIfile, backgroundfile, startFrame,endFrame, veboseoutput, driftfile);
 }

@@ -286,11 +286,12 @@ imshow(sysVar.combinedImage);
 disp('Finished Expanding ROIs');
 
 %% 8) Calculate Traces
-
+tracesStartFrame = 1;
+tracesEndFrame = -1;
 %Don't touch from here
 whileLoopCounter = 1;%Don't change this value from 1!!! It's used for the while loop below
 while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
-    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'])
+    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame)
     whileLoopCounter = whileLoopCounter+1;
 end
 
