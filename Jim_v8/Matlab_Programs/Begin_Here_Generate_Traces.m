@@ -577,7 +577,7 @@ for i=1:sysConst.NumberOfFiles
     
         whileLoopCounter = 1;
         while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
-            Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'])
+            Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame)
             whileLoopCounter = whileLoopCounter+1;
         end
     end
