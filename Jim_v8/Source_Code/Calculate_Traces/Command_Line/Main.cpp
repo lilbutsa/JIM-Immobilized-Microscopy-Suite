@@ -35,7 +35,7 @@
 #include <iostream>
 #include <vector>
 
-int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, bool veboseoutput = false, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
+int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, std::string driftfile = "", std::string weightImageFile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
 
 int main(int argc, char *argv[])
 {
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 	std::string backgroundfile = argv[5];
 
 	bool veboseoutput = false;
-	std::string driftfile = "";
+	std::string driftfile = "", weightsfile = "";
 	int startFrame = 1, endFrame = -1;
 
 	for (int i = 1; i < argc; i++) {
@@ -72,9 +72,15 @@ int main(int argc, char *argv[])
 			}
 			else { std::cout << "error inputting end Frame \n"; return 1; }
 		}
-		if (std::string(argv[i]) == "-Verbose")veboseoutput = true;
+		if (std::string(argv[i]) == "-Weights") {
+			if (i + 1 < argc) {
+				weightsfile = argv[i + 1];
+				std::cout << "Weights imported from " << weightsfile << "\n";
+			}
+			else { std::cout << "error inputting Weights\n"; return 1; }
+		}
 	}
 
 
-	return Calculate_Traces(inputfile, positionIn, channelIn, ROIfile, backgroundfile, startFrame,endFrame, veboseoutput, driftfile);
+	return Calculate_Traces(inputfile, positionIn, channelIn, ROIfile, backgroundfile, startFrame,endFrame, driftfile, weightsfile);
 }

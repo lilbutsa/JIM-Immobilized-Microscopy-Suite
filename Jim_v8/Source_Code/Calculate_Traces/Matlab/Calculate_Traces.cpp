@@ -5,7 +5,7 @@
 #include <vector>
 #include "BLMatlabParser.h"
 
-int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, bool veboseoutput = false, std::string driftfile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
+int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, std::string driftfile = "", std::string weightImageFile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
 
 
 
@@ -25,15 +25,15 @@ public:
         int endFrame = inputs[6][0];
 
         std::string driftfile = "";
-        bool verbose = false;
+        std::string weightfile = "";
 
         for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
             std::string optionArg = parseStringMatlab(inputs, paramcount);
-            if (optionArg == "Verbose") verbose = inputs[paramcount + 1][0];
+            if (optionArg == "Weights")weightfile = parseStringMatlab(inputs, paramcount + 1);
             else if (optionArg == "Drift")driftfile = parseStringMatlab(inputs, paramcount + 1); 
         }
 
-        Calculate_Traces(filebase, (size_t) positionIn, (size_t) channelIn, foregroundposFile, backgroundposfile,startFrame,endFrame, verbose, driftfile);
+        Calculate_Traces(filebase, (size_t) positionIn, (size_t) channelIn, foregroundposFile, backgroundposfile,startFrame,endFrame,  driftfile, weightfile);
         std::cout << "Finishing Program\n";
     }
 
