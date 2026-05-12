@@ -56,8 +56,8 @@ inputFolder=[inputFolder,filesep];
 %% 3) Align Channels and Calculate Drifts
 positionToAnalyse = 1;
 
-alignStartFrame = 2;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 2;% 
+alignStartFrame = 40;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 50;% 
 
 alignMaxShift = 30; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -68,7 +68,7 @@ alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
 %Parameters for Manual Alignment [x y rotation scale]
-alignment = [0 0 0 1];
+alignment = [];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -134,11 +134,11 @@ disp('Alignment completed');
 %% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = [false false false]; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-detectionStartFrame = [2 2 0]; %first frame of the reference region for detection for each channel
-detectionEndFrame = [2 -1 0]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = [1 0 0]; %first frame of the reference region for detection for each channel
+detectionEndFrame = [10 0 0]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = [1 1 0];
+detectWeights = [1 0 0];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -160,7 +160,7 @@ disp('Average projection completed');
 detectionCutoff = 0.4; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectMinEdgeDist = 25;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases. 
+detectMinEdgeDist = 150;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases. 
 
 detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
 detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
@@ -209,12 +209,12 @@ imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
 %% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
-additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
+additionBackgroundDetect = true ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
 additionBackgroundUseMaxProjection = [false false false] ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
 additionalBackgroundStartFrame = [0 50 50]; %first frame of the reference region for background detection
-additionalBackgroundEndFrame = [0 1 -1];%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundEndFrame = [0 -1 -1];%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 additionalBackgroundWeights = [0 3 1];
 
@@ -253,14 +253,18 @@ end
 
 %% 7) Expand Regions
 
+
+expandBoundaryDist = 1.5;
+expandBackgroundInnerRadius = 3;
+
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 
 %don't touch from here
 if additionBackgroundDetect
-    Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'ExtraBackgroundFile',[allPositionFolders{positionToAnalyse},filesep,'Background_Positions.csv']);
+    Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'ExtraBackgroundFile',[allPositionFolders{positionToAnalyse},filesep,'Background_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
 else
-    Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv']);
+    Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
 end
 
 
@@ -291,7 +295,7 @@ tracesEndFrame = -1;
 %Don't touch from here
 whileLoopCounter = 1;%Don't change this value from 1!!! It's used for the while loop below
 while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
-    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame)
+    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame,'Weights',)
     whileLoopCounter = whileLoopCounter+1;
 end
 
@@ -362,7 +366,7 @@ disp('Finished Generating Traces');
 % fprintf(sysVar.fileID, sysVar.variableString);
 % fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =4; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber =5; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 's'; % Unit to use for x axis 
 
@@ -570,9 +574,10 @@ for i=1:sysConst.NumberOfFiles
         if additionBackgroundDetect
             Mean_of_Frames(inputFolder,positionToAnalyse,additionalBackgroundStartFrame,additionalBackgroundEndFrame,additionBackgroundUseMaxProjection,additionalBackgroundWeights);
             Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff,'OutputFile',[allPositionFolders{positionToAnalyse},filesep,'Background']);
-            Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'ExtraBackgroundFile',[allPositionFolders{positionToAnalyse},filesep,'Background_Positions.csv']);
+
+            Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'ExtraBackgroundFile',[allPositionFolders{positionToAnalyse},filesep,'Background_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
         else
-            Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv']);
+            Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
         end
     
         whileLoopCounter = 1;
