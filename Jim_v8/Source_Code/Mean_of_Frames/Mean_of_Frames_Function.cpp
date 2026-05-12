@@ -156,6 +156,8 @@ int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, 
 		//if (bNormalize) std::transform(Combinedmeanimage.begin(), Combinedmeanimage.end(), Combinedmeanimage.begin(), [numOfChan](auto x) { return x / numOfChan; });
 
 		std::string adjustedOutputFilename = fileBase + outputFileName+".tiff";
+		std::cout << "Saving generated file to : " << adjustedOutputFilename << "\n";
+
 
 		if (bNormalize)BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, imageHeight, imageDepth).write1dImage(Combinedmeanimage);
 		else BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, imageHeight, 32).write1dImage(Combinedmeanimage);

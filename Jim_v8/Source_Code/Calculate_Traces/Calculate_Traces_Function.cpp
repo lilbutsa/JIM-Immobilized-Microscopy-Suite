@@ -125,7 +125,7 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 			for (size_t j = 0; j < backgroundpos[i].size(); j++)backgroundsum += imagef[backgroundpos[i][j]];
 			backgroundsum = backgroundsum / backgroundpos[i].size();
 
-			double weightsum = 0, weightsum2;
+			double weightsum = 0, weightsum2 = 0;
 			for (size_t j = 0; j < labelledpos[i].size(); j++) {
 				weights[i][j] = imagef[labelledpos[i][j]] - backgroundsum;
 				weightsum += weights[i][j];
