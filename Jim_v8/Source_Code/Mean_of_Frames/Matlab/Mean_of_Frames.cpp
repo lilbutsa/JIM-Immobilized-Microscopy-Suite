@@ -8,7 +8,7 @@
 
 
 
-int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "");
+int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "", std::string outputFileName = "Image_For_Detection_Partial_Mean.tiff");
 
 //Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
 class MexFunction : public matlab::mex::Function {
@@ -29,17 +29,17 @@ public:
         parse1DMatlabArray(inputs,5, weights);
 
         bool bNormalize = true;
-        std::string driftfile = "", alignfile = "";
+        std::string driftfile = "", alignfile = "",outputfile = "Image_For_Detection_Partial_Mean.tiff";
 
         for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
             std::string optionArg = parseStringMatlab(inputs, paramcount);
             if (optionArg == "Normalize") bNormalize = inputs[paramcount + 1][0];
             else if (optionArg == "DriftFile")driftfile = parseStringMatlab(inputs, paramcount + 1);
-            else if (optionArg == "AlignFile")alignfile = parseStringMatlab(inputs, paramcount + 1);
+            else if (optionArg == "OutputFile")outputfile = parseStringMatlab(inputs, paramcount + 1);
         }
 
 
-        Mean_of_Frames(fileName, positionIn, start, end, bvMaxProject, weights, bNormalize, driftfile, alignfile);
+        Mean_of_Frames(fileName, positionIn, start, end, bvMaxProject, weights, bNormalize, driftfile, alignfile, outputfile);
 
     }
 

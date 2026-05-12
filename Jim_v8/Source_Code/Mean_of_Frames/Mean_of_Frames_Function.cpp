@@ -6,7 +6,7 @@
 #include "BLImageTransform.h"
 #include "BLCSVIO.h"
 
-int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject ,std::vector<float> weights, bool bNormalize,std::string driftfile = "", std::string alignfile="" ) {
+int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject ,std::vector<float> weights, bool bNormalize,std::string driftfile = "", std::string alignfile="", std::string outputFileName = "Image_For_Detection_Partial_Mean.tiff") {
 
 	BLTiffIO::MultiTiffInput allFiles(fileName);
 
@@ -155,8 +155,7 @@ int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, 
 
 		//if (bNormalize) std::transform(Combinedmeanimage.begin(), Combinedmeanimage.end(), Combinedmeanimage.begin(), [numOfChan](auto x) { return x / numOfChan; });
 
-
-		std::string adjustedOutputFilename = fileBase + "Image_For_Detection_Partial_Mean.tiff";
+		std::string adjustedOutputFilename = fileBase + adjustedOutputFilename;
 
 		if (bNormalize)BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, imageHeight, imageDepth).write1dImage(Combinedmeanimage);
 		else BLTiffIO::TiffOutput(adjustedOutputFilename, imageWidth, imageHeight, 32).write1dImage(Combinedmeanimage);

@@ -61,7 +61,7 @@
 #include "BLCSVIO.h"
 #include "BLFlagParser.h"
 
-int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "");
+int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "", std::string outputFileName = "Image_For_Detection_Partial_Mean.tiff");
 
 
 //Input should be align file, drift file, outfile, all image files, -Start chan1 chan2...,-End chan1, chan2

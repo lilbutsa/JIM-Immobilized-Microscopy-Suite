@@ -25,7 +25,6 @@
  * Dependencies:
  *   - BLTiffIO: For reading TIFF image stacks.
  *   - BLCSVIO: For reading/writing CSV files.
- *   - BLImageTransform: For drift correction handling (if used).
  *
  * Author: James Walsh
  * Date: July 2020
