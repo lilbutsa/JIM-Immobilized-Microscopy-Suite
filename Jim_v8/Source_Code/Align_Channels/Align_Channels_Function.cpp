@@ -35,7 +35,12 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan,numOfFrame,numOfZ;
 
 	std::vector<std::string> allFolderNames;
-	for (size_t posCount = 0; posCount < totalPositions; posCount++)allFolderNames.push_back(allFiles.path + allFiles.filesep+allFiles.positionNames[posCount]);
+	for (size_t posCount = 0; posCount < totalPositions; posCount++)
+		if(allFiles.positionNames[posCount].back()=='/' || allFiles.positionNames[posCount].back() == '\\')
+			allFolderNames.push_back(allFiles.path + allFiles.positionNames[posCount]);
+		else
+			allFolderNames.push_back(allFiles.path + allFiles.filesep + allFiles.positionNames[posCount]);
+	
 	BLCSVIO::writeStringList(allFiles.path + allFiles.filesep + "PositionNameList.csv", allFolderNames);
 
 	for (size_t posCount = (positionIn == 0 ? 0 : positionIn-1); posCount < (positionIn == 0 ? totalPositions : positionIn); posCount++) {
