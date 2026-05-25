@@ -83,7 +83,7 @@ int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, 
 		}
 
 		//read in files
-		std::string myFolderName = allFiles.path + allFiles.filesep + allFiles.positionNames[posCount];
+		std::string myFolderName = allFiles.path.back() == '/' || allFiles.path.back() == '\\'? allFiles.path  + allFiles.positionNames[posCount] :allFiles.path + allFiles.filesep + allFiles.positionNames[posCount];
 		if (!std::filesystem::exists(myFolderName))std::filesystem::create_directories(myFolderName);
 		std::string fileBase = myFolderName + allFiles.filesep;
 

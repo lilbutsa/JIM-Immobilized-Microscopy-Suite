@@ -56,8 +56,8 @@ inputFolder=[inputFolder,filesep];
 %% 3) Align Channels and Calculate Drifts
 positionToAnalyse = 1;
 
-alignStartFrame = 40;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 50;% 
+alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
+alignEndFrame = 5;% 
 
 alignMaxShift = 30; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -68,7 +68,7 @@ alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
 %Parameters for Manual Alignment [x y rotation scale]
-alignment = [];
+alignment = [0 0 0 1];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -134,11 +134,11 @@ disp('Alignment completed');
 %% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = [false false false]; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-detectionStartFrame = [1 0 0]; %first frame of the reference region for detection for each channel
-detectionEndFrame = [10 0 0]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = [0 1 0]; %first frame of the reference region for detection for each channel
+detectionEndFrame = [0 -1 0]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = [1 0 0];
+detectWeights = [0 1 0];
 
 % Visualisation saturationg percentages
 displayMin = 0.05;
@@ -157,18 +157,18 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 0.4; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 1; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
-detectMinEdgeDist = 150;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases. 
+detectMinEdgeDist = 50;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases. 
 
-detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-detectMaxCount= 100; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+detectMinCount = 100; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+detectMaxCount= 1000000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
-detectMinEccentricity = -0.10; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
+detectMinEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
 detectMaxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
-detectMinSeparation = 5.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = 0.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
 % Visualisation saturationg percentages
 
@@ -209,7 +209,7 @@ imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
 %% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
-additionBackgroundDetect = true ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
+additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
 additionBackgroundUseMaxProjection = [false false false] ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
@@ -254,8 +254,8 @@ end
 %% 7) Expand Regions
 
 
-expandBoundaryDist = 1.5;
-expandBackgroundInnerRadius = 3;
+expandBoundaryDist = 4.1;
+expandBackgroundInnerRadius = 4.1;
 
 sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -295,7 +295,7 @@ tracesEndFrame = -1;
 %Don't touch from here
 whileLoopCounter = 1;%Don't change this value from 1!!! It's used for the while loop below
 while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
-    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame,'Weights',)
+    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame)
     whileLoopCounter = whileLoopCounter+1;
 end
 
@@ -366,7 +366,7 @@ disp('Finished Generating Traces');
 % fprintf(sysVar.fileID, sysVar.variableString);
 % fclose(sysVar.fileID);
 %% 10) View Traces
-montage.pageNumber =5; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
+montage.pageNumber =1; % Select the page number for traces. 28 traces per page. So traces from(n-1)*28+1 to n*28
 montage.timePerFrame = 1;%Set to zero to just have frames
 montage.timeUnits = 's'; % Unit to use for x axis 
 
@@ -558,7 +558,7 @@ disp(['There are ',num2str(sysConst.NumberOfFiles),' folders to analyse']);
 
 %% 2) Batch Analyse
 
-for i=1:sysConst.NumberOfFiles
+parfor i=1:sysConst.NumberOfFiles
     
     inputFolder =  sysVar.allFolders{i};
     
@@ -569,7 +569,7 @@ for i=1:sysConst.NumberOfFiles
     allPositionFolders = strip(strsplit(fileread([inputFolder filesep 'PositionNameList.csv']),'\n'));
     allPositionFolders = allPositionFolders(:,1:end-1);
 
-    for positionToAnalyse = 1:length(allPositionFolders);
+    for positionToAnalyse = 1:length(allPositionFolders)
         Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff, 'MinDistFromEdge',detectMinEdgeDist,'MinCount',detectMinCount,'MaxCount',detectMaxCount,'MinEccentricity',detectMinEccentricity,'MaxEccentricity',detectMaxEccentricity,'MinSeparation',detectMinSeparation); % Run the program Find_Particles.exe with the users values and write the output to the results sysVar.file with the prefix Detected_
         if additionBackgroundDetect
             Mean_of_Frames(inputFolder,positionToAnalyse,additionalBackgroundStartFrame,additionalBackgroundEndFrame,additionBackgroundUseMaxProjection,additionalBackgroundWeights);
@@ -581,7 +581,7 @@ for i=1:sysConst.NumberOfFiles
         end
     
         whileLoopCounter = 1;
-        while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
+        while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'],'file')>0
             Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame)
             whileLoopCounter = whileLoopCounter+1;
         end

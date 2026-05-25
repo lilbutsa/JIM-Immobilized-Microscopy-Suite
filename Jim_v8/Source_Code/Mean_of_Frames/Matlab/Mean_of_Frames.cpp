@@ -29,7 +29,7 @@ public:
         parse1DMatlabArray(inputs,5, weights);
 
         bool bNormalize = true;
-        std::string driftfile = "", alignfile = "",outputfile = "Image_For_Detection_Partial_Mean.tiff";
+        std::string driftfile = "", alignfile = "",outputfile = "Image_For_Detection_Partial_Mean";
 
         for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
             std::string optionArg = parseStringMatlab(inputs, paramcount);

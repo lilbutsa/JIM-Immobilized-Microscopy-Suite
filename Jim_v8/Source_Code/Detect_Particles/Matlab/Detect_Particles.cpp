@@ -24,7 +24,7 @@ public:
 
         double gaussStdDev = 5, minSeparation = 0,leftminDistFromEdge = 0,rightminDistFromEdge = 0,topminDistFromEdge = 0,bottomminDistFromEdge = 0;
         double minEccentricity = -0.1, maxEccentricity = 1.1, minLength = 0, maxLength = 100000000, minCount = 0, maxCount = 100000000, maxDistFromLinear = 100000000;
-        bool includeSmall = false;
+        bool includeSmall = true;
 
         for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
             std::string optionArg = parseStringMatlab(inputs, paramcount);

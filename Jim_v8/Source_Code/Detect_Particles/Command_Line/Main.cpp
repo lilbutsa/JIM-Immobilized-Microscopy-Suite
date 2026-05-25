@@ -42,10 +42,6 @@
 
 #include <iostream>
 #include <vector>
-#include <algorithm>
-#include "BLTiffIO.h"
-#include "BLCSVIO.h"
-#include "BLImageTransform.h"
 #include "BLFlagParser.h"
 
 

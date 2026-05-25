@@ -281,7 +281,7 @@ void componentMeasurements(std::vector<std::vector<uint64_t> >& pos /*positions 
 			float minDist = myKNN.minDistWithoutConstants;
 			int nearestPixel = 0;
 			int count = 1;
-			while (myKNN.getDist(count) < minDist) {
+			while (count < measurementresults.size() && myKNN.getDist(count) < minDist) {
 				for (int j = 0; j < ROIKNNs[i].points.size(); j++) {
 					ROIKNNs[myKNN.idx[count]].query(ROIKNNs[i].points[j]);
 					if (ROIKNNs[myKNN.idx[count]].getDist(0) < minDist)minDist = ROIKNNs[myKNN.idx[count]].getDist(0);
