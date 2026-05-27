@@ -55,10 +55,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <algorithm>
-#include "BLTiffIO.h"
-#include "BLImageTransform.h"
-#include "BLCSVIO.h"
 #include "BLFlagParser.h"
 
 int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "", std::string outputFileName = "Image_For_Detection_Partial_Mean");

@@ -3,7 +3,6 @@
 #include <vector>
 #include "BLTiffIO.h"
 #include "BLCSVIO.h"
-#include <math.h>
 
 std::vector<std::vector<int>> transformPosition(std::vector<double> alignIn, std::vector<std::vector<int>> positions, int imageWidth, int imageHeight);
 

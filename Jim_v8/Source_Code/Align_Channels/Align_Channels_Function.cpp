@@ -1,7 +1,6 @@
 #include "BLTiffIO.h"
 #include "BLImageTransform.h"
 #include "writeChannelAlignment.hpp"
-#include <stdexcept> 
 
 void driftCorrect(BLTiffIO::MultiTiffInput& input, size_t posIn, int chanIn, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const float& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string& alignedStackNameBase);
 std::vector< std::vector<float>> findAlignment(std::vector< std::vector<float>>& prealignmentReference, uint32_t imageWidth, uint32_t imageHeight, float maxShift);
@@ -30,7 +29,6 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 	//also removing initial full stack as it requires a full read
 	BLTiffIO::MultiTiffInput allFiles(fileName, numOfChannels, filesSplitByChannelIn);
 
-
 	size_t totalPositions = allFiles.positionNames.size();
 	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan,numOfFrame,numOfZ;
 
@@ -44,6 +42,26 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 			allFolderNames.push_back(allFiles.path + allFiles.filesep + allFiles.positionNames[posCount]);
 	
 	BLCSVIO::writeStringList(allFiles.path + allFiles.filesep + "PositionNameList.csv", allFolderNames);
+
+
+	//Sanitize all inputs
+	if(allFiles.allFilesFound==false) {
+		std::cout << "Aborting as a file was not found\n";
+		return 1;
+	}
+	if (alignments.size() > 0 && alignments.size() < numOfChan - 1) {
+		std::cout << "ERROR - Alignment requires an alignment for each channel, exlcuding channel one OR an empty vector to autodetect alignment\n";
+		return 2;
+	}
+	else if (alignments.size() > numOfChan - 1) {
+		std::cout << "Warning - more alignments supplied than channels. Ignoring extra alignments\n";
+		alignments.resize(numOfChan - 1);
+	}
+	for(size_t i=0;i< alignments.size();i++)
+		if (alignments[i].size() != 4) {
+			std::cout << "ERROR - Input Alignment requires four values for each channel, X Y Rotation Scale\n";
+			return 3;
+		}
 
 	for (size_t posCount = (positionIn == 0 ? 0 : positionIn-1); posCount < (positionIn == 0 ? totalPositions : positionIn); posCount++) {
 

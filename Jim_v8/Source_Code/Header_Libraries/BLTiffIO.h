@@ -98,6 +98,7 @@ namespace BLTiffIO {
 		std::string inputfile;
 
 		bool bigtiff;
+		bool fileFound;
 
 		TiffInput(std::string filenamein, bool detectMetadata = true);
 		~TiffInput();
@@ -271,9 +272,12 @@ namespace BLTiffIO {
 
 		ifs.open(filename, std::ifstream::ate | std::ifstream::binary);
 		if (ifs.is_open() == false) {
+			fileFound = false;
+			std::cout << "Error:could not open file : " + filenamein + "\n";
 			throw std::invalid_argument("Error:could not open file:\n" + filenamein + "\n");
 			return;
 		}
+		fileFound = true;
 
 		filesize = ifs.tellg();
 		ifs.close();
@@ -734,6 +738,7 @@ namespace BLTiffIO {
 		std::vector<BLTiffIO::TiffInput*> vimstack;
 		uint64_t maxPos = 0, maxFrame = 0, maxChan = 0, maxZ = 0;
 		std::string path,filesep;
+		bool allFilesFound;
 
 		void inline MultiTiffInput::parseMetadata(std::string inputStr) {
 			//std::cout << "Detecting File order\n";
@@ -873,12 +878,13 @@ namespace BLTiffIO {
 			//Check if files exist and open the image stack files 
 
 			vimstack.resize(inputfiles.size());
-
+			allFilesFound = true;
 			for (size_t i = 0; i < inputfiles.size(); i++) {
 				std::string myfilename = path + filesep + inputfiles[i];
 				if (std::filesystem::exists(myfilename)) vimstack[i] = new BLTiffIO::TiffInput(myfilename, false);
 				else {
 					std::cout << "Error: couldn't find file : " << myfilename << "\n";
+					allFilesFound = false;
 				}
 			}
 
@@ -966,8 +972,6 @@ namespace BLTiffIO {
 
 
 	};
-
-	
 
 
 	inline MultiTiffInput::~MultiTiffInput() {
