@@ -57,7 +57,7 @@
 #include <vector>
 #include "BLFlagParser.h"
 
-int Mean_of_Frames(std::string fileName, int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "", std::string outputFileName = "Image_For_Detection_Partial_Mean");
+int Mean_of_Frames(std::string fileName, size_t positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "", std::string outputFileName = "Image_For_Detection_Partial_Mean");
 
 
 //Input should be align file, drift file, outfile, all image files, -Start chan1 chan2...,-End chan1, chan2
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 {
 
 
-	if (argc < 1) { std::cout << "could not read file name.\n"; return 1; }
+	if (argc < 2) { std::cout << "could not read file name.\n"; return 1; }
 	std::string fileName = argv[1];
 
 	int position=0;

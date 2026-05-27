@@ -6,9 +6,14 @@
 #include "BLImageTransform.h"
 #include "BLCSVIO.h"
 
-int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject ,std::vector<float> weights, bool bNormalize,std::string driftfile = "", std::string alignfile="", std::string outputFileName = "Image_For_Detection_Partial_Mean") {
+int Mean_of_Frames(std::string fileName,size_t positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject ,std::vector<float> weights, bool bNormalize,std::string driftfile = "", std::string alignfile="", std::string outputFileName = "Image_For_Detection_Partial_Mean") {
 
 	BLTiffIO::MultiTiffInput allFiles(fileName);
+
+	if (allFiles.allFilesFound == false) {
+		std::cout << "Aborting as a file was not found\n";
+		return 1;
+	}
 
 	/*
 	std::cout << "filename = " << fileName << "\n";
@@ -35,25 +40,62 @@ int Mean_of_Frames(std::string fileName,int positionIn, std::vector<int> start, 
 	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan, numOfFrame, numOfZ;
 	allFiles.imageInfo(0, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ);
 
-	if (start.size() < numOfChan) {
+	//Check inputs
+
+	if (positionIn > totalPositions) {
+		std::cout << "ERROR : Input position (" << positionIn << ") is greater than the detected number of positions in the data (" << totalPositions << ")\n";
+		return 1;
+	}
+
+	if (start.size() == 0) {
 		std::cout << "Using default start value of 1 for all channels\n";
 		start.resize(numOfChan);
 		for (auto val : start)val = 1;
+	} else 	if (start.size() < numOfChan) {
+		std::cout << "ERROR : Insuffiecient start values. Requires one for each channel\n";
+		return 1;
 	}
-	if (end.size() < numOfChan) {
+	else if (start.size() > numOfChan) {
+		std::cout << "Warning : more start values than channels. Ignoring extra values.\n";
+		start.resize(numOfChan);
+	}
+
+
+	if (end.size() ==0) {
 		std::cout << "Using default end value of -1 for all channels\n";
 		end.resize(numOfChan);
 		for (auto val : end)val = -1;
+	} else 	if (end.size() < numOfChan) {
+		std::cout << "ERROR : Insuffiecient end values. Requires one for each channel\n";
+		return 1;
 	}
-	if (weights.size() < numOfChan) {
+	else if (end.size() > numOfChan) {
+		std::cout << "Warning : more end values than channels. Ignoring extra values.\n";
+		end.resize(numOfChan);
+	}
+
+	if (weights.size() ==0) {
 		std::cout << "Using default weights value of 1 for all channels\n";
 		weights.resize(numOfChan);
 		for (auto val : weights)val = 1;
+	} else 	if (weights.size() < numOfChan) {
+		std::cout << "ERROR : Insuffiecient weights values. Requires one for each channel\n";
+		return 1;
+	} else if (weights.size() > numOfChan) {
+		std::cout << "Warning : more weights values than channels. Ignoring extra values.\n";
+		weights.resize(numOfChan);
 	}
-	if (bvMaxProject.size() < numOfChan) {
-		std::cout << "Using mean for all channels\n";
+
+	if (bvMaxProject.size() ==0 ) {
+		std::cout << "Warning : No preference input so using mean for all channels\n";
 		bvMaxProject.resize(numOfChan);
 		for (auto val : bvMaxProject)val = false;
+	} else if (bvMaxProject.size() < numOfChan) {
+		std::cout << "ERROR : Insuffiecient Max/Mean project values. Requires one for each channel\n";
+		return 1;
+	} else if (bvMaxProject.size() > numOfChan) {
+		std::cout << "Warning : more max/mean project preferences than channels. Ignoring extra values.\n";
+		bvMaxProject.resize(numOfChan);
 	}
 	
 

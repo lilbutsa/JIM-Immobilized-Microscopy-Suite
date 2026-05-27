@@ -32,8 +32,11 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	//read in foreground positions and get image size data out
 	std::vector<std::vector<int>> labelledpos(3000, std::vector<int>(1000, 0));
 	std::vector<std::string> headerLine;
-	BLCSVIO::readVariableWidthCSV(foregroundposfile, labelledpos, headerLine);
-
+	if(BLCSVIO::readVariableWidthCSV(foregroundposfile, labelledpos, headerLine)!=0)return 1;
+	if (labelledpos.size() < 2) {
+		std::cout << "Error : Empty ROI Positions File\n";
+		return 1;
+	}
 	int imageWidth = labelledpos[0][0];
 	int imageHeight = labelledpos[0][1];
 	int imagePoints = labelledpos[0][2];
@@ -49,7 +52,11 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 
 	//read in background
 	std::vector<std::vector<int>> backgroundpos(3000, std::vector<int>(1000, 0));
-	BLCSVIO::readVariableWidthCSV(backgroundposfile, backgroundpos, headerLine);
+	if(BLCSVIO::readVariableWidthCSV(backgroundposfile, backgroundpos, headerLine) != 0)return 1;
+	if (backgroundpos.size() != labelledpos.size() + 1) {
+		std::cout << "Error : Background File needs to have the same number of ROIs as the ROI file\n";
+		return 1;
+	}
 	backgroundpos.erase(backgroundpos.begin());
 
 	//make background image
@@ -60,7 +67,7 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	std::vector<std::vector<int>> extrabackgroundpos;
 	if (bExtraBackground) {
 		extrabackgroundpos = std::vector<std::vector<int>>(3000, std::vector<int>(1000, 0));
-		BLCSVIO::readVariableWidthCSV(extraBackgroundFileName, extrabackgroundpos, headerLine);
+		if(BLCSVIO::readVariableWidthCSV(extraBackgroundFileName, extrabackgroundpos, headerLine) != 0)return 1;
 		extrabackgroundpos.erase(extrabackgroundpos.begin());
 		for (int i = 0; i < extrabackgroundpos.size(); i++)for (int j = 0; j < extrabackgroundpos[i].size(); j++)backgroundImage[extrabackgroundpos[i][j]] = 255;
 	}
@@ -158,7 +165,7 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	//write out for other channels
 	if (channelAlignmentFileName!="") {
 		std::vector<std::vector<double>> channelAlign(50, std::vector<double>(11, 0.0));
-		BLCSVIO::readCSV(channelAlignmentFileName, channelAlign, headerLine);
+		if(BLCSVIO::readCSV(channelAlignmentFileName, channelAlign, headerLine) != 0)return 1;
 		for (int chancount = 0; chancount < channelAlign.size(); chancount++) {
 
 			transformPos = transformPosition(channelAlign[chancount], expandedForeground, imageWidth, imageHeight);

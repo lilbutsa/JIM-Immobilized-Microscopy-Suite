@@ -39,7 +39,7 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 
 int main(int argc, char *argv[])
 {
-	if (argc < 5) { std::cout << "could not read file name" << "\n"; return 1; }
+	if (argc < 6) { std::cout << "could not read file name" << "\n"; return 1; }
 	std::string inputfile = argv[1];
 	size_t positionIn = std::stoi(argv[2]);
 	size_t channelIn = std::stoi(argv[3]);

@@ -24,6 +24,11 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 
 	BLTiffIO::TiffInput inputstack(inputfile);
 
+	if (inputstack.fileFound == false) {
+		std::cout << "Aborting Detection as file not found.\n";
+		return 1;
+	}
+
 	if (fileBase == "") {
 		std::string filesepin(1, std::filesystem::path::preferred_separator);
 		std::string filesep = filesepin;

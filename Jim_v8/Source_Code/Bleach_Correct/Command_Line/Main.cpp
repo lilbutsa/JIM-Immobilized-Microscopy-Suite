@@ -48,7 +48,7 @@ int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleac
 int main(int argc, char* argv[])
 {
 
-    if (argc < 3) { std::cout << "could not read file name.\n"; return 1; }
+    if (argc < 4) { std::cout << "could not read file name.\n"; return 1; }
     std::string inputfile = argv[1];
     std::string output = argv[2];
     double meanBleachFrame = std::stod(argv[3]);

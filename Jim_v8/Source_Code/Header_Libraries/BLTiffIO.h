@@ -327,6 +327,7 @@ namespace BLTiffIO {
 
 			std::cout << "Number of frames = "<< numOfFrames<<"\n";
 
+			if (numOfFrames == 0)return;
 			ifs.seekg(allfilepositions64[0]);
 			countofifd64 = read64bit();
 			uint16_t ifdtag, datatype;
@@ -405,10 +406,9 @@ namespace BLTiffIO {
 				ifs.open(filename, std::ifstream::binary);
 			}
 
-
-
 			numOfFrames = allfilepositions.size();
 
+			if (numOfFrames == 0)return;
 			ifs.seekg(allfilepositions[0]);
 			
 			countofifd = read16bit();
@@ -558,6 +558,7 @@ namespace BLTiffIO {
 	template <typename vectortype>
 	inline void TiffInput::read1dImage(size_t framenumber, ::std::vector<vectortype>& imageout) {
 		imageout.resize(imagePoints);
+		if (framenumber > numOfFrames)framenumber = numOfFrames-1;
 
 		if (bigtiff) {
 			ifs.seekg(allfilepositions64[framenumber]);
@@ -640,6 +641,8 @@ namespace BLTiffIO {
 	inline void TiffInput::read2dImage(size_t framenumber, std::vector<std::vector<vectortype> >& imageout) {
 		imageout.resize(imageWidth);
 		for (size_t i = 0; i < imageWidth; i++)imageout[i].resize(imageHeight);
+
+		if (framenumber > numOfFrames)framenumber = numOfFrames - 1;
 
 		if (bigtiff) {
 			ifs.seekg(allfilepositions64[framenumber]);

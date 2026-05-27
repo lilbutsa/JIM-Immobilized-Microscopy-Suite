@@ -54,6 +54,25 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 
 	size_t totalPositions = allFiles.positionNames.size();
 
+
+	if (allFiles.allFilesFound == false) {
+		std::cout << "Aborting as a file was not found\n";
+		return 1;
+	}
+	if (positionIn > totalPositions || positionIn == 0) {
+		std::cout << "ERROR : Input position (" << positionIn << ") must be between 1 and the detected number of positions in the data (" << totalPositions << ")\n";
+		return 1;
+	}
+
+	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan, numOfFrame, numOfZ;
+	allFiles.imageInfo(positionIn-1, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ);
+
+	if (channelIn > numOfChan) {
+		std::cout << "ERROR : The input channel number ("<< channelIn <<") is greater than the detected number of channels in the data ("<< numOfChan <<")\n";
+		return 1;
+	}
+
+
 	std::string myFolderName = allFiles.path + allFiles.filesep + allFiles.positionNames[positionIn-1];
 	if (!std::filesystem::exists(myFolderName))std::filesystem::create_directories(myFolderName);
 	std::string fileBase = myFolderName + allFiles.filesep;
@@ -73,16 +92,22 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 	else std::cout << "WARNING : No drift file found. Assuming sample has no drift\n";
 
 
-	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan, numOfFrame, numOfZ;
-	allFiles.imageInfo(positionIn-1, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ);
 
 
 	std::vector< std::vector<size_t> > labelledpos(3000, std::vector<size_t>(1000, 0));
-	BLCSVIO::readVariableWidthCSV(ROIfile, labelledpos,headerLine);
+	if(BLCSVIO::readVariableWidthCSV(ROIfile, labelledpos,headerLine)!=0)return 1;
+	if (labelledpos.size() < 2) {
+		std::cout<<"Error : Empty ROI Positions File\n"; 
+		return 1;
+	}
 	labelledpos.erase(labelledpos.begin());
 
 	std::vector< std::vector<size_t> > backgroundpos(3000, std::vector<size_t>(1000, 0));
-	BLCSVIO::readVariableWidthCSV(backgroundfile, backgroundpos,headerLine);
+	if (BLCSVIO::readVariableWidthCSV(backgroundfile, backgroundpos,headerLine) != 0)return 1;
+	if (backgroundpos.size() != labelledpos.size()+1) {
+		std::cout << "Error : Background File needs to have the same number of ROIs as the ROI file\n";
+		return 1;
+	}
 	backgroundpos.erase(backgroundpos.begin());
 
 	size_t numoffits = labelledpos.size();
