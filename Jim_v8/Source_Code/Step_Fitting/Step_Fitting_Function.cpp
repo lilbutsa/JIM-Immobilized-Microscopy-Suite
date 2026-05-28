@@ -1,12 +1,9 @@
 #include <vector>
-#include <iostream>     // std::cout
-#include <random>       // std::default_random_engine
-#include <chrono>       // std::chrono::system_clock
+#include  <filesystem>
 #include "BLCSVIO.h"
-
 #include "findStepHeader.hpp"
 
-int Step_Fitting(std::string output, std::string inputfile,double TThreshold, int maxSteps, int method) {
+int Step_Fitting(std::string inputfile,double TThreshold = 1.96, int method = 0 , int maxSteps = -1, std::string output="") {
 
 	std::vector<std::vector<double>> alltofit(3000, std::vector<double>(1000, 0));
 	std::vector<std::string> headerLine;
@@ -32,8 +29,18 @@ int Step_Fitting(std::string output, std::string inputfile,double TThreshold, in
 		}
 	}
 
-	BLCSVIO::writeCSV(output + "_StepPoints.csv", stepPoints, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
-	BLCSVIO::writeCSV(output + "_StepMeans.csv", stepMeans, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
+
+
+	if (output == "") output = "StepFit";
+	
+	
+	std::string filesepin(1, std::filesystem::path::preferred_separator);
+	std::string filesep = filesepin;
+	std::string fileBase = std::filesystem::path(inputfile).parent_path().generic_string() + filesep + "StepFit";
+
+
+	BLCSVIO::writeCSV(fileBase + "_StepPoints.csv", stepPoints, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
+	BLCSVIO::writeCSV(fileBase + "_StepMeans.csv", stepMeans, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
 
 	return 0;
 }

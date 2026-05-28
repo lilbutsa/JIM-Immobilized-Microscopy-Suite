@@ -45,6 +45,12 @@ int main(int argc, char* argv[])
 	std::string fileIn, outputName;
 
 	try {
+		if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
+			std::cout << "Usage: Picasso_Raw_Converter <input_tiff> <output_base>\n";
+			std::cout << "  input_tiff   Input TIFF stack to convert\n";
+			std::cout << "  output_base  Output file base (without extension)\n";
+			return 0;
+		}
 		if (argc < 3)throw std::invalid_argument("Insufficient Arguments");
 		fileIn = std::string(argv[1]);
 		outputName = std::string(argv[2]);

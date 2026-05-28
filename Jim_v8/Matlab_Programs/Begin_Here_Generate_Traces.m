@@ -28,6 +28,7 @@ clear
 % fclose(sysVar.fid);
 % matlab.desktop.editor.openAndGoToLine([sysConst.JIM,filesep,'Begin_Here_Generate_Traces.m'],24);
 
+
 %% 1) Select the input tiff file and Create a Folder for results
 %Default directory for input file selector e.g.
 sysVar.defaultFolder = 'F:\';
@@ -52,7 +53,6 @@ inputFolder = uigetdir(sysVar.defaultFolder,'Select the Folder containing your d
 inputFolder=[inputFolder,filesep];
 
 
-
 %% 3) Align Channels and Calculate Drifts
 positionToAnalyse = 1;
 
@@ -70,15 +70,29 @@ alignOutputStacks = true ;
 %Parameters for Manual Alignment [x y rotation scale]
 alignment = [0 0 0 1];
 
+alignNumberOfChannels = 1; % Only used if OME metadata is unavailable
+alignFilesSplitByChannel = false; % Only used if OME metadata is unavailable
+alignSkipIndependentDrifts = false;
+
 % Visualisation saturationg percentages
 displayMin = 0.05;
 displayMax = 0.99;
 
 %Don't touch from here
-%Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe, Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
-Align_Channels(inputFolder,alignStartFrame,alignEndFrame,positionToAnalyse,alignment,false,alignMaxShift,alignOutputStacks)
+Align_Channels(inputFolder, ...
+    'Start',alignStartFrame, ...
+    'End',alignEndFrame, ...
+    'Position',positionToAnalyse, ...
+    'Alignment',alignment, ...
+    'SkipIndependentDrifts',alignSkipIndependentDrifts, ...
+    'MaxShift',alignMaxShift, ...
+    'OutputAligned',alignOutputStacks, ...
+    'NumberOfChannels',alignNumberOfChannels, ...
+    'FilesSplitByChannel',alignFilesSplitByChannel);
 
-allPositionFolders = strip(strsplit(fileread([inputFolder 'PositionNameList.csv']),'\n'));
+allPositionFolders = readlines([inputFolder 'PositionNameList.csv']);
+allPositionFolders = strtrim(cellstr(allPositionFolders));
+allPositionFolders = allPositionFolders(~cellfun(@isempty,allPositionFolders));
 if exist([allPositionFolders{positionToAnalyse},filesep, 'Aligned_Channel_To_Channel_Alignment.csv'],'file')>0
     sysVar.channelAlignment = csvread([allPositionFolders{positionToAnalyse},filesep, 'Aligned_Channel_To_Channel_Alignment.csv'],1,0);
     imStackNumberOfChannels = size(sysVar.channelAlignment,1)+1;
@@ -140,16 +154,25 @@ detectionEndFrame = [0 -1 0]; %last frame of reference region. Negative numbers 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
 detectWeights = [0 1 0];
 
+
+detectNoNorm = false; % true disables normalization
+
 % Visualisation saturationg percentages
 displayMin = 0.05;
 displayMax = 0.999;
 
-Mean_of_Frames(inputFolder,positionToAnalyse,detectionStartFrame,detectionEndFrame,detectUsingMaxProjection,detectWeights);
+Mean_of_Frames(inputFolder, ...
+    'Position',positionToAnalyse, ...
+    'Start',detectionStartFrame, ...
+    'End',detectionEndFrame, ...
+    'MaxProjection',detectUsingMaxProjection, ...
+    'Weights',detectWeights, ...
+    'NoNorm',detectNoNorm);
 
 figure
 sysVar.imout = cast(imread([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff']),'double');
-tosort = sort(sysVar.imout(:));
-sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+sysVar.tosort = sort(sysVar.imout(:));
+sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
 imshow(sysVar.imout);
 
 disp('Average projection completed');
@@ -170,6 +193,17 @@ detectMaxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. S
 
 detectMinSeparation = 0.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
+%%niche options
+detectMinLength = 0;
+detectMaxLength = 100000000;
+detectMaxDistFromLinear = 100000000;
+detectIncludeSmall = true;%Cut around small objects in background
+detectLeftMinEdgeDist = detectMinEdgeDist;
+detectRightMinEdgeDist = detectMinEdgeDist;
+detectTopMinEdgeDist = detectMinEdgeDist;
+detectBottomMinEdgeDist = detectMinEdgeDist;
+
+
 % Visualisation saturationg percentages
 
 displayMin = 0.05; % This just adjusts the contrast in the displayed image. It does NOT effect detection
@@ -179,18 +213,32 @@ displayMax = 0.95; % This just adjusts the contrast in the displayed image. It d
 % MinDistFromEdge LeftMinDistFromEdge RightMinDistFromEdge TopMinDistFromEdge BottomMinDistFromEdge 
 % MinEccentricity MaxEccentricity MinLength MaxLength 
 % MinCount MaxCount MaxDistFromLinear 
-% IncludeSmall OutputFile GaussStdDev MinSeparation 
+% IncludeSmall Output GaussianStdDev MinSeparation 
 
 % Don't Touch From Here
 
-Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff, 'MinDistFromEdge',detectMinEdgeDist,'MinCount',detectMinCount,'MaxCount',detectMaxCount,'MinEccentricity',detectMinEccentricity,'MaxEccentricity',detectMaxEccentricity,'MinSeparation',detectMinSeparation); % Run the program Find_Particles.exe with the users values and write the output to the results sysVar.file with the prefix Detected_
+Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff, ...
+    'MinSeparation',detectMinSeparation, ...
+    'MinDistFromEdge',detectMinEdgeDist, ...
+    'LeftMinDistFromEdge',detectLeftMinEdgeDist, ...
+    'RightMinDistFromEdge',detectRightMinEdgeDist, ...
+    'TopMinDistFromEdge',detectTopMinEdgeDist, ...
+    'BottomMinDistFromEdge',detectBottomMinEdgeDist, ...
+    'MinEccentricity',detectMinEccentricity, ...
+    'MaxEccentricity',detectMaxEccentricity, ...
+    'MinLength',detectMinLength, ...
+    'MaxLength',detectMaxLength, ...
+    'MinCount',detectMinCount, ...
+    'MaxCount',detectMaxCount, ...
+    'MaxDistFromLinear',detectMaxDistFromLinear, ...
+    'IncludeSmall',detectIncludeSmall);
 
 
 %Show detection results - Red Original Image -ROIs->White -
 % Green/Yellow->Excluded by filters
 sysVar.imout = cast(imread([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff']),'double');
-tosort = sort(sysVar.imout(:));
-sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+sysVar.tosort = sort(sysVar.imout(:));
+sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
 sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
 for j=1:3
     sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
@@ -209,16 +257,21 @@ imshow(sysVar.combinedImage)
 disp('Finish detecting particles');
 
 %% 6) Additional Background Detection - Use this to detect all other particles that are not in the detection image to cut around for background
-additionBackgroundDetect = false ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
+additionBackgroundDetect = true ;% enable the additional detection. Disable if all particles were detected (before filtering) above.
 
 additionBackgroundUseMaxProjection = [false false false] ; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-additionalBackgroundStartFrame = [0 50 50]; %first frame of the reference region for background detection
-additionalBackgroundEndFrame = [0 -1 -1];%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+additionalBackgroundStartFrame = [1 1 1]; %first frame of the reference region for background detection
+additionalBackgroundEndFrame = [-1 -1 -1];%last frame of background reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
-additionalBackgroundWeights = [0 3 1];
+additionalBackgroundWeights = [1 1 1];
+additionalBackgroundNoNorm = false; % true disables normalization
 
 additionBackgroundCutoff = 1.5; %Threshold for particles to be detected for background
+
+
+
+additionalBackgroundMeanOutput = 'Additional_Background'; % '' uses default output name
 
 % Visualisation saturationg percentages
 
@@ -228,18 +281,25 @@ displayMax = 0.99; % This just adjusts the contrast in the displayed image. It d
 %don't touch from here
 
 if additionBackgroundDetect
-    Mean_of_Frames(inputFolder,positionToAnalyse,additionalBackgroundStartFrame,additionalBackgroundEndFrame,additionBackgroundUseMaxProjection,additionalBackgroundWeights);
-    Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],additionBackgroundCutoff,'OutputFile',[allPositionFolders{positionToAnalyse},filesep,'Background']);
+    Mean_of_Frames(inputFolder, ...
+        'Position',positionToAnalyse, ...
+        'Start',additionalBackgroundStartFrame, ...
+        'End',additionalBackgroundEndFrame, ...
+        'MaxProjection',double(additionBackgroundUseMaxProjection), ...
+        'Weights',additionalBackgroundWeights, ...
+        'NoNorm',additionalBackgroundNoNorm, ...
+        'Output',additionalBackgroundMeanOutput);
+    Detect_Particles([allPositionFolders{positionToAnalyse},filesep,additionalBackgroundMeanOutput,'.tiff'],additionBackgroundCutoff, 'Output',additionalBackgroundMeanOutput);
 
 
-    sysVar.imout = cast(imread([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff']),'double');
-    tosort = sort(sysVar.imout(:));
-    sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+    sysVar.imout = cast(imread([allPositionFolders{positionToAnalyse},filesep,additionalBackgroundMeanOutput,'.tiff']),'double');
+    sysVar.tosort = sort(sysVar.imout(:));
+    sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
     sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
     for j=1:3
         sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
     end
-    sysVar.imout = im2double(imread([allPositionFolders{positionToAnalyse},filesep,'Background_Regions.tif']));
+    sysVar.imout = im2double(imread([allPositionFolders{positionToAnalyse},filesep,'Additional_Background_Regions.tif']));
     for j=1:3
         sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(2,j);
     end
@@ -256,21 +316,28 @@ end
 
 expandBoundaryDist = 4.1;
 expandBackgroundInnerRadius = 4.1;
+expandBackgroundDist = 20;
 
-sysVar.displayMin = 0; % This just adjusts the contrast in the displayed image. It does NOT effect detection
-sysVar.displayMax = 1; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMin = 0.05; % This just adjusts the contrast in the displayed image. It does NOT effect detection
+displayMax = 0.99; % This just adjusts the contrast in the displayed image. It does NOT effect detection
 
 %don't touch from here
 if additionBackgroundDetect
-    Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'ExtraBackgroundFile',[allPositionFolders{positionToAnalyse},filesep,'Background_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
+    additionalBackgroundFile = [allPositionFolders{positionToAnalyse},filesep,'Additional_Background_Positions.csv'];
 else
-    Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
+    additionalBackgroundFile = '';
 end
+Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'], ...
+    [allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'], ...
+    'BoundaryDist',expandBoundaryDist, ...
+    'BackInnerRadius',expandBackgroundInnerRadius, ...
+    'BackgroundDist',expandBackgroundDist, ...
+    'ExtraBackgroundFile',additionalBackgroundFile);
 
 
 sysVar.imout = cast(imread([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff']),'double');
-tosort = sort(sysVar.imout(:));
-sysVar.imout = (sysVar.imout-tosort(round(displayMin*length(tosort))))./(tosort(round(displayMax*length(tosort)))-tosort(round(displayMin*length(tosort))));
+sysVar.tosort = sort(sysVar.imout(:));
+sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-tosort(round(displayMin*length(sysVar.tosort))));
 sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
 for j=1:3
     sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
@@ -292,12 +359,16 @@ disp('Finished Expanding ROIs');
 %% 8) Calculate Traces
 tracesStartFrame = 1;
 tracesEndFrame = -1;
+
 %Don't touch from here
-whileLoopCounter = 1;%Don't change this value from 1!!! It's used for the while loop below
-while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'])>0
-    Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame)
-    whileLoopCounter = whileLoopCounter+1;
-end
+
+Calculate_Traces(inputFolder,positionToAnalyse, ...
+    [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions.csv'], ...
+    [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions.csv'], ...
+    'Start',tracesStartFrame, ...
+    'End',tracesEndFrame, ...
+    'NumberOfChannels',alignNumberOfChannels, ...
+    'FilesSplitByChannel',alignFilesSplitByChannel);
 
 
 % Save Parameters
@@ -409,12 +480,12 @@ if montage.timePerFrame ~= 0
 end
 
 for i=1:28
-    traceIdx = i + 28 * (montage.pageNumber - 1);
+    sysVar.traceIdx = i + 28 * (montage.pageNumber - 1);
 
-    if traceIdx<=size(sysVar.traces1,1)
+    if sysVar.traceIdx<=size(sysVar.traces1,1)
         subplot(7,4,i)
         hold on
-        title(['No. ' num2str(traceIdx) ' x ' num2str(round(sysVar.measures(traceIdx,1))) ' y ' num2str(round(sysVar.measures(traceIdx,2)))])
+        title(['No. ' num2str(sysVar.traceIdx) ' x ' num2str(round(sysVar.measures(sysVar.traceIdx,1))) ' y ' num2str(round(sysVar.measures(sysVar.traceIdx,2)))])
         %title(['Particle ' num2str(i+28*(montage.pageNumber-1))],'FontName','Myriad Pro','FontSize',9)
         if imStackNumberOfChannels>1
             yyaxis left
@@ -423,7 +494,7 @@ for i=1:28
              ylabel(['Channel 1 Intensity (x10^{',num2str(sysVar.fact(1)),'} a.u.)'],'FontWeight','bold','FontSize',14)
         end
 
-        plot(montage.timeaxis,sysVar.traces1(traceIdx,:)./(10.^sysVar.fact(1)),'LineWidth',2)
+        plot(montage.timeaxis,sysVar.traces1(sysVar.traceIdx,:)./(10.^sysVar.fact(1)),'LineWidth',2)
         
         plot([0 max(montage.timeaxis)],[0 0] ,'-black');
         
@@ -433,16 +504,16 @@ for i=1:28
             if i==16
                 ylabel(['Channel 2 Intensity (x10^{',num2str(sysVar.fact(2)),'} a.u.)'],'FontWeight','bold','FontSize',14)
             end
-            plot(montage.timeaxis,sysVar.traces2(traceIdx,:)./(10.^sysVar.fact(2)),'LineWidth',2)
+            plot(montage.timeaxis,sysVar.traces2(sysVar.traceIdx,:)./(10.^sysVar.fact(2)),'LineWidth',2)
 
             for j=3:imStackNumberOfChannels
                 traces=sysVar.allTraces{j};
                 montage.c = colororder;
-                plot(montage.timeaxis,traces(traceIdx,:).*max(sysVar.traces2(traceIdx,:))./(10.^sysVar.fact(2))./max(traces(traceIdx,:)),'-','LineWidth',2,'Color',montage.c(j,:))
+                plot(montage.timeaxis,traces(sysVar.traceIdx,:).*max(sysVar.traces2(sysVar.traceIdx,:))./(10.^sysVar.fact(2))./max(traces(sysVar.traceIdx,:)),'-','LineWidth',2,'Color',montage.c(j,:))
             end
 
-            [sysVar.yliml(1),sysVar.yliml(2)] = bounds(sysVar.traces1(traceIdx,:)./(10.^sysVar.fact(1)),'all');
-            [sysVar.ylimr(1),sysVar.ylimr(2)] = bounds(sysVar.traces2(traceIdx,:)./(10.^sysVar.fact(2)),'all');
+            [sysVar.yliml(1),sysVar.yliml(2)] = bounds(sysVar.traces1(sysVar.traceIdx,:)./(10.^sysVar.fact(1)),'all');
+            [sysVar.ylimr(1),sysVar.ylimr(2)] = bounds(sysVar.traces2(sysVar.traceIdx,:)./(10.^sysVar.fact(2)),'all');
             sysVar.ratio = min([sysVar.yliml(1)/sysVar.yliml(2) sysVar.ylimr(1)/sysVar.ylimr(2) -0.05]);
             set(gca,'Ylim',sort([sysVar.ylimr(2)*sysVar.ratio sysVar.ylimr(2)]))
             yyaxis left
@@ -460,24 +531,51 @@ print([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example
 savefig(sysVar.fig,[allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Page_' num2str(montage.pageNumber)],'compact');
 
 %% 11)Extract Individual Trace and montage
-montage.traceNo = 112;
-montage.start = 3;
-montage.end = 48;
-montage.delta = 5;
-montage.average = 5;
+montage.traceNo = 11;
+montage.start = 1;
+montage.end = 100;
+montage.numMontageImages = 11;
 
 montage.outputParticleImageStack = true;% Create a Tiff stack of the ROI of the particle
+montage.numberOfChannels = imStackNumberOfChannels; % Only used if OME metadata is unavailable
+montage.filesSplitByChannel = false; % Only used if OME metadata is unavailable
 
 % Don't touch from here
 
-sysVar.cmd = [sysConst.JIM,'Isolate_Particle',sysConst.fileEXE,' "',allPositionFolders{positionToAnalyse},'Alignment_Channel_To_Channel_Alignment.csv" "',allPositionFolders{positionToAnalyse},'Alignment_Channel_1.csv" "',allPositionFolders{positionToAnalyse},'Detected_Filtered_Measurements.csv" "',allPositionFolders{positionToAnalyse},'Examples',filesep,'Example" ',sysVar.allChannelNames,' -Start ',num2str(montage.start),' -End ',num2str(montage.end),' -Particle ',num2str(montage.traceNo),' -Delta ',num2str(montage.delta),' -Average ',num2str(montage.average)];
-if montage.outputParticleImageStack
-    sysVar.cmd = [sysVar.cmd ' -outputImageStack'];
+sysVar.examplesFolder = [allPositionFolders{positionToAnalyse},filesep,'Examples',filesep];
+if ~exist(sysVar.examplesFolder,'dir')
+    mkdir(sysVar.examplesFolder);
 end
+sysVar.exampleOutputBase = [sysVar.examplesFolder,'Example'];
+sysVar.measurementFile = [allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Measurements.csv'];
+sysVar.driftFile = [allPositionFolders{positionToAnalyse},filesep,'Aligned_Drifts.csv'];
+sysVar.alignFile = [allPositionFolders{positionToAnalyse},filesep,'Aligned_Channel_To_Channel_Alignment.csv'];
+if exist(sysVar.driftFile,'file')==0
+    sysVar.driftFile = '';
+end
+if exist(sysVar.alignFile,'file')==0
+    sysVar.alignFile = '';
+end
+sysVar.isolateArgs = {inputFolder,positionToAnalyse,montage.traceNo, ...
+    'Start',montage.start, ...
+    'End',montage.end, ...
+    'MontageImages',montage.numMontageImages, ...
+    'NumberOfChannels',imStackNumberOfChannels, ...
+    'FilesSplitByChannel',alignFilesSplitByChannel, ...
+    'OutputImageStack',logical(montage.outputParticleImageStack), ...
+    'Drift',sysVar.driftFile, ...
+    'Alignment',sysVar.alignFile, ...
+    'Measurement',sysVar.measurementFile, ...
+    'Output',sysVar.exampleOutputBase};
+Isolate_Particle(sysVar.isolateArgs{:});
 
-system(sysVar.cmd);   
-    
-sysVar.channel1Im = imread([allPositionFolders{positionToAnalyse},'Examples' filesep 'Example_Trace_' num2str(montage.traceNo) '_Range_' num2str(montage.start) '_' num2str(montage.delta) '_' num2str(montage.end) '_montage.tiff']);
+sysVar.montageFiles = dir([sysVar.exampleOutputBase,'_Trace_',num2str(montage.traceNo),'_Range_*_montage.tiff']);
+if isempty(sysVar.montageFiles)
+    error('Could not find montage output for particle %d.', montage.traceNo);
+end
+[~,sysVar.latestMontageIdx] = max([sysVar.montageFiles.datenum]);
+sysVar.latestMontageFile = [sysVar.montageFiles(sysVar.latestMontageIdx).folder,filesep,sysVar.montageFiles(sysVar.latestMontageIdx).name];
+sysVar.channel1Im = imread(sysVar.latestMontageFile);
 figure('Name',['Particle ' num2str(montage.traceNo) ' montage']);
 imshow(sysVar.channel1Im,'Border','tight','InitialMagnification',200);    
 
@@ -510,14 +608,14 @@ if imStackNumberOfChannels>1
         montage.c = colororder;
         plot(montage.timeaxis,traces(montage.traceNo,:).*max(sysVar.traces2(montage.traceNo,max(montage.start-(montage.average-1)/2,1):min(montage.end+(montage.average-1)/2,length(montage.timeaxis))))./max(traces(montage.traceNo,max(montage.start-(montage.average-1)/2,1):min(montage.end+(montage.average-1)/2,length(montage.timeaxis)))),'-','LineWidth',2,'Color',montage.c(j,:))
     end
-    [sysVar.yliml(1),sysVar.yliml(2)] = bounds(sysVar.traces1(montage.traceNo,max(montage.start-(montage.average-1)/2,1):min(montage.end+(montage.average-1)/2,length(montage.timeaxis))),'all');
-    [sysVar.ylimr(1),sysVar.ylimr(2)] = bounds(sysVar.traces2(montage.traceNo,max(montage.start-(montage.average-1)/2,1):min(montage.end+(montage.average-1)/2,length(montage.timeaxis))),'all');
+    [sysVar.yliml(1),sysVar.yliml(2)] = bounds(sysVar.traces1(montage.traceNo,montage.start:montage.end),'all');
+    [sysVar.ylimr(1),sysVar.ylimr(2)] = bounds(sysVar.traces2(montage.traceNo,montage.start:montage.end),'all');
     sysVar.ratio = min([sysVar.yliml(1)/sysVar.yliml(2) sysVar.ylimr(1)/sysVar.ylimr(2) -0.05]);
     set(gca,'Ylim',[sysVar.ylimr(2)*sysVar.ratio sysVar.ylimr(2)])
     yyaxis left
     set(gca,'Ylim',[sysVar.yliml(2)*sysVar.ratio sysVar.yliml(2)])
 end
-xlim([0 montage.timeaxis(min(montage.end+(montage.average-1)/2,length(montage.timeaxis)))])
+xlim([montage.timeaxis(montage.start) montage.timeaxis(montage.end)])
 if montage.timePerFrame ==0
     xlabel('Frame')
 else
@@ -527,9 +625,9 @@ hold off
 set(gca,'LooseInset',max(get(gca,'TightInset'), 0.02));
 sysVar.fig.PaperPositionMode   = 'auto';
 
-print([allPositionFolders{positionToAnalyse} 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)], '-dpng', '-r600');
-print([allPositionFolders{positionToAnalyse} 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)], '-depsc', '-r600');
-savefig(sysVar.fig,[allPositionFolders{positionToAnalyse} 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)],'compact');
+print([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)], '-dpng', '-r600');
+print([allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)], '-depsc', '-r600');
+savefig(sysVar.fig,[allPositionFolders{positionToAnalyse} filesep 'Examples' filesep 'Example_Trace_' num2str(montage.traceNo)],'compact');
 
 
 %% Continue from here for batch processing
@@ -546,45 +644,92 @@ sysVar.fileName = uigetdir(); % open the dialog box to select the folder for bat
 sysVar.fileName=[sysVar.fileName,filesep];
 
 if filesInSubFolders
-    sysVar.allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); % find everything in the input folder
-    sysVar.allFolders = sysVar.allFolders(arrayfun(@(x) isdir(cell2mat(x)),sysVar.allFolders));
-    sysVar.allFolders = sysVar.allFolders(~startsWith(sysVar.allFolders, {[sysVar.fileName '.']}));
+    allFolders = arrayfun(@(x)[sysVar.fileName,x.name],dir(sysVar.fileName),'UniformOutput',false); % find everything in the input folder
+    allFolders = allFolders(arrayfun(@(x) isdir(cell2mat(x)),allFolders));
+    allFolders = allFolders(~startsWith(sysVar.allFolders, {[sysVar.fileName '.']}));
 else
-    sysVar.allFolders = {sysVar.fileName};
+    allFolders = {sysVar.fileName};
 end
 
-sysConst.NumberOfFiles=size(sysVar.allFolders,1);
+sysConst.NumberOfFiles=size(allFolders,1);
 disp(['There are ',num2str(sysConst.NumberOfFiles),' folders to analyse']);
 
 %% 2) Batch Analyse
 
 parfor i=1:sysConst.NumberOfFiles
     
-    inputFolder =  sysVar.allFolders{i};
+    inputFolder =  allFolders{i};
     
     disp(['Analysing ',inputFolder]);
 
-    Align_Channels(inputFolder,alignStartFrame,alignEndFrame,0,alignment,false,alignMaxShift,alignOutputStacks);
-    Mean_of_Frames(inputFolder,0,detectionStartFrame,detectionEndFrame,detectUsingMaxProjection,detectWeights);
-    allPositionFolders = strip(strsplit(fileread([inputFolder filesep 'PositionNameList.csv']),'\n'));
-    allPositionFolders = allPositionFolders(:,1:end-1);
+    Align_Channels(inputFolder, ...
+        'Start',alignStartFrame, ...
+        'End',alignEndFrame, ...
+        'Position',0, ...
+        'Alignment',alignment, ...
+        'SkipIndependentDrifts',alignSkipIndependentDrifts, ...
+        'MaxShift',alignMaxShift, ...
+        'NumberOfChannels',alignNumberOfChannels, ...
+        'FilesSplitByChannel',alignFilesSplitByChannel);
+    Mean_of_Frames(inputFolder, ...
+        'Position',0, ...
+        'Start',detectionStartFrame, ...
+        'End',detectionEndFrame, ...
+        'MaxProjection',detectUsingMaxProjection, ...
+        'Weights',detectWeights, ...
+        'NoNorm',detectNoNorm);
+    allPositionFolders = readlines([inputFolder filesep 'PositionNameList.csv']);
+    allPositionFolders = strtrim(cellstr(allPositionFolders));
+    allPositionFolders = allPositionFolders(~cellfun(@isempty,allPositionFolders));
 
     for positionToAnalyse = 1:length(allPositionFolders)
-        Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff, 'MinDistFromEdge',detectMinEdgeDist,'MinCount',detectMinCount,'MaxCount',detectMaxCount,'MinEccentricity',detectMinEccentricity,'MaxEccentricity',detectMaxEccentricity,'MinSeparation',detectMinSeparation); % Run the program Find_Particles.exe with the users values and write the output to the results sysVar.file with the prefix Detected_
-        if additionBackgroundDetect
-            Mean_of_Frames(inputFolder,positionToAnalyse,additionalBackgroundStartFrame,additionalBackgroundEndFrame,additionBackgroundUseMaxProjection,additionalBackgroundWeights);
-            Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff,'OutputFile',[allPositionFolders{positionToAnalyse},filesep,'Background']);
+        Detect_Particles([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff'],detectionCutoff, ...
+            'MinSeparation',detectMinSeparation, ...
+            'MinDistFromEdge',detectMinEdgeDist, ...
+            'LeftMinDistFromEdge',detectLeftMinEdgeDist, ...
+            'RightMinDistFromEdge',detectRightMinEdgeDist, ...
+            'TopMinDistFromEdge',detectTopMinEdgeDist, ...
+            'BottomMinDistFromEdge',detectBottomMinEdgeDist, ...
+            'MinEccentricity',detectMinEccentricity, ...
+            'MaxEccentricity',detectMaxEccentricity, ...
+            'MinLength',detectMinLength, ...
+            'MaxLength',detectMaxLength, ...
+            'MinCount',detectMinCount, ...
+            'MaxCount',detectMaxCount, ...
+            'MaxDistFromLinear',detectMaxDistFromLinear, ...
+            'IncludeSmall',detectIncludeSmall);
 
-            Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'ExtraBackgroundFile',[allPositionFolders{positionToAnalyse},filesep,'Background_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
-        else
-            Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'],[allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'],'BoundaryDist',expandBoundaryDist,'BackInnerRadius',expandBackgroundInnerRadius);
-        end
+        if additionBackgroundDetect
+            Mean_of_Frames(inputFolder, ...
+                'Position',positionToAnalyse, ...
+                'Start',additionalBackgroundStartFrame, ...
+                'End',additionalBackgroundEndFrame, ...
+                'MaxProjection',double(additionBackgroundUseMaxProjection), ...
+                'Weights',additionalBackgroundWeights, ...
+                'NoNorm',additionalBackgroundNoNorm, ...
+                'Output',additionalBackgroundMeanOutput);
+            Detect_Particles([allPositionFolders{positionToAnalyse},filesep,additionalBackgroundMeanOutput,'.tiff'],...
+                additionBackgroundCutoff, 'Output',additionalBackgroundMeanOutput);
     
-        whileLoopCounter = 1;
-        while exist([allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'],'file')>0
-            Calculate_Traces(inputFolder,positionToAnalyse, whileLoopCounter, [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions_Channel_',num2str(whileLoopCounter),'.csv'], [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions_Channel_',num2str(whileLoopCounter),'.csv'],tracesStartFrame,tracesEndFrame)
-            whileLoopCounter = whileLoopCounter+1;
+            additionalBackgroundFile = [allPositionFolders{positionToAnalyse},filesep,'Additional_Background_Positions.csv'];
+        else
+            additionalBackgroundFile = '';
         end
+
+        Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_Positions.csv'], ...
+            [allPositionFolders{positionToAnalyse},filesep,'Detected_Positions.csv'], ...
+            'BoundaryDist',expandBoundaryDist, ...
+            'BackInnerRadius',expandBackgroundInnerRadius, ...
+            'BackgroundDist',expandBackgroundDist, ...
+            'ExtraBackgroundFile',additionalBackgroundFile);
+
+        Calculate_Traces(inputFolder,positionToAnalyse, ...
+            [allPositionFolders{positionToAnalyse},filesep,'Expanded_ROI_Positions.csv'], ...
+            [allPositionFolders{positionToAnalyse},filesep,'Expanded_Background_Positions.csv'], ...
+            'Start',tracesStartFrame, ...
+            'End',tracesEndFrame, ...
+            'NumberOfChannels',alignNumberOfChannels, ...
+            'FilesSplitByChannel',alignFilesSplitByChannel);
     end
 
 

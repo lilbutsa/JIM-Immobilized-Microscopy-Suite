@@ -1,38 +1,35 @@
 /**
- * @file Align_Channels Main.cpp 
- * @brief Multi-channel image stack drift correction and alignment pipeline.
+ * @file Main.cpp
+ * @brief CLI entry point for Align_Channels.
  *
- * This program performs sub-pixel drift correction and inter-channel alignment
- * of multi-frame TIFF image stacks. It supports automatic alignment estimation
- * or manual input, and can optionally output aligned image stacks.
+ * Positional arguments:
+ *   1) fileName : Input TIFF stack (or input base used by the processing pipeline).
  *
- * Usage:
- *   ./Align_Channels [OutputFileBase] [Channel1.tif] [Channel2.tif] ... [options]
- *
- * Dependencies:
- *   - BLTiffIO (for TIFF reading/writing)
- *   - BLImageTransform (for image transformations and alignment)
- *   - BLFlagParser (for parsing command-line arguments)
- *
- * Author: James Walsh
- * Date: July 2020
+ * Optional flags:
+ *   -Start <int>                  First frame to use for alignment (default: 1)
+ *   -End <int>                    Last frame to use (default: all frames)
+ *   -Position <int>               Position index to process; 0 processes all positions (default: 0)
+ *   -MaxShift <float>             Maximum absolute XY shift searched during alignment (default: unlimited)
+ *   -OutputAligned                Write aligned TIFF stack outputs
+ *   -SkipIndependentDrifts        Skip per-channel independent drift fitting
+ *   -Alignment <v1 ... v4N>       Manual channel alignment values; 4 values per extra channel
+ *                                 (x offset, y offset, rotation, scale)
+ *   -NumberOfChannels <int>       Number of channels if OME metadata is unavailable (default: 1)
+ *   -FilesSplitByChannel          Input frame order is channel-blocked instead of interleaved
+ *   -Output <string>              Output base name override
  */
 
-
-
-#include "BLTiffIO.h"
-#include "BLImageTransform.h"
 #include "BLFlagParser.h"
 #include <stdexcept> 
 
-int Align_Channels(std::string fileName, int startFrame, int endFrame, size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned, int numOfChannels = 1, bool filesSplitByChannelIn = false);
+int Align_Channels(std::string fileName, int startFrame, int endFrame, size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned, int numOfChannels = 1, bool filesSplitByChannelIn = false, std::string outputBaseString = "");
 
 
 int main(int argc, char *argv[])
 {
 
 	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
-		std::cout << "Standard input: FileName... Options\n";
+		std::cout << "Usage: Align_Channels <fileName> [options]\n";
 		std::cout << "Options:\n";
 		std::cout << "-Start i (Default i = 1) Specify frame i initially align from\n";
 		std::cout << "-End i (Default i = total number of frames) Specify frame i to initially align to\n";
@@ -41,37 +38,37 @@ int main(int argc, char *argv[])
 		std::cout << "-OutputAligned (Default false) Save the aligned image stacks\n";
 		std::cout << "-SkipIndependentDrifts (Default false) Only Generate combined drifts, For Channel to Channel alignment use the reference frames\n";
 		std::cout << "-Alignment Manually input the alignment between channels. Requires 4 values per extra channel (x offset ch2, ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n";
-		std::cout << "-NumberOfChannels i (Default i = 2) Sets the number of channels to split the file into. Only used if no OME metadata is present. \n";
+		std::cout << "-NumberOfChannels i (Default i = 1) Sets the number of channels to split the file into. Only used if no OME metadata is present. \n";
+		std::cout << "-FilesSplitByChannel Images ordered by channel rather than alternating. Only used if no OME metadata is present. \n";
+		std::cout << "-Output <name> Override the output base name for generated files.\n";
 		return 0;
 	}
 
 
-	int numInputFiles = 0;
-	std::vector<BLTiffIO::TiffInput*> is;//input stack
 	bool inputalignment = false,skipIndependentDrifts = false;
-	int start = 1, end = -1, position = 0, numOfChan = 2;
+	int start = 1, end = -1, position = 0, numOfChan = 1;
 	std::vector<std::vector<float>> alignments;
 	std::vector<std::vector<float>> drifts;
 	float maxShift = FLT_MAX;
-	bool outputAligned = false;
-
+	bool outputAligned = false, filesSplitByChannel = false;
+	std::string outputfile="";
 
 	std::string fileName = std::string(argv[1]);
-
-
 
 	alignments = std::vector<std::vector<float>>();
 	std::vector<float> alignmentArguments;
 
 	std::vector<std::pair<std::string, int*>> intFlags = {{"Start", &start},{"End", &end},{"Position", &position},{"NumberOfChannels", &numOfChan} };
 	std::vector<std::pair<std::string, float*>> floatFlags = {{"MaxShift", &maxShift} };
-	std::vector<std::pair<std::string, bool*>> boolFlags = { {"OutputAligned", &outputAligned}, {"SkipIndependentDrifts", &skipIndependentDrifts} };
+	std::vector<std::pair<std::string, bool*>> boolFlags = { {"OutputAligned", &outputAligned}, {"SkipIndependentDrifts", &skipIndependentDrifts},{"FilesSplitByChannel",&filesSplitByChannel} };
 	std::vector<std::pair<std::string, std::vector<float>*>> vecFlags = { {"Alignment", &alignmentArguments} };
+	std::vector<std::pair<std::string, std::string*>> stringFlags = {{"Output", &outputfile} };
 
 	if (BLFlagParser::parseValues(intFlags, argc, argv)) return 1;
 	if (BLFlagParser::parseValues(floatFlags, argc, argv)) return 1;
 	if (BLFlagParser::parseValues(boolFlags, argc, argv)) return 1;
 	if (BLFlagParser::parseValues(vecFlags, argc, argv)) return 1;
+	if (BLFlagParser::parseValues(stringFlags, argc, argv)) return 1;
 
 
 	if (alignmentArguments.size()>0 && alignmentArguments.size() % 4 != 0 )throw std::invalid_argument("Not Enough Alignment Inputs.\nRequires 4 values per extra channel (x offset ch2 ch2... yoffset ch2 ch3..., rotation ch2 ch3... scale ch2 ch3...)\n");
@@ -80,13 +77,8 @@ int main(int argc, char *argv[])
 		for (size_t i = 0; i < alignments.size(); i++)for (size_t j = 0; j < 4; j++)alignments[i][j] = alignmentArguments[j + i * 4];
 	}
 
-	return Align_Channels(fileName, start, end, position, alignments, skipIndependentDrifts, maxShift, outputAligned);
-
-
+	return Align_Channels(fileName, start, end, position, alignments, skipIndependentDrifts, maxShift, outputAligned, numOfChan, filesSplitByChannel, outputfile);
 
 	//system("PAUSE");
-	
-
-
 
 }

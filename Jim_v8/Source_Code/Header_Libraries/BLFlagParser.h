@@ -89,9 +89,12 @@ namespace BLFlagParser {
                     else if (i + 1 >= argc) {
                         std::cerr << "Missing value for flag " << it->first << "\n";
                         return 1;
-                    }else *(it->second) = convertFromString<T>(argv[i + 1]);
-                    //std::cout << it->first.substr(1) << " set to " << *(it->second) << "\n";
-                    ++i; // Skip value
+                    }
+                    else {
+                        *(it->second) = convertFromString<T>(argv[i + 1]);
+                        //std::cout << it->first.substr(1) << " set to " << *(it->second) << "\n";
+                        ++i; // Skip value
+                    }
                 }
                 catch (const std::exception& e) {
                     std::cerr << "Error parsing " << it->first << ": " << e.what() << "\n";

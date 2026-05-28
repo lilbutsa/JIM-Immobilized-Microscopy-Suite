@@ -29,11 +29,14 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 		return 1;
 	}
 
+
+	std::string filesepin(1, std::filesystem::path::preferred_separator);
+	std::string filesep = filesepin;
 	if (fileBase == "") {
-		std::string filesepin(1, std::filesystem::path::preferred_separator);
-		std::string filesep = filesepin;
 		fileBase = std::filesystem::path(inputfile).parent_path().generic_string()+ filesep+"Detected";
-		std::cout << "Using the default file base of " << fileBase << "\n";
+	}
+	else {
+		fileBase = std::filesystem::path(inputfile).parent_path().generic_string() + filesep + fileBase;
 	}
 
 	uint32_t imageDepth = inputstack.imageDepth;

@@ -5,7 +5,7 @@
 void driftCorrect(BLTiffIO::MultiTiffInput& input, size_t posIn, int chanIn, const std::vector< std::vector<float>>& alignment, std::vector< std::vector<float>>& drifts, const float& maxShift, std::vector<float>& referenceImage, std::vector<std::vector<float>>& outputImage, const std::string& alignedStackNameBase);
 std::vector< std::vector<float>> findAlignment(std::vector< std::vector<float>>& prealignmentReference, uint32_t imageWidth, uint32_t imageHeight, float maxShift);
 
-int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned, int numOfChannels = 1,bool filesSplitByChannelIn = false)
+int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t positionIn, std::vector<std::vector<float>>& alignments, bool skipIndependentDrifts, float maxShift, bool outputAligned, int numOfChannels = 1,bool filesSplitByChannelIn = false,std::string outputBaseString="")
 {
 	/*
 	std::cout <<"filename = "<< fileName << "\n";
@@ -31,6 +31,7 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 
 	size_t totalPositions = allFiles.positionNames.size();
 	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan,numOfFrame,numOfZ;
+	allFiles.imageInfo(0, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ);
 
 	std::vector<std::string> allFolderNames;
 	
@@ -63,6 +64,11 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 			return 3;
 		}
 
+	if (positionIn > totalPositions) {
+		std::cout << "ERROR : Input position (" << positionIn << ") is greater than the detected number of positions in the data (" << totalPositions << ")\n";
+		return 1;
+	}
+
 	for (size_t posCount = (positionIn == 0 ? 0 : positionIn-1); posCount < (positionIn == 0 ? totalPositions : positionIn); posCount++) {
 
 		std::cout << "Analysing Position "<< posCount +1<<" : "<< allFiles.positionNames[posCount] <<"\n";
@@ -79,10 +85,12 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 		std::vector< std::vector<float> > prealignmentReference(numOfChan, std::vector<float>(imagePoints, 0)), imageOut(numOfChan, std::vector<float>(imagePoints, 0));
 		imageTransform_32f transformclass(imageWidth, imageHeight);
 
+		if (outputBaseString == "")outputBaseString = "Aligned";
+
 		//make output image files
 		std::string myFolderName = allFiles.path + allFiles.filesep+ allFiles.positionNames[posCount];
 		if (!std::filesystem::exists(myFolderName))std::filesystem::create_directories(myFolderName);
-		std::string fileBase = myFolderName + allFiles.filesep + "Aligned";
+		std::string fileBase = myFolderName + allFiles.filesep + outputBaseString;
 
 		std::string filenameOut = fileBase + "_Reference_Frames_Before.tiff";
 		BLTiffIO::TiffOutput BeforePartial(filenameOut, imageWidth, imageHeight, 16);
@@ -138,7 +146,9 @@ int Align_Channels(std::string fileName,  int startFrame, int endFrame,size_t po
 
 		//output results
 		writeChannelAlignment(fileBase, alignments, imageWidth, imageHeight);
-		writeDrifts(fileBase, drifts, alignments, imageWidth, imageHeight);
+		//writeDrifts(fileBase, drifts, alignments, imageWidth, imageHeight);
+		std::string myFileName = fileBase + "_Drifts.csv";
+		BLCSVIO::writeCSV(myFileName, drifts, "X Drift, Y Drift\n");
 
 		//write out aligned full stack images
 		filenameOut = fileBase + "_Full_Projection_After.tiff";

@@ -4,30 +4,19 @@
 #include "BLTiffIO.h"
 #include "BLCSVIO.h"
 
-std::vector<std::vector<int>> transformPosition(std::vector<double> alignIn, std::vector<std::vector<int>> positions, int imageWidth, int imageHeight);
 
-
-int Expand_Shapes(std::string output,std::string foregroundposfile, std::string backgroundposfile,std::string extraBackgroundFileName,std::string channelAlignmentFileName,float boundaryDist,float backinnerradius, float backgroundDist)
+int Expand_Shapes(std::string foregroundposfile, std::string backgroundposfile,std::string extraBackgroundFileName,float boundaryDist,float backinnerradius, float backgroundDist, std::string output = "")
 {
 	bool bExtraBackground = false;
 	if(extraBackgroundFileName!="")bExtraBackground = true;
 
-	if (channelAlignmentFileName == "") {//check folder for file
-		std::string filesepin(1, std::filesystem::path::preferred_separator);
-		std::string filesep = filesepin;
-		std::string potentialChannelAlignment = std::filesystem::path(foregroundposfile).parent_path().generic_string() + filesep + "Aligned_Channel_To_Channel_Alignment.csv";
-		if (std::filesystem::exists(potentialChannelAlignment)) {
-			channelAlignmentFileName = potentialChannelAlignment;
-			std::cout << "Using the default channel alignment file of " << potentialChannelAlignment << "\n";
-		} else std::cout << "Channel Alignment not found\n";
-	}
+	if (output == "")output = "Expanded";
 
-	if (output == "") {
-		std::string filesepin(1, std::filesystem::path::preferred_separator);
-		std::string filesep = filesepin;
-		output = std::filesystem::path(foregroundposfile).parent_path().generic_string() + filesep + "Expanded";
-		std::cout << "Using the default output location " << output << "\n";
-	}
+	
+	std::string filesepin(1, std::filesystem::path::preferred_separator);
+	std::string filesep = filesepin;
+	std::string fileBase = std::filesystem::path(foregroundposfile).parent_path().generic_string() + filesep + output;
+	
 
 	//read in foreground positions and get image size data out
 	std::vector<std::vector<int>> labelledpos(3000, std::vector<int>(1000, 0));
@@ -53,10 +42,6 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	//read in background
 	std::vector<std::vector<int>> backgroundpos(3000, std::vector<int>(1000, 0));
 	if(BLCSVIO::readVariableWidthCSV(backgroundposfile, backgroundpos, headerLine) != 0)return 1;
-	if (backgroundpos.size() != labelledpos.size() + 1) {
-		std::cout << "Error : Background File needs to have the same number of ROIs as the ROI file\n";
-		return 1;
-	}
 	backgroundpos.erase(backgroundpos.begin());
 
 	//make background image
@@ -71,7 +56,7 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 		extrabackgroundpos.erase(extrabackgroundpos.begin());
 		for (int i = 0; i < extrabackgroundpos.size(); i++)for (int j = 0; j < extrabackgroundpos[i].size(); j++)backgroundImage[extrabackgroundpos[i][j]] = 255;
 	}
-	//BLTiffIO::TiffOutput(output + "_debug_backposimage.tif", imageWidth, imageHeight, 16).write1dImage(backgroundImage);
+	//BLTiffIO::TiffOutput(fileBase + "_debug_backposimage.tif", imageWidth, imageHeight, 16).write1dImage(backgroundImage);
 
 	//find search positions for each ring
 	std::vector<std::vector<int>> foregroundSearchPos, midgroundSearchPos, backgroundSearchPos;
@@ -134,7 +119,7 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 		}
 	}
 
-	//BLTiffIO::TiffOutput(output + "_debug_expandimage.tif", imageWidth, imageHeight, 16).write1dImage(expandedForegrounddebugImage);
+	//BLTiffIO::TiffOutput(fileBase + "_debug_expandimage.tif", imageWidth, imageHeight, 16).write1dImage(expandedForegrounddebugImage);
 	// 
 	//filter background positions for unique values
 	for (int i = 0; i < expandedBackground.size(); i++) {
@@ -145,81 +130,24 @@ int Expand_Shapes(std::string output,std::string foregroundposfile, std::string 
 	//write out foreground regions image
 	std::vector<uint8_t> expandedForegroundBinaryImage(imagePoints, 0);
 	for (int i = 0; i < expandedForeground.size(); i++)for (int j = 0; j < expandedForeground[i].size(); j++) expandedForegroundBinaryImage[expandedForeground[i][j]] = 255;
-	BLTiffIO::TiffOutput(output + "_ROIs.tif", imageWidth, imageHeight, 8).write1dImage(expandedForegroundBinaryImage);
+	BLTiffIO::TiffOutput(fileBase + "_ROIs.tif", imageWidth, imageHeight, 8).write1dImage(expandedForegroundBinaryImage);
 
 	//write out background regions image
 	std::vector<uint8_t> expandedBackgroundBinaryImage(imagePoints, 0);
 	for (int i = 0; i < expandedBackground.size(); i++)for (int j = 0; j < expandedBackground[i].size(); j++) expandedBackgroundBinaryImage[expandedBackground[i][j]] = 255;
-	BLTiffIO::TiffOutput(output + "_Background_Regions.tif", imageWidth, imageHeight, 8).write1dImage(expandedBackgroundBinaryImage);
+	BLTiffIO::TiffOutput(fileBase + "_Background_Regions.tif", imageWidth, imageHeight, 8).write1dImage(expandedBackgroundBinaryImage);
 
 	//write out foreground positions file
 	std::vector<std::vector<int>> transformPos = expandedForeground;
 	transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
-	BLCSVIO::writeCSV(output + "_ROI_Positions_Channel_1.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
+	BLCSVIO::writeCSV(fileBase + "_ROI_Positions.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
 
 	//write out background positions file
 	transformPos = expandedBackground;
 	transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
-	BLCSVIO::writeCSV(output + "_Background_Positions_Channel_1.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
-
-	//write out for other channels
-	if (channelAlignmentFileName!="") {
-		std::vector<std::vector<double>> channelAlign(50, std::vector<double>(11, 0.0));
-		if(BLCSVIO::readCSV(channelAlignmentFileName, channelAlign, headerLine) != 0)return 1;
-		for (int chancount = 0; chancount < channelAlign.size(); chancount++) {
-
-			transformPos = transformPosition(channelAlign[chancount], expandedForeground, imageWidth, imageHeight);
-			transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
-			BLCSVIO::writeCSV(output + "_ROI_Positions_Channel_" + std::to_string(chancount + 2) + ".csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
-
-			transformPos = transformPosition(channelAlign[chancount], expandedBackground, imageWidth, imageHeight);
-			transformPos.insert(transformPos.begin(), { imageWidth,imageHeight,imagePoints });
-			BLCSVIO::writeCSV(output + "_Background_Positions_Channel_" + std::to_string(chancount + 2) + ".csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
-		}
-	}
+	BLCSVIO::writeCSV(fileBase + "_Background_Positions.csv", transformPos, "First Line is Image Size. Each Line is an ROI. Numbers Go Horizontal. To get {x;y}->{n%width;Floor(n/width)}\n");
 
 	return 0;
 
 }
 
-
-
-
-
-std::vector<std::vector<int>> transformPosition(std::vector<double> alignIn, std::vector<std::vector<int>> positions, int imageWidth, int imageHeight) {
-
-	std::vector<std::vector<int>> positionslistout;
-	std::vector<int> singleLine;
-	double xcentre = alignIn[9];
-	double ycentre = alignIn[10];
-
-	for (int pos = 0; pos < positions.size(); pos++) {
-		//cout <<"transform "<< pos << " " << positions[pos][0] << " " << positions[pos].size() << "\n";
-		singleLine.clear();
-		for (int i = 0; i < positions[pos].size(); i++) {
-			double xin = (int)positions[pos][i] % imageWidth;
-			double yin = (int)positions[pos][i] / imageWidth;
-			xin += -xcentre;
-			yin += -ycentre;
-			double xout = xin * alignIn[5] + yin * alignIn[6];
-			double yout = xin * alignIn[7] + yin * alignIn[8];
-			xout += xcentre;
-			yout += ycentre;
-			xout += -alignIn[3];
-			yout += -alignIn[4];
-			if (xout < 0)xout = 0;
-			if (yout < 0)yout = 0;
-			if (xout > imageWidth - 1) xout = imageWidth - 1;
-			if (yout > imageHeight - 1)yout = imageHeight - 1;
-			singleLine.push_back((int)(floor(xout) + floor(yout) * imageWidth));
-			singleLine.push_back((int)(ceil(xout) + floor(yout) * imageWidth));
-			singleLine.push_back((int)(floor(xout) + ceil(yout) * imageWidth));
-			singleLine.push_back((int)(ceil(xout) + ceil(yout) * imageWidth));
-		}
-		sort(singleLine.begin(), singleLine.end());
-		singleLine.erase(unique(singleLine.begin(), singleLine.end()), singleLine.end());
-		positionslistout.push_back(singleLine);
-	}
-
-	return positionslistout;
-}

@@ -3,40 +3,46 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include "BLMatlabParser.h"
 
-int Isolate_Particle(std::string outputfile, std::vector<std::string> inputfiles, std::string driftfile, std::string alignfile, std::string measurementsfile, int particle, int start, int end, int delta, int average, bool bOutputImageStack);
+int Isolate_Particle(std::string fileName, size_t positionIn, size_t particle, int startFrame = 1, int endFrame = -1, size_t numMontageImages = 10, bool bOutputImageStack = false, size_t numOfChannels = 1, bool filesSplitByChannelIn = false, std::string driftfile = "", std::string alignfile = "", std::string measurementsfile = "", std::string outputfile = "");
 
-
-//Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
+// MATLAB call:
+// Isolate_Particle(fileName, positionIn, particle,
+//                  'Start', startFrame, 'End', endFrame, 'MontageImages', n,
+//                  'OutputImageStack', logicalValue, 'NumberOfChannels', n,
+//                  'FilesSplitByChannel', logicalValue, 'Drift', driftFile,
+//                  'Alignment', alignmentFile, 'Measurement', measurementFile, 'Output', outputBase)
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 11;
+    const int minNumOfInputs = 3;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         std::cout << "Starting Program\n";
         checkArguments(outputs, inputs);
-        matlab::data::CharArray filebaseChar = inputs[0];
-        std::string filebase = filebaseChar.toAscii();
-        std::vector<std::string> inputFiles;
-        for (int i = 0;i < inputs.size() - minNumOfInputs + 1;i++) {
-            filebaseChar = inputs[i + 1];
-            inputFiles.push_back(filebaseChar.toAscii());
+        std::string fileName = parseStringMatlab(inputs, 0);
+        int position = inputs[1][0];
+        int particle = inputs[2][0];
+
+        int start = 1, end = -1, montageImages = 10, numOfChannels = 1;
+        std::string outputfile = "", driftfile = "", alignfile = "", measurementsfile = "";
+        bool bOutputImageStack = false, splitByChannel = false;
+
+        for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
+            std::string optionArg = parseStringMatlab(inputs, paramcount);
+            if (optionArg == "Start") start = inputs[paramcount + 1][0];
+            else if (optionArg == "End")end = inputs[paramcount + 1][0];
+            else if (optionArg == "MontageImages")montageImages = inputs[paramcount + 1][0];
+            else if (optionArg == "NumberOfChannels")numOfChannels = inputs[paramcount + 1][0];
+            else if (optionArg == "OutputImageStack") bOutputImageStack = inputs[paramcount + 1][0];
+            else if (optionArg == "FilesSplitByChannel") splitByChannel = inputs[paramcount + 1][0];
+            else if (optionArg == "Drift")driftfile = parseStringMatlab(inputs, paramcount+1);
+            else if (optionArg == "Alignment")alignfile = parseStringMatlab(inputs, paramcount + 1);
+            else if (optionArg == "Measurement")measurementsfile = parseStringMatlab(inputs, paramcount + 1);
+            else if (optionArg == "Output")outputfile = parseStringMatlab(inputs, paramcount + 1);
+
         }
-        filebaseChar = inputs[inputs.size() - minNumOfInputs + 2];
-        std::string driftfile = filebaseChar.toAscii();
-        filebaseChar = inputs[inputs.size() - minNumOfInputs + 3];
-        std::string alignfile = filebaseChar.toAscii();
-        filebaseChar = inputs[inputs.size() - minNumOfInputs + 4];
-        std::string measurementsfile = filebaseChar.toAscii();
 
-
-        int particle = inputs[inputs.size() - minNumOfInputs + 5][0];
-        int startFrame = inputs[inputs.size() - minNumOfInputs + 6][0];
-        int endFrame = inputs[inputs.size() - minNumOfInputs + 7][0];
-        int delta = inputs[inputs.size() - minNumOfInputs + 8][0];
-        int average = inputs[inputs.size() - minNumOfInputs + 9][0];
-        bool bOutputImageStack = inputs[inputs.size() - minNumOfInputs + 10][0];
-
-        Isolate_Particle(filebase, inputFiles, driftfile, alignfile, measurementsfile, particle, startFrame, endFrame, delta, average, bOutputImageStack);
+        Isolate_Particle(fileName, position, particle, start, end, montageImages, bOutputImageStack, numOfChannels, splitByChannel, driftfile, alignfile, measurementsfile, outputfile);
 
         std::cout << "Finishing Program\n";
     }
@@ -48,7 +54,12 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least 11 inputs required - Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar(
+                    "Isolate_Particle requires at least 3 inputs.\n"
+                    "Usage: Isolate_Particle(fileName, positionIn, particle, "
+                    "'Start', startFrame, 'End', endFrame, 'MontageImages', n, 'OutputImageStack', logicalValue, "
+                    "'NumberOfChannels', n, 'FilesSplitByChannel', logicalValue, 'Drift', driftFile, "
+                    "'Alignment', alignmentFile, 'Measurement', measurementFile, 'Output', outputBase)") }));
         }
 
     }

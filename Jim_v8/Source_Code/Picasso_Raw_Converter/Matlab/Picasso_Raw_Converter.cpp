@@ -6,10 +6,11 @@
 
 int Picasso_Raw_Converter(std::string outputName, std::string fileIn);
 
-//Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
+// MATLAB call:
+// Picasso_Raw_Converter(outputBase, inputTiff)
 class MexFunction : public matlab::mex::Function {
 public:
-    const int minNumOfInputs = 9;
+    const int minNumOfInputs = 2;
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         std::cout << "Starting Program\n";
         checkArguments(outputs, inputs);
@@ -30,7 +31,9 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least two inputs required - Standard input :int Picasso_Raw_Converter(std::string outputName, std::string fileIn)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar(
+                    "Picasso_Raw_Converter requires 2 inputs.\n"
+                    "Usage: Picasso_Raw_Converter(outputBase, inputTiff)") }));
         }
 
     }

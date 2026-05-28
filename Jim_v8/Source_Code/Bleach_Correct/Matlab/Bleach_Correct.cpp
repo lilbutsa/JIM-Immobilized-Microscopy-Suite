@@ -5,7 +5,8 @@
 #include <vector>
 
 int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleachFrame);
-//Standard input : ([Output File Base],[Input Traces] ,meanBleachFrame)
+// MATLAB call:
+// Bleach_Correct(outputBase, inputCsv, meanBleachFrame)
 
 class MexFunction : public matlab::mex::Function {
 public:
@@ -30,7 +31,9 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least three inputs required - Standard input : ([Output File Base],[Input Traces] ,meanBleachFrame)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar(
+                    "Bleach_Correct requires 3 inputs.\n"
+                    "Usage: Bleach_Correct(outputBase, inputCsv, meanBleachFrame)") }));
         }
 
     }

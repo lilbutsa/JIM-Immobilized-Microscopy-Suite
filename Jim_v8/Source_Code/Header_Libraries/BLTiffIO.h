@@ -558,7 +558,7 @@ namespace BLTiffIO {
 	template <typename vectortype>
 	inline void TiffInput::read1dImage(size_t framenumber, ::std::vector<vectortype>& imageout) {
 		imageout.resize(imagePoints);
-		if (framenumber > numOfFrames)framenumber = numOfFrames-1;
+		if (framenumber >= numOfFrames)framenumber = numOfFrames-1;
 
 		if (bigtiff) {
 			ifs.seekg(allfilepositions64[framenumber]);
@@ -642,7 +642,7 @@ namespace BLTiffIO {
 		imageout.resize(imageWidth);
 		for (size_t i = 0; i < imageWidth; i++)imageout[i].resize(imageHeight);
 
-		if (framenumber > numOfFrames)framenumber = numOfFrames - 1;
+		if (framenumber >= numOfFrames)framenumber = numOfFrames - 1;
 
 		if (bigtiff) {
 			ifs.seekg(allfilepositions64[framenumber]);
@@ -933,6 +933,10 @@ namespace BLTiffIO {
 				for (size_t i = 0; i < vimstack.size(); i++)
 					if (bAcrossMultipleFiles)maxFrame += vimstack[i]->numOfFrames;
 					else maxFrame = std::max(maxFrame, vimstack[i]->numOfFrames);
+				if (maxFrame % numOfChannels != 0) {
+					std::cout << "WARNING : Uneven number of frames for each channel. Ignoring last "<< maxFrame % numOfChannels <<" images\n";
+					maxFrame = maxFrame - (maxFrame % numOfChannels);
+				}
 				maxFrame = maxFrame / maxChan;
 
 				imageOrder = std::vector<std::vector<std::vector<std::vector<imagePos>>>>(maxPos,std::vector<std::vector<std::vector<imagePos>>>(maxFrame,std::vector<std::vector<imagePos>>(maxChan,

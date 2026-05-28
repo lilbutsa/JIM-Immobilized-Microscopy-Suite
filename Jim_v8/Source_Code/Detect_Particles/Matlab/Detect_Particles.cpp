@@ -8,7 +8,13 @@
 
 int Detect_Particles(std::string fileBase, std::string inputfile, double gaussStdDev, double binarizecutoff, double minSeparation, double leftminDistFromEdge, double rightminDistFromEdge, double topminDistFromEdge, double bottomminDistFromEdge,
     double minEccentricity, double maxEccentricity, double minLength, double maxLength, double minCount, double maxCount, double maxDistFromLinear, bool includeSmall);
-//Standard input : ([Output File Base],[Input Image] , NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)
+// MATLAB call:
+// Detect_Particles(inputImage, binarizeCutoff, 'GaussianStdDev', value, 'MinSeparation', value,
+//                  'MinDistFromEdge', value, 'LeftMinDistFromEdge', value, 'RightMinDistFromEdge', value,
+//                  'TopMinDistFromEdge', value, 'BottomMinDistFromEdge', value,
+//                  'MinEccentricity', value, 'MaxEccentricity', value, 'MinLength', value, 'MaxLength', value,
+//                  'MinCount', value, 'MaxCount', value, 'MaxDistFromLinear', value,
+//                  'IncludeSmall', logicalValue, 'Output', outputBase)
 
 class MexFunction : public matlab::mex::Function {
 public:
@@ -29,8 +35,8 @@ public:
         for (size_t paramcount = minNumOfInputs; paramcount < inputs.size() - 1; paramcount = paramcount + 2) {
             std::string optionArg = parseStringMatlab(inputs, paramcount);
             if (optionArg == "IncludeSmall") includeSmall = inputs[paramcount + 1][0];
-            else if (optionArg == "OutputFile")outputBase = parseStringMatlab(inputs, paramcount + 1);
-            else if (optionArg == "GaussStdDev")gaussStdDev = inputs[paramcount + 1][0];
+            else if (optionArg == "Output")outputBase = parseStringMatlab(inputs, paramcount + 1);
+            else if (optionArg == "GaussianStdDev")gaussStdDev = inputs[paramcount + 1][0];
             else if (optionArg == "MinSeparation")minSeparation = inputs[paramcount + 1][0];
             else if (optionArg == "MinDistFromEdge") {
                 leftminDistFromEdge = inputs[paramcount + 1][0];
@@ -65,7 +71,13 @@ public:
 
         if (inputs.size() < minNumOfInputs) {
             matlabPtr->feval(u"error",
-                0, std::vector<matlab::data::Array>({ factory.createScalar("At least 16 inputs required - Standard input : ([Output File Base],[Input Image Stack file 1] ,..., NumberOfChannels, startframe, endframe,Transform, bBigTiff, bMetadata,bDetectMultipleFiles)") }));
+                0, std::vector<matlab::data::Array>({ factory.createScalar(
+                    "Detect_Particles requires at least 2 inputs.\n"
+                    "Usage: Detect_Particles(inputImage, binarizeCutoff, 'Output', outputBase, 'GaussianStdDev', value, "
+                    "'MinSeparation', value, 'MinDistFromEdge', value, 'LeftMinDistFromEdge', value, 'RightMinDistFromEdge', value, "
+                    "'TopMinDistFromEdge', value, 'BottomMinDistFromEdge', value, 'MinEccentricity', value, 'MaxEccentricity', value, "
+                    "'MinLength', value, 'MaxLength', value, 'MinCount', value, 'MaxCount', value, 'MaxDistFromLinear', value, "
+                    "'IncludeSmall', logicalValue)") }));
         }
 
     }

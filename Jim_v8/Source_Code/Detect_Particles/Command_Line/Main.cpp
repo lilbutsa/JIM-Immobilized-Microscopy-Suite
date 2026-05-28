@@ -6,19 +6,22 @@
  *   followed by binarization, and optional filtering based on shape, size, and position criteria.
  *
  * Usage:
- *   Detect_Particles <TIFF_Image> <Output_Base> [Optional Parameters]
+ *   Detect_Particles <TIFF_Image> <BinarizeCutoff> [Optional Parameters]
  *
  * Optional Parameters:
- *   -BinarizeCutoff <float>           : Threshold multiplier for binarization (default 0.2)
- *   -minDistFromEdge <float>         : Minimum distance from all edges (overrides specific edges if larger)
- *   -left/-right/-top/-bottom <float>: Minimum distance from respective image edge
- *   -minEccentricity/-maxEccentricity<float>: Eccentricity filter
- *   -minLength/-maxLength <float>    : Length of major axis filter
- *   -minCount/-maxCount <float>      : Minimum/maximum number of pixels per region
- *   -maxDistFromLinear <float>       : Deviation from best-fit line
- *   -minSeparation <float>           : Minimum separation between region centers
+ *   -Output <string>                 : Output base name override
+ *   -MinDistFromEdge <float>         : Minimum distance from all edges (overrides specific edges if larger)
+ *   -LeftMinDistFromEdge <float>     : Minimum distance from left edge
+ *   -RightMinDistFromEdge <float>    : Minimum distance from right edge
+ *   -TopMinDistFromEdge <float>      : Minimum distance from top edge
+ *   -BottomMinDistFromEdge <float>   : Minimum distance from bottom edge
+ *   -MinEccentricity/-MaxEccentricity <float> : Eccentricity filter bounds
+ *   -MinLength/-MaxLength <float>    : Major-axis length filter bounds
+ *   -MinCount/-MaxCount <float>      : Pixel-count filter bounds
+ *   -MaxDistFromLinear <float>       : Deviation from best-fit line
+ *   -MinSeparation <float>           : Minimum separation between region centers
  *   -GaussianStdDev <float>          : Standard deviation for LoG filter (default 5)
- *   -includeSmall                    : Include small regions in nearest neighbour calculations and for background ROI output
+ *   -IncludeSmall                    : Include small regions in nearest-neighbour and background ROI calculations
  *
  * Outputs (written to <Output_Base>.*):
  *   - _Regions.tif                   : Binary image showing detected ROIs
@@ -51,6 +54,21 @@ int Detect_Particles(std::string fileBase, std::string inputfile, double gaussSt
 
 int main(int argc, char *argv[])
 {
+	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
+		std::cout << "Usage: Detect_Particles <input_tiff> <binarize_cutoff> [options]\n";
+		std::cout << "Options:\n";
+		std::cout << "-Output <name> Output base name override.\n";
+		std::cout << "-GaussianStdDev f (Default f = 5) Gaussian filter standard deviation.\n";
+		std::cout << "-MinSeparation f (Default f = 0) Minimum center-to-center separation.\n";
+		std::cout << "-MinDistFromEdge f Apply a common minimum distance from all image edges.\n";
+		std::cout << "-LeftMinDistFromEdge f, -RightMinDistFromEdge f, -TopMinDistFromEdge f, -BottomMinDistFromEdge f\n";
+		std::cout << "-MinEccentricity f, -MaxEccentricity f ROI eccentricity filter bounds.\n";
+		std::cout << "-MinLength f, -MaxLength f Major-axis length filter bounds.\n";
+		std::cout << "-MinCount f, -MaxCount f Pixel-count filter bounds.\n";
+		std::cout << "-MaxDistFromLinear f Maximum deviation from local linear trend.\n";
+		std::cout << "-IncludeSmall Include small regions in neighbour/background calculations.\n";
+		return 0;
+	}
 
 
 	float minEccentricity = -0.1f, maxEccentricity = 1.1f, minLength = 0.0f, maxLength = 10000000000.0f, minCount = 0.0f, maxCount = 1000000000.0f, maxDistFromLinear = 10000000.0f;
@@ -66,20 +84,24 @@ int main(int argc, char *argv[])
 
 	//read in parameters
 
-	if (argc < 3) { std::cout << "could not read file name\n"; return 1; }
+	if (argc < 3) {
+		std::cout << "Insufficient arguments.\n";
+		std::cout << "Usage: Detect_Particles <input_tiff> <binarize_cutoff> [options]\n";
+		return 1;
+	}
 	std::string inputfile = argv[1];
 	float binarizecutoff = std::stod(argv[2]);
 
 	std::string output = "";
 
-	std::vector<std::pair<std::string, std::string*> >stringParams{ std::make_pair("OutputFile", &output) };
+	std::vector<std::pair<std::string, std::string*> >stringParams{ std::make_pair("Output", &output) };
 	if (BLFlagParser::parseValues(stringParams, argc, argv)) return 1;
 
 
-	std::vector<std::pair<std::string, float*> >params{ std::make_pair("minDistFromEdge", &allminDistFromEdge),
-		std::make_pair("left", &leftminDistFromEdge),std::make_pair("right", &rightminDistFromEdge),std::make_pair("top", &topminDistFromEdge),std::make_pair("bottom", &bottomminDistFromEdge),
-		std::make_pair("minEccentricity", &minEccentricity),std::make_pair("maxEccentricity", &maxEccentricity),std::make_pair("minLength", &minLength),std::make_pair("maxLength", &maxLength),
-		std::make_pair("minCount", &minCount),std::make_pair("maxCount", &maxCount),std::make_pair("maxDistFromLinear", &maxDistFromLinear),std::make_pair("minSeparation", &minSeparation),
+	std::vector<std::pair<std::string, float*> >params{ std::make_pair("MinDistFromEdge", &allminDistFromEdge),
+		std::make_pair("LeftMinDistFromEdge", &leftminDistFromEdge),std::make_pair("RightMinDistFromEdge", &rightminDistFromEdge),std::make_pair("TopMinDistFromEdge", &topminDistFromEdge),std::make_pair("BottomMinDistFromEdge", &bottomminDistFromEdge),
+		std::make_pair("MinEccentricity", &minEccentricity),std::make_pair("MaxEccentricity", &maxEccentricity),std::make_pair("MinLength", &minLength),std::make_pair("MaxLength", &maxLength),
+		std::make_pair("MinCount", &minCount),std::make_pair("MaxCount", &maxCount),std::make_pair("MaxDistFromLinear", &maxDistFromLinear),std::make_pair("MinSeparation", &minSeparation),
 		std::make_pair("GaussianStdDev", &gaussStdDev) };
 
 	if (BLFlagParser::parseValues(params, argc, argv)) return 1;
@@ -92,7 +114,7 @@ int main(int argc, char *argv[])
 	if (gaussStdDev > 0) logStdDevChanged = true;
 	else gaussStdDev = 5;
 
-	std::vector<std::pair<std::string, bool*> > boolparams{ std::make_pair("includeSmall", &includeSmall) };
+	std::vector<std::pair<std::string, bool*> > boolparams{ std::make_pair("IncludeSmall", &includeSmall) };
 	if (BLFlagParser::parseValues(boolparams, argc, argv)) return 1;
 
 

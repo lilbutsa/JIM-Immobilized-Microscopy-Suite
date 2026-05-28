@@ -47,8 +47,19 @@ int Bleach_Correct(std::string fileBase, std::string inputfile, double meanBleac
 
 int main(int argc, char* argv[])
 {
+    if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
+        std::cout << "Usage: Bleach_Correct <input_csv> <output_base> <mean_bleach_frame>\n";
+        std::cout << "  input_csv         CSV file containing traces (one trace per row)\n";
+        std::cout << "  output_base       Base name used for generated output CSV files\n";
+        std::cout << "  mean_bleach_frame Positive decay timescale parameter for bleaching correction\n";
+        return 0;
+    }
 
-    if (argc < 4) { std::cout << "could not read file name.\n"; return 1; }
+    if (argc < 4) {
+        std::cout << "Insufficient arguments.\n";
+        std::cout << "Usage: Bleach_Correct <input_csv> <output_base> <mean_bleach_frame>\n";
+        return 1;
+    }
     std::string inputfile = argv[1];
     std::string output = argv[2];
     double meanBleachFrame = std::stod(argv[3]);

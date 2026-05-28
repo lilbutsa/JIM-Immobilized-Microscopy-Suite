@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Main.cpp - Mean_of_Frames
  *
  * Description:
@@ -16,20 +16,18 @@
  *   - Outputs the final image as a TIFF file.
  *
  * Input Arguments (Positional):
- *   argv[1] - Channel alignment CSV file (can be empty for single-channel input).
- *   argv[2] - Drift correction CSV file (x, y drift per frame).
- *   argv[3] - Output file base name.
- *   argv[4...] - Input TIFF stacks (one per imaging channel).
+ *   argv[1] - fileName input (TIFF stack or input base used by the processing pipeline).
  *
  * Optional Flags:
- *   -Start <val1 val2 ...>    : Start frame per channel (1-based, default = 1).
- *                               Can also be negative (offset from end) or used with -Percent.
- *   -End <val1 val2 ...>      : End frame per channel (inclusive, default = total frames).
- *                               Can also be negative or percent-based.
- *   -Percent                  : Treat -Start and -End values as percentages (0–100).
- *   -Weights <w1 w2 ...>      : Scaling weights per channel.
- *   -MaxProjection            : Use max projection instead of summation/mean across frames. Gove a 0 for mean or 1 use Max projection for each channel eg. -MaxProjection 0 1 0 uses max project for channel 2
- *   -NoNorm                   : Skip normalization (output raw summed intensity values).
+ *   -Position <int>            : Position index to process (default: 0)
+ *   -Start <val1 val2 ...>     : Start frame per channel (default: 1)
+ *   -End <val1 val2 ...>       : End frame per channel (default: all frames)
+ *   -MaxProjection <v1 v2 ...> : Per-channel projection mode (0 = mean/sum, non-zero = max)
+ *   -Weights <w1 w2 ...>       : Scaling weights per channel
+ *   -NoNorm                    : Skip normalization (output raw summed intensity values)
+ *   -Drift <file>              : Drift CSV file
+ *   -Alignment <file>          : Channel alignment CSV file
+ *   -Output <string>           : Output file base override
  *
  * Output:
  *   - <outputfile>_Partial_Mean.tiff : Composite image result.
@@ -37,10 +35,8 @@
  *       If not normalized, written as 32-bit float TIFF.
  *
  * Notes:
- *   - Channel alignment is only applied if multiple input files are given.
- *   - Drift correction is always applied prior to averaging.
- *   - Frame ranges and weights are flexible and user-defined per channel.
- *   - Designed for preprocessing steps in single-particle or ROI analysis workflows.
+ *   - Channel alignment is only applied if multiple channels are present.
+ *   - Drift correction is applied before frame aggregation.
  *
  * Dependencies:
  *   - BLCSVIO: Reads CSV files (drift, alignment).
@@ -60,25 +56,45 @@
 int Mean_of_Frames(std::string fileName, size_t positionIn, std::vector<int> start, std::vector<int> end, std::vector<int> bvMaxProject, std::vector<float> weights, bool bNormalize, std::string driftfile = "", std::string alignfile = "", std::string outputFileName = "Image_For_Detection_Partial_Mean");
 
 
-//Input should be align file, drift file, outfile, all image files, -Start chan1 chan2...,-End chan1, chan2
+// Positional input is fileName; all other inputs are optional flags parsed below.
 int main(int argc, char *argv[])
 {
 
 
-	if (argc < 2) { std::cout << "could not read file name.\n"; return 1; }
+	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
+		std::cout << "Usage: Mean_of_Frames <fileName> [options]\n";
+		std::cout << "Options:\n";
+		std::cout << "-Position i (Default i = 0) Position index to process.\n";
+		std::cout << "-Start v1 v2 ... Start frame per channel.\n";
+		std::cout << "-End v1 v2 ... End frame per channel.\n";
+		std::cout << "-MaxProjection v1 v2 ... Per-channel projection mode (0 = mean, non-zero = max).\n";
+		std::cout << "-Weights w1 w2 ... Per-channel weights.\n";
+		std::cout << "-NoNorm Disable normalization.\n";
+		std::cout << "-Drift <file> Drift CSV file.\n";
+		std::cout << "-Alignment <file> Channel alignment CSV file.\n";
+		std::cout << "-Output <name> Override output base name.\n";
+		return 0;
+	}
+
+	if (argc < 2) {
+		std::cout << "Insufficient arguments.\n";
+		std::cout << "Usage: Mean_of_Frames <fileName> [options]\n";
+		return 1;
+	}
 	std::string fileName = argv[1];
 
 	int position=0;
 	std::vector<int> start, end, bvMaxProject;
 	std::vector<float>weights;
 	bool bSkipNormalization = false;
-	std::string driftfile = "", alignfile = "";
+	std::string driftfile = "", alignfile = "", outputfile="";
 
 	std::vector<std::pair<std::string, std::vector<int>*>> vecIntFlags = { {"Start", &start},{"End", &end}, { "MaxProjection",& bvMaxProject } };
 	std::vector<std::pair<std::string, std::vector<float>*>> vecFloatFlags = { {"Weights", &weights} };
 	std::vector<std::pair<std::string, bool*>> boolFlags = { {"NoNorm", &bSkipNormalization} };
 	std::vector<std::pair<std::string, int*>> intFlags = { {"Position", &position} };
-	std::vector<std::pair<std::string, std::string*>> stringFlags = { {"Drift", &driftfile},{"Alignment", &alignfile} };
+	std::vector<std::pair<std::string, std::string*>> stringFlags = { {"Drift", &driftfile},{"Alignment", &alignfile},{"Output", &outputfile} };
+
 
 	if (BLFlagParser::parseValues(vecIntFlags, argc, argv)) return 1;
 	if (BLFlagParser::parseValues(vecFloatFlags, argc, argv)) return 1;
@@ -86,7 +102,7 @@ int main(int argc, char *argv[])
 	if (BLFlagParser::parseValues(intFlags, argc, argv)) return 1;
 	if (BLFlagParser::parseValues(stringFlags, argc, argv)) return 1;
 
-	return Mean_of_Frames(fileName, position, start, end, bvMaxProject, weights, !bSkipNormalization, driftfile, alignfile);
+	return Mean_of_Frames(fileName, position, start, end, bvMaxProject, weights, !bSkipNormalization, driftfile, alignfile, outputfile);
 	
 	//system("PAUSE");
 

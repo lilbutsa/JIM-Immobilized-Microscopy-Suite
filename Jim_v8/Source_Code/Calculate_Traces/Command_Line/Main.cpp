@@ -1,86 +1,65 @@
 /*
- * Calculate_Traces Main.cpp
+ * Main.cpp - Calculate_Traces CLI
  *
- * Description:
- *   This program extracts fluorescence intensity time traces from regions of interest (ROIs)
- *   in a multi-frame TIFF image stack. For each ROI, it computes total and background-subtracted
- *   fluorescence across all frames, with optional drift correction.
+ * Positional arguments:
+ *   1) fileName         Input TIFF stack (or input base used by the processing pipeline)
+ *   2) positionIn       Position index to process
+ *   3) ROIfile          CSV of ROI pixel indices
+ *   4) backgroundfile   CSV of background pixel indices
  *
- *   The program reads:
- *     - A TIFF image stack.
- *     - A CSV file listing ROI pixel indices.
- *     - A CSV file listing background pixel indices for each ROI.
- *     - (Optional) A CSV file with frame-by-frame XY drift values.
- *
- *   For each ROI and frame, it computes the background-subtracted total intensity.
- *
- *   The results are output to:
- *     - A fluorescence intensity CSV (background-subtracted).
- *     - A background intensity CSV.
- *     - A verbose trace CSV (if -Verbose flag is set), containing full statistical detail.
- *
- * Usage:
- *   Calculate_Traces <TIFF_Image> <ROI_CSV> <Background_CSV> <Output_Base> [-Drift <Drift_CSV>] [-Verbose]
- *
- * Dependencies:
- *   - BLTiffIO: For reading TIFF image stacks.
- *   - BLCSVIO: For reading/writing CSV files.
- *   - BLImageTransform: For drift correction handling (if used).
- *
- * Author: James Walsh
- * Date: July 2020
+ * Optional flags:
+ *   -Start <int>                First frame to analyze (default: 1)
+ *   -End <int>                  Last frame to analyze (default: all frames)
+ *   -Drift <file>               Drift CSV file
+ *   -Alignment <file>           Channel alignment CSV file
+ *   -NumberOfChannels <int>     Number of channels if OME metadata is unavailable (default: 1)
+ *   -FilesSplitByChannel        Input frame order is channel-blocked instead of interleaved
+ *   -Output <string>            Output base name override
  */
 
 #include <string>
 #include <iostream>
 #include <vector>
+#include "BLFlagParser.h"
 
-int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, std::string driftfile = "", std::string weightImageFile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
+int Calculate_Traces(std::string fileName, size_t positionIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, std::string driftfile = "", std::string alignfile = "", std::string outputFileBase = "", int numOfChannels = 1, bool filesSplitByChannelIn = false);
 
 int main(int argc, char *argv[])
 {
-	if (argc < 6) { std::cout << "could not read file name" << "\n"; return 1; }
+	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
+		std::cout << "Usage: Calculate_Traces <fileName> <positionIn> <ROIfile> <backgroundfile> [options]\n";
+		std::cout << "Options:\n";
+		std::cout << "-Start i (Default i = 1) Specify first frame to analyze.\n";
+		std::cout << "-End i (Default i = total number of frames) Specify last frame to analyze.\n";
+		std::cout << "-Drift <file> CSV file containing XY drift per frame.\n";
+		std::cout << "-Alignment <file> CSV file containing channel alignment parameters.\n";
+		std::cout << "-NumberOfChannels i (Default i = 1) Set channel count when metadata is unavailable.\n";
+		std::cout << "-FilesSplitByChannel Input frames are ordered by channel blocks.\n";
+		std::cout << "-Output <name> Override output base name.\n";
+		return 0;
+	}
+	if (argc < 5) {
+		std::cout << "Insufficient arguments.\n";
+		std::cout << "Usage: Calculate_Traces <fileName> <positionIn> <ROIfile> <backgroundfile> [options]\n";
+		return 1;
+	}
 	std::string inputfile = argv[1];
 	size_t positionIn = std::stoi(argv[2]);
-	size_t channelIn = std::stoi(argv[3]);
-	std::string ROIfile = argv[4];
-	std::string backgroundfile = argv[5];
+	std::string ROIfile = argv[3];
+	std::string backgroundfile = argv[4];
 
-	bool veboseoutput = false;
-	std::string driftfile = "", weightsfile = "";
-	int startFrame = 1, endFrame = -1;
+	std::string outputfile = "", driftfile = "", alignfile = "";
+	int start = 1, end = -1, numOfChannels=1;
+	bool splitByChannel = false;
 
-	for (int i = 1; i < argc; i++) {
-		if (std::string(argv[i]) == "-Drift") {
-			if (i + 1 < argc) {
-				driftfile = argv[i + 1];
-				std::cout << "Drifts imported from " << driftfile << "\n";
-			}
-			else { std::cout << "error inputting drifts\n" ; return 1; }
-		}
-		if (std::string(argv[i]) == "-startFrame") {
-			if (i + 1 < argc) {
-				startFrame = std::stoi(argv[i + 1]);
-				std::cout << "Traces starting from frame " << startFrame << "\n";
-			}
-			else { std::cout << "error inputting start Frame \n" ; return 1; }
-		}
-		if (std::string(argv[i]) == "-endFrame") {
-			if (i + 1 < argc) {
-				endFrame = std::stoi(argv[i + 1]);
-				std::cout << "Traces ending at frame " << endFrame << "\n";
-			}
-			else { std::cout << "error inputting end Frame \n"; return 1; }
-		}
-		if (std::string(argv[i]) == "-Weights") {
-			if (i + 1 < argc) {
-				weightsfile = argv[i + 1];
-				std::cout << "Weights imported from " << weightsfile << "\n";
-			}
-			else { std::cout << "error inputting Weights\n"; return 1; }
-		}
-	}
+	std::vector<std::pair<std::string, int*>> intFlags = { {"Start", &start},{"End", &end},{"NumberOfChannels", &numOfChannels} };
+	std::vector<std::pair<std::string, bool*>> boolFlags = {{"FilesSplitByChannel", &splitByChannel} };
+	std::vector<std::pair<std::string, std::string*>> stringFlags = { {"Drift", &driftfile},{"Alignment", &alignfile},{"Output", &outputfile} };
+
+	if (BLFlagParser::parseValues(stringFlags, argc, argv)) return 1;
+	if (BLFlagParser::parseValues(intFlags, argc, argv)) return 1;
+	if (BLFlagParser::parseValues(boolFlags, argc, argv)) return 1;
 
 
-	return Calculate_Traces(inputfile, positionIn, channelIn, ROIfile, backgroundfile, startFrame,endFrame, driftfile, weightsfile);
+	return Calculate_Traces(inputfile, positionIn, ROIfile, backgroundfile, start, end, driftfile, alignfile, outputfile, numOfChannels, splitByChannel);
 }

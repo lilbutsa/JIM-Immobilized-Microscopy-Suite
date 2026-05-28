@@ -1,3 +1,19 @@
+/*
+ * Main.cpp - Step_Fitting CLI
+ *
+ * Positional arguments:
+ *   1) inputfile : CSV file containing traces to fit.
+ *
+ * Optional flags:
+ *   -TThreshold <float> : Statistical threshold used by compatible methods (default: 1.96)
+ *   -MaxSteps <int>     : Maximum number of fitted steps (default: unlimited)
+ *   -Output <string>    : Output base name override
+ *   -Aggarwal           : Use Aggarwal step fitting method (default)
+ *   -TTest              : Use T-test based method
+ *   -AutoStepFit        : Use AutoStepFit method
+ *   -ChangePoint        : Use heuristic change-point analysis method
+ */
+
 #include <vector>
 #include <iostream>     // std::cout
 #include <random>       // std::default_random_engine
@@ -6,7 +22,7 @@
 #include "../findStepHeader.hpp"
 
 
-int Step_Fitting(std::string output, std::string inputfile, double TThreshold, int maxSteps, int method);
+int Step_Fitting(std::string inputfile, double TThreshold = 1.96, int method = 0, int maxSteps = -1, std::string output = "");
 
 
 double erfinv(double x);
@@ -14,27 +30,33 @@ void testCase(int steps, int frames, double noise);
 
 int main(int argc, char* argv[])
 {
-	
-	int method = 0;
+	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
+		std::cout << "Usage: Step_Fitting <input_csv> [options]\n";
+		std::cout << "Options:\n";
+		std::cout << "-TThreshold f (Default f = 1.96) Set method threshold value.\n";
+		std::cout << "-MaxSteps i (Default i = -1) Limit number of fitted steps.\n";
+		std::cout << "-Output <name> Override output base name.\n";
+		std::cout << "-Aggarwal | -TTest | -AutoStepFit | -ChangePoint Select fitting method.\n";
+		return 0;
+	}
 
-	double TThreshold = 50;
-	double threshold = erf(TThreshold);
-	int iterations = 1000;
-	int maxSteps = -1;
+	double TThreshold = 1.96;
+	int method = 0,maxSteps = -1;
+	std::string output = "";
 
-
-	if (argc < 3) { std::cout << "could not read file name\n"; return 1; }
+	if (argc < 2) {
+		std::cout << "Insufficient arguments.\n";
+		std::cout << "Usage: Step_Fitting <input_csv> [options]\n";
+		return 1;
+	}
 	std::string inputfile = argv[1];
-	std::string output = argv[2];
-
 	std::cout << "Step-Fitting File " << inputfile << "\n";
 
 	for (int i = 1; i < argc; i++) {
 		if (std::string(argv[i]) == "-TThreshold") {
 			if (i + 1 < argc) {
 				TThreshold = std::stod(argv[i + 1]);
-				threshold = erf(threshold);
-				std::cout << "T value threshold set to "<<TThreshold<<" corresponding to P value = " << 1-threshold << "\n";
+				std::cout << "T value threshold set to "<<TThreshold<< "\n";
 			}
 			else { std::cout << "error inputting t value threshold\n"; return 1; }
 		}
@@ -45,12 +67,11 @@ int main(int argc, char* argv[])
 			}
 			else { std::cout << "error inputting max number of steps\n"; return 1; }
 		}
-		if (std::string(argv[i]) == "-Iterations") {
+		if (std::string(argv[i]) == "-Output") {
 			if (i + 1 < argc) {
-				iterations = std::stoi(argv[i + 1]);
-				std::cout << "Iterations set to " << iterations << "\n";
+				output = argv[i + 1];
 			}
-			else { std::cout << "error inputting number of iterations\n"; return 1; }
+			else { std::cout << "error inputting output base\n"; return 1; }
 		}
 		if (std::string(argv[i]) == "-Aggarwal") {
 			method = 0; std::cout << "method set to Aggarwal\n";
@@ -67,7 +88,7 @@ int main(int argc, char* argv[])
 		
 	}
 
-	return Step_Fitting(output, inputfile, TThreshold, maxSteps, method);
+	return Step_Fitting(inputfile, TThreshold, method, maxSteps, output);
 	//for (int i = 0; i < 10; i++)for (int j = 0; j < 10; j++)testCase(i, 100, 0.25 * (j+1));
 	//system("PAUSE");
 }

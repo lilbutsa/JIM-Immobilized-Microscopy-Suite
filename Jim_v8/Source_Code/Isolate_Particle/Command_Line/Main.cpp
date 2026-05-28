@@ -14,19 +14,19 @@
  *   - Optionally outputs the time series of cropped images as a TIFF stack.
  *
  * Input Arguments (Positional):
- *   argv[1]  - Channel alignment CSV file (ignored if only one channel).
- *   argv[2]  - Drift correction CSV file (x, y drift per frame).
- *   argv[3]  - Particle measurement CSV file (bounding box metadata).
- *   argv[4]  - Output filename base (used for all output TIFFs).
- *   argv[5...] - One or more TIFF stacks (1 per channel, all same dimensions).
+ *   argv[1]  - fileName input (TIFF stack or input base used by the processing pipeline)
+ *   argv[2]  - position index to process
+ *   argv[3]  - particle index to isolate
  *
  * Optional Flags:
- *   -Particle <int>   : Index of particle to isolate (1-based, default = 1)
- *   -Start <int>      : First frame to include (0-based, default = 0)
- *   -End <int>        : Last frame to include (exclusive, default = total number of frames)
- *   -Delta <int>      : Frame step between montage entries (default = 1)
- *   -Average <int>    : Number of frames to average around each montage frame (must be odd, default = 1)
+ *   -Start <int>      : First frame to include (default = 1)
+ *   -End <int>        : Last frame to include (default = all frames)
+ *   -MontageImages <int> : Number of images shown in montage output (default = 10)
  *   -OutputImageStack : Output a full aligned ROI stack as a TIFF
+ *   -Drift <file>     : Drift CSV file
+ *   -Alignment <file> : Channel alignment CSV file
+ *   -Measurement <file> : ROI measurement CSV file
+ *   -Output <name>    : Output base name override
  *
  * Output Files:
  *   - <base>_Trace_<particle>_Range_<start>_<delta>_<end>_montage.tiff:
@@ -54,62 +54,54 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "BLTiffIO.h"
-#include "BLImageTransform.h"
-#include "BLCSVIO.h"
 #include "BLFlagParser.h"
 
 
 
-int Isolate_Particle(std::string outputfile, std::vector<std::string> inputfiles, std::string driftfile, std::string alignfile, std::string measurementsfile, int particle, int start, int end, int delta, int average, bool bOutputImageStack);
-
-//Input should be align file, drift file, outfile, all image files, -Start chan1 chan2...,-End chan1, chan2
+int Isolate_Particle(std::string fileName, size_t positionIn, size_t particle, int startFrame = 1, int endFrame = -1, size_t numMontageImages = 10, bool bOutputImageStack = false, size_t numOfChannels = 1, bool filesSplitByChannelIn = false, std::string driftfile = "", std::string alignfile = "", std::string measurementsfile = "", std::string outputfile = "");
+	// Positional inputs are fileName, positionIn, and particle; all others are optional flags.
 int main(int argc, char* argv[])
 {
 
-
 	if (argc == 1 || (std::string(argv[1]).substr(0, 2) == "-h" || std::string(argv[1]).substr(0, 2) == "-H")) {
-		std::cout<<"Standard input: [channel alignment file] [Drift Correction File] [Particle Measurements File] [Output File Base] [Input Image Stack Channel 1]... Options\n";
+		std::cout<<"Usage: Isolate_Particle <fileName> <positionIn> <particle> [options]\n";
 		std::cout << "Options:\n";
-		std::cout << "-Particle i (Default i = 1) Specify particle i to isolate\n";
+		std::cout << "-MontageImages i (Default i = 10) Number of images for the montage\n";
 		std::cout << "-Start i (Default i = 1) Specify frame i to start isolating from\n";
 		std::cout << "-End i (Default i = total number of frames) Specify frame i to end isolating from\n";
-		std::cout << "-Delta i (Default i = 1) Specify steps in frames between isolated images\n";
-		std::cout << "-Average i (Default i = 1) Specify number of frames around each step to average image (Must Be Odd)\n";
-		std::cout << "-outputImageStack Output the ROI for the particle as a tiff stack \n";
+		std::cout << "-OutputImageStack : Output the ROI for the particle as a tiff stack \n";
+		std::cout << "-NumberOfChannels i (Default i = 1) Sets the number of channels to split the file into. Only used if no OME metadata is present. \n";
+		std::cout << "-FilesSplitByChannel : Images ordered by channel rather than alternating. Only used if no OME metadata is present. \n";
+		std::cout << "-Alignment <file>  : CSV file containing Channel to channel alignment parameters for multi-channel output.\n";
+		std::cout << "-Measurement <file>  : CSV file containing the ROI measurements.\n";
+		std::cout << "-Drift <file>  : CSV file containing the XY drifts for each frame for Channel 1.\n";
+		std::cout << "-Output <name>  : Change the output file base name.\n";
 		return 0;
 	}
 
-	int numInputFiles = 0;
-	int particle = 1, start = 0, end = 100000000, delta = 1, average = 1;
+
+	int position, particle, start = 1, end = -1, montageImages = 10, numOfChannels = 1;
 	
-	std::string outputfile,driftfile,alignfile, measurementsfile;
-	std::vector<BLTiffIO::TiffInput*> vcinput;
-	bool bOutputImageStack = false;
+	std::string fileName, outputfile="",driftfile="",alignfile="", measurementsfile="";
+	bool bOutputImageStack = false, splitByChannel = false;
 
 	try {
-		if (argc<5)throw std::invalid_argument("Insufficient Arguments");
-		for (int i = 5; i < argc && std::string(argv[i]).substr(0, 1) != "-"; i++) numInputFiles++;
-		if(numInputFiles == 0)throw std::invalid_argument("No Input Image Stacks Detected");
+		if (argc<4)throw std::invalid_argument("Insufficient Arguments");
+		fileName = argv[1];
+		position = std::stoi(argv[2]);
+		particle = std::stoi(argv[3]);
 
 
-		std::vector<std::string> inputfiles(numInputFiles);
-		for (int i = 0; i < numInputFiles; i++)inputfiles[i] = argv[i + 5];
+		std::vector<std::pair<std::string, int*>> intFlags = {{"Start", &start},{"End", &end},{"MontageImages", &montageImages},{"NumberOfChannels", &numOfChannels} };
+		std::vector<std::pair<std::string, bool*>> boolFlags = { {"OutputImageStack", &bOutputImageStack}, {"FilesSplitByChannel", &splitByChannel} };
+		std::vector<std::pair<std::string, std::string*>> stringFlags = { {"Drift", &driftfile},{"Alignment", &alignfile},{"Measurement", &measurementsfile},{"Output", &outputfile} };
 
-		std::vector<std::pair<std::string, int*>> intFlags = { {"Particle", &particle},{"Start", &start},{"End", &end},{"Delta", &delta},{"Average", &average} };
-		std::vector<std::pair<std::string, bool*>> boolFlags = { {"OutputAligned", &bOutputImageStack} };
-
+		if (BLFlagParser::parseValues(stringFlags, argc, argv)) return 1;
 		if (BLFlagParser::parseValues(intFlags, argc, argv)) return 1;
 		if (BLFlagParser::parseValues(boolFlags, argc, argv)) return 1;
 
-		if (average % 2 == 0)throw std::invalid_argument("Averaging Value Must Be Odd");
+		return Isolate_Particle(fileName, position, particle, start, end, montageImages, bOutputImageStack, numOfChannels, splitByChannel, driftfile, alignfile, measurementsfile, outputfile);
 
-		alignfile = argv[1];
-		driftfile = argv[2];
-		measurementsfile = argv[3];
-		outputfile = argv[4];
-
-		Isolate_Particle(outputfile, inputfiles, driftfile, alignfile, measurementsfile, particle, start, end, delta, average, bOutputImageStack);
 
 	}
 	catch (const std::invalid_argument & e) {

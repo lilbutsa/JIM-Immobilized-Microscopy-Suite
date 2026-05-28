@@ -17,10 +17,9 @@
  *   The results are output to:
  *     - A fluorescence intensity CSV (background-subtracted).
  *     - A background intensity CSV.
- *     - A verbose trace CSV (if -Verbose flag is set), containing full statistical detail.
  *
  * Usage:
- *   Calculate_Traces <TIFF_Image> <ROI_CSV> <Background_CSV> <Output_Base> [-Drift <Drift_CSV>] [-Verbose]
+ *   Calculate_Traces <TIFF_Image> <ROI_CSV> <Background_CSV> <Output_Base> [-Drift <Drift_CSV>] 
  *
  * Dependencies:
  *   - BLTiffIO: For reading TIFF image stacks.
@@ -41,16 +40,14 @@
 #include <cmath>
 #include "BLTiffIO.h"
 #include "BLCSVIO.h"
-#include <numeric>
+
+void transformDrifts(std::vector<double> alignIn, std::vector< std::vector< double>>& driftsIn, std::vector< std::vector< double>>& driftsOut);
+std::vector<std::vector<size_t>> transformPosition(std::vector<double> alignIn, std::vector<std::vector<size_t>> positions, size_t imageWidth, size_t imageHeight);
 
 
-
-
-
-int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, std::string driftfile = "", std::string weightImageFile = "", int numOfChannels = 1, bool filesSplitByChannelIn = false)
+int Calculate_Traces(std::string fileName, size_t positionIn, std::string ROIfile, std::string backgroundfile, int startFrame = 1, int endFrame = -1, std::string driftfile = "", std::string alignfile = "", std::string outputFileBase = "", int numOfChannels = 1, bool filesSplitByChannelIn = false)
 {
 	BLTiffIO::MultiTiffInput allFiles(fileName, numOfChannels, filesSplitByChannelIn);
-
 
 	size_t totalPositions = allFiles.positionNames.size();
 
@@ -64,13 +61,8 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 		return 1;
 	}
 
-	size_t imageWidth, imageHeight, imagePoints, imageDepth, numOfChan, numOfFrame, numOfZ;
+	size_t imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ;
 	allFiles.imageInfo(positionIn-1, imageWidth, imageHeight, imageDepth, numOfChan, numOfFrame, numOfZ);
-
-	if (channelIn > numOfChan) {
-		std::cout << "ERROR : The input channel number ("<< channelIn <<") is greater than the detected number of channels in the data ("<< numOfChan <<")\n";
-		return 1;
-	}
 
 
 	std::string myFolderName = allFiles.path + allFiles.filesep + allFiles.positionNames[positionIn-1];
@@ -79,19 +71,40 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 
 
 	std::vector<std::string> headerLine;
-	std::vector< std::vector<double> > tableofdrifts(3000, std::vector<double>(2, 0.0));
-	bool bdrifts = false;
+	std::vector< std::vector<double> > tableofdrifts(numOfFrame, std::vector<double>(2, 0.0));
+	std::vector< std::vector<double> >channelalignment(numOfChan - 1, { 0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,(double)imageWidth / 2,(double)imageHeight / 2 });
+
+
 	if (driftfile == "") {//Try to find the default drift file
-		driftfile = fileBase + "Aligned_Channel_" + std::to_string(channelIn) + ".csv";
+		driftfile = fileBase + "Aligned_Drifts.csv";
 	}
 	if (std::filesystem::exists(driftfile)) {
 		std::cout << "Importing Drifts from : " << driftfile << "\n";
 		BLCSVIO::readCSV(driftfile, tableofdrifts, headerLine);
-		bdrifts = true;
 	}
 	else std::cout << "WARNING : No drift file found. Assuming sample has no drift\n";
+	if (tableofdrifts.size() < numOfFrame || tableofdrifts[0].size() != 2) {
+		std::cout << "ERROR : There must be an x and y drift value for every frame. The drift file contains " << tableofdrifts.size() << " values but should contain " << numOfFrame << "\n";
+		return 1;
+	}
 
 
+	if (numOfChan > 1) {
+		if (alignfile == "") {//Try to find the default drift file
+			alignfile = fileBase + "Aligned_Channel_To_Channel_Alignment.csv";
+		}
+		if (std::filesystem::exists(alignfile)) {
+			std::cout << "Importing Alignments from : " << alignfile << "\n";
+			if (BLCSVIO::readCSV(alignfile, channelalignment, headerLine) != 0)return 1;
+		}
+		else {
+			std::cout << "WARNING : No channel Alignments file found. Assuming sample is overlaid\n";
+		}
+		if (channelalignment.size() < numOfChan - 1 || channelalignment[0].size() != 11) {
+			std::cout << "ERROR : Invalid Channel Alignment File\n";
+			return 1;
+		}
+	}
 
 
 	std::vector< std::vector<size_t> > labelledpos(3000, std::vector<size_t>(1000, 0));
@@ -114,105 +127,147 @@ int Calculate_Traces(std::string fileName, size_t positionIn, size_t channelIn, 
 
 	std::vector< std::vector<double> > results;
 	
-	int startFrameIn = startFrame < 0 ? numOfFrame + startFrame : startFrame - 1;
-	int endFrameIn = endFrame < 0 ? numOfFrame + endFrame + 1 : endFrame;
-	int NOFMeasure = endFrameIn - startFrameIn;
+	size_t startFrameIn = startFrame < 0 ? numOfFrame + startFrame : startFrame - 1;
+	size_t endFrameIn = endFrame < 0 ? numOfFrame + endFrame + 1 : endFrame;
+	
+	if (startFrameIn >= numOfFrame) {
+		std::cout << "ERROR : Start frame (" << startFrameIn + 1 << ")is greater than images in stack (" << numOfFrame << ")\n";
+		return 1;
+	}
+	if (endFrameIn > numOfFrame) {
+		endFrameIn = numOfFrame;
+		std::cout << "End frame set to end of stack (" << numOfFrame << ")\n";
+	}
+	int NOFMeasure = std::max((int)endFrameIn - (int)startFrameIn, 0);
 
 
 	std::vector< std::vector<double> > amplitudevals(numoffits, std::vector<double>(NOFMeasure));
 	std::vector< std::vector<double> > backgroundvals(numoffits, std::vector<double>(NOFMeasure));
-	std::vector< std::vector<double> > fitvals(numoffits, std::vector<double>(NOFMeasure));
 
 	std::vector< std::vector<float> > image(imageWidth, std::vector<float>(imageHeight));
 	std::vector< std::vector<float> > ROIdata(labelledpos.size()), backgroundData(labelledpos.size());
+
+	auto transDrifts = tableofdrifts;
+	auto transROIPos = labelledpos;
+	auto transBackPos = backgroundpos;
       
+	int pointcount,backcount, xdrift = 0, ydrift = 0, xin, yin;
+	double totfluor, totalback;
 
-	int xdrift = 0, ydrift = 0, xin, yin;
-	
-
-	int pointcount,backcount;
-	double totfluor, totalback, weightedtotfluor;
-
-	//cout << "num of fits = " << numoffits << "\n";
-	//setup image weights if image file is input
-	bool bweights = false;
-	std::vector< std::vector<float> > weights(labelledpos.size());
-	if (std::filesystem::exists(weightImageFile)) {
-		std::cout << "Importing weights from : " << weightImageFile << "\n";
-		BLTiffIO::TiffInput weightImage(weightImageFile);
-		std::vector<float> imagef(weightImage.imageWidth*weightImage.imageHeight, 0);
-		weightImage.read1dImage(0, imagef);
-
-		for (size_t i = 0; i < labelledpos.size(); i++) {
-			weights[i] = std::vector<float>(labelledpos[i].size());
-
-			double backgroundsum = 0;
-			for (size_t j = 0; j < backgroundpos[i].size(); j++)backgroundsum += imagef[backgroundpos[i][j]];
-			backgroundsum = backgroundsum / backgroundpos[i].size();
-
-			double weightsum = 0, weightsum2 = 0;
-			for (size_t j = 0; j < labelledpos[i].size(); j++) {
-				weights[i][j] = imagef[labelledpos[i][j]] - backgroundsum;
-				weightsum += weights[i][j];
-				weightsum2 += weights[i][j]* weights[i][j];
-			}
-			for (size_t j = 0; j < labelledpos[i].size(); j++)weights[i][j] = weights[i][j] * weightsum / weightsum2;
-
+	for (int chancount = 0; chancount < numOfChan; chancount++) {
+		//calculate positions for channel
+			//write out for other channels
+		if (chancount>0) {
+			transformDrifts(channelalignment[chancount - 1], tableofdrifts, transDrifts);
+			transROIPos = transformPosition(channelalignment[chancount - 1], labelledpos, imageWidth, imageHeight);
+			transBackPos = transformPosition(channelalignment[chancount - 1], backgroundpos, imageWidth, imageHeight);
 		}
 
-		bweights = true;
+		for (size_t imagecount = 0; imagecount < NOFMeasure; imagecount++) {
+			//cout << "Fitting Frame Number " << imagecount << endl;
+			allFiles.read2dImage(positionIn - 1, imagecount + startFrameIn, chancount, 0, image);
+
+			xdrift = (int)round(transDrifts[imagecount + startFrameIn][0]);
+			ydrift = (int)round(transDrifts[imagecount + startFrameIn][1]);
+
+
+			for (size_t fitcount = 0; fitcount < numoffits; fitcount++) {
+
+				backcount = 0;
+				totalback = 0;
+				for (size_t i = 0; i < transBackPos[fitcount].size(); i++) {
+					xin = transBackPos[fitcount][i] % imageWidth - xdrift;
+					yin = (int)(transBackPos[fitcount][i] / imageWidth) - ydrift;
+					if (xin >= 0 && xin < (int)imageWidth && yin >= 0 && yin < (int)imageHeight) {
+						totalback += image[xin][yin];
+						backcount++;
+					}
+				}
+
+				if (backcount > 0) totalback = totalback / backcount;
+
+
+				pointcount = 0;
+				totfluor = 0;
+				for (int i = 0; i < transROIPos[fitcount].size(); i++) {
+					xin = transROIPos[fitcount][i] % imageWidth - xdrift;
+					yin = (int)(transROIPos[fitcount][i] / imageWidth) - ydrift;
+					if (xin >= 0 && xin < (int)imageWidth && yin >= 0 && yin < (int)imageHeight) {
+						totfluor += image[xin][yin];
+						pointcount++;
+					}
+				}
+
+				if (pointcount > 0 && backcount > 0) {
+					amplitudevals[fitcount][imagecount] = totfluor - (totalback * pointcount);
+					backgroundvals[fitcount][imagecount] = totalback;
+				}
+				else {
+					amplitudevals[fitcount][imagecount] = 0;
+					backgroundvals[fitcount][imagecount] = 0;
+				}
+
+
+			}
+		}
+
+		std::cout << "Writing out traces to :" << fileBase + "\n";
+		std::string output = fileBase + outputFileBase+ "Channel_" + std::to_string(chancount+1);
+		BLCSVIO::writeCSV(output + "_Fluorescent_Intensities.csv", amplitudevals, "Each row is a particle. Each column is a Frame\n");
+		BLCSVIO::writeCSV(output + "_Fluorescent_Backgrounds.csv", backgroundvals, "Each row is the mean background surrounding the particle. Each column is a Frame\n");
 	}
 
-	for (size_t imagecount = 0; imagecount < NOFMeasure; imagecount++) {
-		//cout << "Fitting Frame Number " << imagecount << endl;
-		allFiles.read2dImage(positionIn-1,imagecount + startFrameIn,channelIn-1,0,image);
-		if (bdrifts) {
-			xdrift = (int)round(tableofdrifts[imagecount+startFrameIn][0]);
-			ydrift = (int)round(tableofdrifts[imagecount + startFrameIn][1]);
-		}
-
-		for (size_t fitcount = 0; fitcount < numoffits; fitcount++) {
-
-			backcount = 0;
-			totalback = 0;
-			for (size_t i = 0; i < backgroundpos[fitcount].size(); i++) {
-				xin = backgroundpos[fitcount][i] % imageWidth - xdrift;
-				yin = (int)(backgroundpos[fitcount][i] / imageWidth) - ydrift;
-				if (xin >= 0 && xin < (int)imageWidth && yin >= 0 && yin < (int)imageHeight) {
-					totalback += image[xin][yin];
-					backcount++;
-				}
-			}
-
-			totalback = totalback / backcount;
-
-
-			pointcount = 0;
-			totfluor = 0;
-			weightedtotfluor = 0;
-			for (int i = 0; i < labelledpos[fitcount].size(); i++) {
-				xin = labelledpos[fitcount][i] % imageWidth - xdrift;
-				yin = (int)(labelledpos[fitcount][i] / imageWidth) - ydrift;
-				if (xin >= 0 && xin < (int)imageWidth && yin >= 0 && yin < (int)imageHeight) {
-					totfluor += image[xin][yin];
-					if(bweights)weightedtotfluor += weights[fitcount][i] * (image[xin][yin]- totalback);
-					pointcount++;
-				}
-			}
-
-
-			amplitudevals[fitcount][imagecount] = totfluor - (totalback * pointcount);
-			backgroundvals[fitcount][imagecount] = totalback;
-			if (bweights)fitvals[fitcount][imagecount] = weightedtotfluor;
-
-		}
-	}
-	std::cout << "Writing out traces to :" << fileBase + "\n";
-	std::string output = fileBase + "Channel_" + std::to_string(channelIn);
-	BLCSVIO::writeCSV(output + "_Fluorescent_Intensities.csv", amplitudevals, "Each row is a particle. Each column is a Frame\n");
-	if (bweights)BLCSVIO::writeCSV(output + "_Fluorescent_Weighted_Fits.csv", fitvals, "Each row is a particle. Each column is a Frame\n");
-	BLCSVIO::writeCSV(output + "_Fluorescent_Backgrounds.csv", backgroundvals, "Each row is the mean background surrounding the particle. Each column is a Frame\n");
 	
 	return 0;
 
+}
+
+void transformDrifts(std::vector<double> alignIn,std::vector< std::vector< double>>& driftsIn, std::vector< std::vector< double>>& driftsOut) {
+
+	if (driftsOut.size() != driftsIn.size())driftsOut = driftsIn;
+
+	for (int pos = 0; pos < driftsIn.size(); pos++) {
+		driftsOut[pos][0] = driftsIn[pos][0] * alignIn[5] + driftsIn[pos][1] * alignIn[6];
+		driftsOut[pos][1] = driftsIn[pos][0] * alignIn[7] + driftsIn[pos][1] * alignIn[8];
+	}
+
+}
+
+
+std::vector<std::vector<size_t>> transformPosition(std::vector<double> alignIn, std::vector<std::vector<size_t>> positions, size_t imageWidth, size_t imageHeight) {
+
+	std::vector<std::vector<size_t>> positionslistout;
+	std::vector<size_t> singleLine;
+	double xcentre = alignIn[9];
+	double ycentre = alignIn[10];
+
+	for (size_t pos = 0; pos < positions.size(); pos++) {
+		//cout <<"transform "<< pos << " " << positions[pos][0] << " " << positions[pos].size() << "\n";
+		singleLine.clear();
+		for (size_t i = 0; i < positions[pos].size(); i++) {
+			double xin = (size_t)positions[pos][i] % imageWidth;
+			double yin = (size_t)positions[pos][i] / imageWidth;
+			xin += -xcentre;
+			yin += -ycentre;
+			double xout = xin * alignIn[5] + yin * alignIn[6];
+			double yout = xin * alignIn[7] + yin * alignIn[8];
+			xout += xcentre;
+			yout += ycentre;
+			xout += -alignIn[3];
+			yout += -alignIn[4];
+			if (xout < 0)xout = 0;
+			if (yout < 0)yout = 0;
+			if (xout > imageWidth - 1) xout = imageWidth - 1;
+			if (yout > imageHeight - 1)yout = imageHeight - 1;
+			singleLine.push_back((size_t)(floor(xout) + floor(yout) * imageWidth));
+			singleLine.push_back((size_t)(ceil(xout) + floor(yout) * imageWidth));
+			singleLine.push_back((size_t)(floor(xout) + ceil(yout) * imageWidth));
+			singleLine.push_back((size_t)(ceil(xout) + ceil(yout) * imageWidth));
+		}
+		sort(singleLine.begin(), singleLine.end());
+		singleLine.erase(unique(singleLine.begin(), singleLine.end()), singleLine.end());
+		positionslistout.push_back(singleLine);
+	}
+
+	return positionslistout;
 }
