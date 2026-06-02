@@ -58,13 +58,42 @@ int Expand_Shapes(std::string foregroundposfile, std::string backgroundposfile,s
 	}
 	//BLTiffIO::TiffOutput(fileBase + "_debug_backposimage.tif", imageWidth, imageHeight, 16).write1dImage(backgroundImage);
 
+
+
+
 	//find search positions for each ring
-	std::vector<std::vector<int>> foregroundSearchPos, midgroundSearchPos, backgroundSearchPos;
-	for (int i = (int)(-ceil(backgroundDist)); i <= (int)ceil(backgroundDist);i++)
-		for (int j = (int)(-ceil(backgroundDist)); j <= (int)ceil(backgroundDist);j++)
-			if (i * i + j * j <= boundaryDist * boundaryDist + 0.000001)foregroundSearchPos.push_back({ i * i + j * j,i,j });
-			else if (i * i + j * j <= backinnerradius * backinnerradius + 0.000001)midgroundSearchPos.push_back({ i * i + j * j,i,j });
-			else if (i * i + j * j <= backgroundDist * backgroundDist + 0.000001)backgroundSearchPos.push_back({ i * i + j * j,i,j });
+	int foregroundSearchCount = 0, midgroundSearchCount = 0, backgroundSearchCount = 0;
+	for (int i = (int)(-backgroundDist); i <= (int)backgroundDist; i++)
+		for (int j = (int)(-backgroundDist); j <= (int)backgroundDist; j++)
+			if (i * i + j * j <= boundaryDist * boundaryDist + 0.000001)foregroundSearchCount++;
+			else if (i * i + j * j <= backinnerradius * backinnerradius + 0.000001)midgroundSearchCount++;
+			else if (i * i + j * j <= backgroundDist * backgroundDist + 0.000001)backgroundSearchCount;
+
+
+	std::vector<std::vector<int>> foregroundSearchPos(foregroundSearchCount,std::vector<int>(3,0)), 
+		midgroundSearchPos(midgroundSearchCount, std::vector<int>(3, 0)), 
+		backgroundSearchPos(backgroundSearchCount, std::vector<int>(3, 0));
+	foregroundSearchCount = 0; midgroundSearchCount = 0; backgroundSearchCount = 0;
+	for (int i = (int)(-backgroundDist); i <= (int)backgroundDist;i++)
+		for (int j = (int)(-backgroundDist); j <= (int)backgroundDist;j++)
+			if (i * i + j * j <= boundaryDist * boundaryDist + 0.000001) {
+				foregroundSearchPos[foregroundSearchCount][0] == i * i + j * j;
+				foregroundSearchPos[foregroundSearchCount][1] == i;
+				foregroundSearchPos[foregroundSearchCount][2] == j;
+				foregroundSearchCount++;
+			}
+			else if (i * i + j * j <= backinnerradius * backinnerradius + 0.000001) {
+				midgroundSearchPos[midgroundSearchCount][0] == i * i + j * j;
+				midgroundSearchPos[midgroundSearchCount][1] == i;
+				midgroundSearchPos[midgroundSearchCount][2] == j;
+				midgroundSearchCount++;
+			}
+			else if (i * i + j * j <= backgroundDist * backgroundDist + 0.000001) {
+				backgroundSearchPos[backgroundSearchCount][0] == i * i + j * j;
+				backgroundSearchPos[backgroundSearchCount][1] == i;
+				backgroundSearchPos[backgroundSearchCount][2] == j;
+				backgroundSearchCount++;
+			}
 
 	std::sort(foregroundSearchPos.begin(), foregroundSearchPos.end(), [](const std::vector<int>& a, const std::vector<int>& b) {return a[0] < b[0];});
 	std::sort(midgroundSearchPos.begin(), midgroundSearchPos.end(), [](const std::vector<int>& a, const std::vector<int>& b) {return a[0] < b[0];});
@@ -86,7 +115,6 @@ int Expand_Shapes(std::string foregroundposfile, std::string backgroundposfile,s
 			if (xIn >= 0 && xIn < imageWidth && yIn >= 0 && yIn < imageHeight) {
 				if (posImage[xIn + yIn * imageWidth] > 0) {//if found in the foreground points then add it to the list
 					expandedForeground[posImage[xIn + yIn * imageWidth] - 1].push_back(x + y * imageWidth);
-					//expandedForegrounddebugImage[x + y * imageWidth] = posImage[xIn + yIn * imageWidth];
 					notfound = false;
 					break;
 				}
