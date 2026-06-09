@@ -37,14 +37,15 @@ public class myFFT {
     }
 
     void  FFT2d(int[] sample, Complex[][] output, TransformType direction) {
-        double mean = 0;
-        for (long value : sample) mean = mean + ((double) value);
+        double mean = 0.0;
+        for (int value : sample) mean = mean + ((double) value);
         mean = mean / sample.length;
 
-        double stddev = 0;
-        for (long value : sample) stddev += (((double) value) - mean) * (((double) value) - mean);
-        stddev = (double) Math.sqrt(stddev / sample.length);
+        double stddev = 0.0;
+        for (int value : sample) stddev = stddev + (((double) value) - mean) * (((double) value) - mean);
+        stddev = Math.sqrt(stddev / sample.length);
 
+        if(stddev==0)stddev = 1;
         //FFT each row
         for (int i = 0; i < ROILength; i++) {
             for (int j = 0; j < ROILength; j++) rowInput[j] = (((double)sample[i * ROILength + j]) - mean) / stddev;
@@ -79,6 +80,29 @@ public class myFFT {
 
 
     }
+    void  set_Reference_log (int[] sample,double gaussStdDev) {
+
+        FFT2d(sample, refFourCon, TransformType.FORWARD);
+
+        double sqrtconst = Math.sqrt(Math.PI * Math.sqrt(2.0) * gaussStdDev);
+        double const2 = Math.PI *Math.PI * Math.sqrt(2.0) * gaussStdDev;
+
+        for (int i = 0; i < ROILength; i++)
+            for (int j = 0; j < ROILength; j++){
+                int xIn = i;
+                int yIn = j;
+                if (xIn >= ROILength / 2)xIn += -ROILength;
+                if (yIn >= ROILength / 2)yIn += -ROILength;
+
+                double kSquared = ((double)(xIn * xIn)) / (ROILength * ROILength) + ((double)(yIn * yIn)) / (ROILength * ROILength);
+                double logVal = (-kSquared * sqrtconst * Math.exp(-kSquared * const2));
+
+                refFourCon[i][j] = refFourCon[i][j].multiply(logVal*logVal);
+
+                refFourCon[i][j] = refFourCon[i][j].conjugate();
+
+            }
+    }
 
 
     void align(int[] sample,int maxShift){
@@ -97,11 +121,10 @@ public class myFFT {
         for(int i=0;i<ROILength;i++)sampleFour[i] = FFT.transform(sampleFour[i], TransformType.INVERSE);
         for (int i = 0; i < ROILength; i++)for (int j = 0; j < ROILength; j++)crosscorr[i+j*ROILength] = sampleFour[i][j].getReal();
 
-
         //Find Max
         int maxAt = 0;
         for (int i = 0; i < crosscorr.length; i++) {
-            if(((i%ROILength)<maxShift || (i%ROILength)>ROILength-maxShift) && (i/ROILength<maxShift || i/ROILength>ROILength-maxShift))
+            if(((i%ROILength)<=maxShift || (i%ROILength)>=ROILength-maxShift) && (i/ROILength<=maxShift || i/ROILength>=ROILength-maxShift))
                 maxAt = crosscorr[i] > crosscorr[maxAt] ? i : maxAt;
         }
 
@@ -109,6 +132,8 @@ public class myFFT {
         maxYPos = (int) maxAt / ROILength;
         if (maxXPos > ROILength / 2) maxXPos += -ROILength;
         if (maxYPos > ROILength / 2) maxYPos += -ROILength;
+
+        //System.out.println("maxcc="+crosscorr[maxAt]+" maxpos= "+maxAt+" dx=  "+maxXPos+" dy= "+maxYPos+" ,");
 
     }
 

@@ -4,9 +4,13 @@ import java.util.Arrays;
 
 public class MakeHistogram {
     double[][] makeHistogram(double[] values) {
+        if(values.length<3)return new double[0][0];
+
         double[] quartiles = CalcQuartile(values);
 
         double binWidth = 2.0*(quartiles[2] - quartiles[0]) / (Math.pow(1.0*values.length, 0.3333333)); //Using the Freedman–Diaconis rule
+
+        if(binWidth==0)binWidth=1;
 
         double min= Arrays.stream(values).min().getAsDouble();
         double max = Arrays.stream(values).max().getAsDouble();
