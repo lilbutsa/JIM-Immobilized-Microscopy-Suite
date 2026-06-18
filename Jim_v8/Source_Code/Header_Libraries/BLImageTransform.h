@@ -147,6 +147,9 @@ public:
 
         alignLoadIm1(dataIm1, maxDist);
 
+        float const1 = 4 * pi * pi;
+        float const2 = 2 * pi * pi * gaussStdDev * gaussStdDev;
+
         for (int i = 0;i < imagePoints;i++) {
 
             int xIn = i % imageWidth;
@@ -154,7 +157,8 @@ public:
             if (xIn >= imageWidth / 2)xIn += -imageWidth;
             if (yIn >= imageHeight / 2)yIn += -imageHeight;
             float kSquared = ((float)(xIn * xIn)) / (imageWidth * imageWidth) + ((float)(yIn * yIn)) / (imageHeight * imageHeight);
-            float logVal = (-kSquared * sqrt(pi * sqrt(2.0f) * gaussStdDev) * exp(-kSquared * pi * pi * sqrt(2.0f) * gaussStdDev));
+            //float logVal = (-kSquared * sqrt(pi * sqrt(2.0f) * gaussStdDev) * exp(-kSquared * pi * pi * sqrt(2.0f) * gaussStdDev));I think this is wrong
+            float logVal = (-kSquared * const1 * exp(-kSquared * const2));
 
             fftCh1[i] = fftCh1[i] * (logVal * logVal);
 

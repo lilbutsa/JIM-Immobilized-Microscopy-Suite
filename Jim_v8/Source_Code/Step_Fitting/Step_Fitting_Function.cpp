@@ -40,7 +40,7 @@ int Step_Fitting(std::string inputfile,double TThreshold = 1.96, int method = 0 
 
 
 	BLCSVIO::writeCSV(fileBase + "_StepPoints.csv", stepPoints, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
-	BLCSVIO::writeCSV(fileBase + "_StepMeans.csv", stepMeans, "Each row is a particle. Each column first frame of a new step. First frame is 0\n");
+	BLCSVIO::writeCSV(fileBase + "_StepMeans.csv", stepMeans, "Each row is a particle. Each column is the height of the next step\n");
 
 	return 0;
 }
