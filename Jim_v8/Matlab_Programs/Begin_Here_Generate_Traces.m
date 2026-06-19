@@ -57,7 +57,7 @@ inputFolder=[inputFolder,filesep];
 positionToAnalyse = 1;
 
 alignStartFrame = 1;% Select reference frames where there is signal in all channels at the same time start frame from 1
-alignEndFrame = 5;% 
+alignEndFrame = 1;% 
 
 alignMaxShift = 30; % Limit the mamximum distance that the program will shift images for alignment this can help stop false alignments
 
@@ -68,7 +68,7 @@ alignOutputStacks = true ;
 
 %Multi Channel Alignment from here
 %Parameters for Manual Alignment [x y rotation scale]
-alignment = [0 0 0 1];
+alignment = [0 0 0 1;0 0 0 1];
 
 alignNumberOfChannels = 1; % Only used if OME metadata is unavailable
 alignFilesSplitByChannel = false; % Only used if OME metadata is unavailable
@@ -148,11 +148,11 @@ disp('Alignment completed');
 %% 4) Make a SubAverage of Frames for each Channel for Detection 
 detectUsingMaxProjection = [false false false]; %Use a max projection rather than mean. This is better for short lived blinking particles
 
-detectionStartFrame = [0 1 0]; %first frame of the reference region for detection for each channel
-detectionEndFrame = [0 -1 0]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
+detectionStartFrame = [1 0 0]; %first frame of the reference region for detection for each channel
+detectionEndFrame = [1 0 0]; %last frame of reference region. Negative numbers go from end of stack. i.e. -1 is last image in stack
 
 %Each channel is multiplied by this value before they're combined. This is handy if one channel is much brigthter than another. 
-detectWeights = [0 1 0];
+detectWeights = [1 0 0];
 
 
 detectNoNorm = false; % true disables normalization
@@ -180,18 +180,18 @@ disp('Average projection completed');
 %% 5) Detect Particles
 
 %Thresholding
-detectionCutoff = 1; % The cutoff for the initial thresholding. Typically in range 0.25-2
+detectionCutoff = 2.5; % The cutoff for the initial thresholding. Typically in range 0.25-2
 
 %Filtering
 detectMinEdgeDist = 50;% Excluded particles closer to the edge than this. Make sure this value is larger than the maximum drift. 25 works well in most cases. 
 
-detectMinCount = 100; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
-detectMaxCount= 1000000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
+detectMinCount = 10; % Minimum number of pixels in a ROI to be counted as a particle. Use this to exclude speckles of background
+detectMaxCount= 1000; % Maximum number of pixels in a ROI to be counted as a particle. Use this to exclude aggregates
 
 detectMinEccentricity = -0.1; % Eccentricity of best fit ellipse goes from 0 to 1 - 0=Perfect Circle, 1 = Line. Use the Minimum to exclude round objects. Set it to any negative number to allow all round objects
-detectMaxEccentricity = 1.1;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
+detectMaxEccentricity = 0.5;  % Use the maximum to exclude long, thin objects. Set it to a value above 1 to include long, thin objects  
 
-detectMinSeparation = 0.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
+detectMinSeparation = 5.00;% Minimum separation between ROI's. Given by the closest edge between particles Set to 0 to accept all particles
 
 %%niche options
 detectMinLength = 0;
@@ -267,7 +267,7 @@ additionalBackgroundEndFrame = [-1 -1 -1];%last frame of background reference re
 additionalBackgroundWeights = [1 1 1];
 additionalBackgroundNoNorm = false; % true disables normalization
 
-additionBackgroundCutoff = 1.5; %Threshold for particles to be detected for background
+additionBackgroundCutoff = 0.2; %Threshold for particles to be detected for background
 
 
 
@@ -337,7 +337,7 @@ Expand_Shape([allPositionFolders{positionToAnalyse},filesep,'Detected_Filtered_P
 
 sysVar.imout = cast(imread([allPositionFolders{positionToAnalyse},filesep,'Image_For_Detection_Partial_Mean.tiff']),'double');
 sysVar.tosort = sort(sysVar.imout(:));
-sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-tosort(round(displayMin*length(sysVar.tosort))));
+sysVar.imout = (sysVar.imout-sysVar.tosort(round(displayMin*length(sysVar.tosort))))./(sysVar.tosort(round(displayMax*length(sysVar.tosort)))-sysVar.tosort(round(displayMin*length(sysVar.tosort))));
 sysVar.combinedImage = zeros(size(sysVar.imout,1),size(sysVar.imout,2),3);
 for j=1:3
     sysVar.combinedImage(:,:,j) = sysVar.combinedImage(:,:,j)+sysVar.imout.*sysVar.overlayColour(1,j);
