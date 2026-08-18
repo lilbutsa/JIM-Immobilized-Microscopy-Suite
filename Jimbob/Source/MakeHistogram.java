@@ -1,4 +1,4 @@
-package org.micromanager.plugins.Poor_Mans_JIM;
+package Jimbob;
 
 import java.util.Arrays;
 
@@ -6,14 +6,20 @@ public class MakeHistogram {
     double[][] makeHistogram(double[] values) {
         if(values.length<3)return new double[0][0];
 
+
         double[] quartiles = CalcQuartile(values);
 
         double binWidth = 2.0*(quartiles[2] - quartiles[0]) / (Math.pow(1.0*values.length, 0.3333333)); //Using the Freedman–Diaconis rule
 
         if(binWidth==0)binWidth=1;
 
-        double min= Arrays.stream(values).min().getAsDouble();
-        double max = Arrays.stream(values).max().getAsDouble();
+       // double min= Arrays.stream(values).min().getAsDouble();
+       // double max = Arrays.stream(values).max().getAsDouble();
+
+        Arrays.sort(values);
+        double max = values[(int)Math.round(Math.min(0.9* values.length,values.length-1))];
+        double min = values[(int)Math.round(0.05* values.length)];
+        if(min<0.2*max)min = Math.min(0,min);
 
         min -= binWidth;
         max += binWidth;
@@ -28,7 +34,7 @@ public class MakeHistogram {
 
         for (int i = 0; i < values.length; i++) {
             pos = (int)Math.floor((values[i] - min) / binWidth);
-            output[1][pos] = output[1][pos] + 1;
+            if(pos>=0 && pos<numOfBins) output[1][pos] = output[1][pos] + 1;
         }
 
         for (int i = 0; i < numOfBins; i++)output[1][i] = output[1][i] / (values.length*binWidth);

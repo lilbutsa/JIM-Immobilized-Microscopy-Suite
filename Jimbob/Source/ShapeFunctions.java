@@ -1,4 +1,4 @@
-package org.micromanager.plugins.Poor_Mans_JIM;
+package Jimbob;
 
 import java.io.FileWriter;
 import java.util.ArrayList;
@@ -101,10 +101,11 @@ public class ShapeFunctions {
         // [16] yBoundingBoxMin
         // [17] yBoundingBoxMax
         // [18] nearestNeighbour
+        // [19] squared moment anisotropy
 
         binaryToPositions(binaryImageIn,imageWidth,detectedPos);
 
-        double[][] measurementresults = new double[detectedPos.size()][19];
+        double[][] measurementresults = new double[detectedPos.size()][20];
         double[] xpos, ypos;
         double x2, y2, xy;
         double max, min,ymin,ymax;
@@ -145,10 +146,14 @@ public class ShapeFunctions {
             x2 = x2/xpos.length;
             y2 = y2/xpos.length;
             xy = xy/xpos.length;
-            double eccentricity = ((x2 - y2) * (x2 - y2) + 4 * xy * xy) / ((x2 + y2) * (x2 + y2));//Eccentricity from https://docs.baslerweb.com/visualapplets/files/manuals/content/examples%20imagemoments.html
+            double eccentricity = ((x2 + y2)==0)?0:((x2 - y2) * (x2 - y2) + 4 * xy * xy) / ((x2 + y2) * (x2 + y2));//Eccentricity from https://docs.baslerweb.com/visualapplets/files/manuals/content/examples%20imagemoments.html
+
             double mainAxisAngle = (0.5 * Math.atan2(2 * xy, (x2 - y2)));//theta = 1/2*np.arctan2(2*mu11/mu00, (mu20 - mu02)/mu00) from https://ojskrede.github.io/inf4300/notes/week_05/
 
-            measurementresults[i][2] = eccentricity;
+            double conventionalEccentricity = Math.sqrt(2.0 * Math.sqrt(eccentricity) / (1.0 + Math.sqrt(eccentricity)));
+
+            measurementresults[i][2] = conventionalEccentricity;
+            measurementresults[i][19] = eccentricity;
 
             double xMajorAxis = Math.cos(mainAxisAngle);
             double yMajorAxis = Math.sin(mainAxisAngle);
@@ -378,6 +383,50 @@ public class ShapeFunctions {
                 }
             }
 
+            myOutput.close();
+
+        }catch(Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    static void writeCSVALD(String fileName, ArrayList<ArrayList<Double>> data,String headerline){
+        try {
+            FileWriter myOutput = new FileWriter(fileName);
+            myOutput.write(headerline+"\n");
+            String myLine;
+
+            for (int i = 0; i < data.size(); i++) {
+                myLine = "";
+                for (int j = 0; j < data.get(i).size(); j++) {
+                    myLine = myLine + String.valueOf(data.get(i).get(j)) + ",";
+                }
+                myLine = myLine.substring(0, myLine.length() - 1);
+                myLine = myLine + "\n";
+                myOutput.write(myLine);
+            }
+            myOutput.close();
+
+        }catch(Exception e) {
+            System.out.println(e);
+        }
+    }
+
+    static void writeCSVALI(String fileName, ArrayList<ArrayList<Integer>> data,String headerline){
+        try {
+            FileWriter myOutput = new FileWriter(fileName);
+            myOutput.write(headerline+"\n");
+            String myLine;
+
+            for (int i = 0; i < data.size(); i++) {
+                myLine = "";
+                for (int j = 0; j < data.get(i).size(); j++) {
+                    myLine = myLine + String.valueOf(data.get(i).get(j)) + ",";
+                }
+                myLine = myLine.substring(0, myLine.length() - 1);
+                myLine = myLine + "\n";
+                myOutput.write(myLine);
+            }
             myOutput.close();
 
         }catch(Exception e) {

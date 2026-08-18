@@ -1,5 +1,5 @@
 
-package org.micromanager.plugins.Poor_Mans_JIM;
+package Jimbob;
 
 
 import org.micromanager.MenuPlugin;
@@ -9,6 +9,8 @@ import org.scijava.plugin.Plugin;
 import org.scijava.plugin.SciJavaPlugin;
 
 import javax.swing.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 @Plugin(type = MenuPlugin.class)
 public class Jimbob implements SciJavaPlugin, MenuPlugin {
@@ -36,11 +38,25 @@ public class Jimbob implements SciJavaPlugin, MenuPlugin {
      */
     @Override
     public void onPluginSelected() {
-        frame = new JFrame("Jimbob");
-        frame.setContentPane(new PMJ_Window(studio_).MainPanel);
-        frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-        frame.pack();
+        if (frame == null || !frame.isDisplayable()) {
+            frame = new JFrame("Jimbob");
+            frame.setContentPane(new Jimbob_Window(studio_).MainPanel);
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+            frame.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent event) {
+                    if (frame == event.getWindow()) {
+                        frame = null;
+                    }
+                }
+            });
+
+            frame.pack();
+        }
+
         frame.setVisible(true);
+        frame.toFront();
     }
 
     /**
@@ -62,7 +78,7 @@ public class Jimbob implements SciJavaPlugin, MenuPlugin {
 
     @Override
     public String getHelpText() {
-        return "Jim but only the basics.";
+        return "Jimbob image analysis.";
     }
 
     @Override
