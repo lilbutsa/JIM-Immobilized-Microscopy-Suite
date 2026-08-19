@@ -304,9 +304,7 @@ public class Jimbob_Window {
             @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent) {
                 allFitsDropdown.removeAllItems();
-
                 for(int i=0;i<params.allFits.size();i++){
-
                     allFitsDropdown.addItem(params.allFits.get(i).fitNameString);
                 }
             }
@@ -437,14 +435,21 @@ public class Jimbob_Window {
         addFitToBatchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if(params==null)return;
                 params.parseParameters(mainWindow);
                 //check if there is need to input bleach rate
                 fittingMainClass newFit = new fittingMainClass();
                 int success = newFit.inputParametersFromGUI();
 
 
-                if(success ==0)params.allFits.add(newFit);
-                allFitsDropdown.setSelectedIndex(params.allFits.size()-1);
+                if(success ==0) {
+                    params.allFits.add(newFit);
+                    allFitsDropdown.removeAllItems();
+                    for(int i=0;i<params.allFits.size();i++){
+                        allFitsDropdown.addItem(params.allFits.get(i).fitNameString);
+                    }
+                    allFitsDropdown.setSelectedIndex(params.allFits.size() - 1);
+                }
 
 
             }
@@ -453,9 +458,11 @@ public class Jimbob_Window {
         overwriteFitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if(params==null)return;
+
                 params.parseParameters(mainWindow);
                 //check if there is need to input bleach rate
-                if(params.selectedFit==-1)return;
+                if(params.selectedFit==-1 || params.allFits.size()<=params.selectedFit)return;
                 fittingMainClass newFit = new fittingMainClass(params.allFits.get(params.selectedFit));
                 int success = newFit.inputParametersFromGUI();
 
@@ -467,6 +474,7 @@ public class Jimbob_Window {
         clearFitBatchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if(params==null)return;
                 params.parseParameters(mainWindow);
                 params.allFits.remove(params.selectedFit);
                 allFitsDropdown.setSelectedIndex(0);

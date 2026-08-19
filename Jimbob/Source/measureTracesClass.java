@@ -175,21 +175,19 @@ public class measureTracesClass {
         double[] frames = new double[rawData.totFrameNum];
         for (int frameNum = 0; frameNum < rawData.totFrameNum; frameNum++)frames[frameNum] = frameNum*params.timePerFrame;
         for (int chanNum = 0; chanNum < rawData.totChanNum; chanNum++) plot.addLine(frames, meanNormedTrace[chanNum]);
-        if (outputDisplay)plot.display(true);
-        if (params.saveTraces)plot.save(params.fileBase +"Mean_Trace.png",true);
+        plot.saveAndDisplay(params.saveTraces,params.fileBase +"Mean_Trace.png",true,outputDisplay);
 
 
         //plot background trace
         plot = new myPlot("Mean Background Trace", "Time ("+params.timePerFrameUnits+")", "Intensity (a.u.)");
         for (int chanNum = 0; chanNum < rawData.totChanNum; chanNum++)plot.addLine(frames, meanBackTrace[chanNum]);
-        if (outputDisplay)plot.display(true);
-        if (params.saveTraces)plot.save(params.fileBase +"Mean_Background_Trace.png",true);
+        plot.saveAndDisplay(params.saveTraces,params.fileBase +"Mean_Background_Trace.png",true, outputDisplay);
 
 
         //plot Drifts
         plot = new myPlot("Sample Drift", "Time ("+params.timePerFrameUnits+")","Pixels");
         for (int chanNum = 0; chanNum < 2; chanNum++) plot.addLine(frames, Arrays.stream(allDrifts[chanNum]).asDoubleStream().toArray());
-        if (outputDisplay)plot.display(true);
+        plot.saveAndDisplay(false,"",true, outputDisplay);
 
 
         if(params.saveTraces){
@@ -266,7 +264,8 @@ public class measureTracesClass {
             if (params.bNormalizeTraces)plot.addNormalizedLine(frames,toplot);
             else plot.addLine(frames,toplot);
         }
-        plot.display(true);
+
+        plot.saveAndDisplay(false,"",true, true);
 
 
     }

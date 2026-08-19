@@ -26,10 +26,13 @@ public class myPlot {
 
     myPlot(String header, String xAxis, String yAxis){
         plot = new Plot(header, xAxis, yAxis);
-        plot.setFrameSize(400, 250);
+
+        plot.setFrameSize(325, 250);
+
+        //plot.setFrameSize(400, 250);
         PlotWindow.noGridLines = true;
 
-        Font myriad = new Font("Myriad Pro", Font.BOLD, 40);
+        Font myriad = new Font("Myriad Pro", Font.BOLD, 30);
         plot.setAxisLabelFont(myriad.getStyle(), myriad.getSize2D());
         plot.setFont(myriad);
 
@@ -37,7 +40,7 @@ public class myPlot {
     }
 
     void addLine(double[] xVals,double[] yVals){
-        plot.setLineWidth(2.0f);
+        plot.setLineWidth(3.0f);
         plot.setColor(mycolour.get(plotCount%mycolour.size()));
         plot.add("line",xVals.clone(), yVals.clone());
         plotCount++;
@@ -87,23 +90,18 @@ public class myPlot {
         }
     }
 
-
-    void display(boolean includeZero){
-        setPlotLimitsWithYBuffer(includeZero);
-        SwingUtilities.invokeLater(plot::show);
-    }
-
-    void save(String fileName,boolean includeZero){
+    void saveAndDisplay(boolean bSave, String fileName,boolean includeZero, boolean bDisplay){
         setPlotLimitsWithYBuffer( includeZero);
-        ImagePlus plotImage = plot.makeHighResolution("", 1.0f, true, false);
-        fileName = fileName.endsWith(".png")?fileName:fileName+".png";
-        new FileSaver(plotImage).saveAsPng(fileName);
+        if(bSave) {
+            ImagePlus plotImage = plot.makeHighResolution("", 1.0f, true, false);
+            fileName = fileName.endsWith(".png") ? fileName : fileName + ".png";
+            new FileSaver(plotImage).saveAsPng(fileName);
+        }
+        if(bDisplay)SwingUtilities.invokeLater(plot::show);
     }
 
 
     void setPlotLimitsWithYBuffer(boolean includeZero) {
-        plot.setLimitsToFit(true);
-        plot.draw();
 
         if (includeZero) {
             minX = Math.min(minX, 0.0);

@@ -359,7 +359,7 @@ public class fittingMainClass {
         fitNameString = "Channel "+(fitChannel+1)+" "+fitTypeNames[fitType]+ " Aligned to "+
                 (alignType>1?(" Channel "+(alignChannel+1)+" "+alignmentTypeNames[alignType]):" Frame "+washinFrame);
         fitNameNoSpaces = "Channel_"+(fitChannel+1)+"_"+fitTypeNames[fitType]+ "_Aligned_to_"+
-                (alignType>1?("_Channel_"+(alignChannel+1)+"_"+alignmentTypeNames[alignType]):"_Frame_"+washinFrame);
+                (alignType>1?("Channel_"+(alignChannel+1)+"_"+alignmentTypeNames[alignType]):"Frame_"+washinFrame);
 
 
 
@@ -756,8 +756,7 @@ public class fittingMainClass {
         myPlot plot = new myPlot(resultString, "Time ("+timePerFrameUnits+")", "Intensity");
         plot.addLine(xIn,yIn);
         plot.overlay(xIn,yFit);
-        if (outputDisplay)plot.display(true);
-        if (saveTraces)plot.save(fileBase + "_" + csvNameString+".png",true);
+        plot.saveAndDisplay(saveTraces, fileBase + "_" + csvNameString+".png",true, outputDisplay);
 
 
 
@@ -1031,8 +1030,9 @@ public class fittingMainClass {
         myPlot plot = new myPlot(name+" Mean = "+ IJ.d2s(1/expFit[2],2), xAxis, yAxis);
         plot.addLine(survivalCurves[0],survivalCurves[1]);
         plot.overlay(survivalCurves[0],survivalCurves[2]);
-        plot.display(true);
-        if(displayOutput)plot.save(fileName,true);
+
+        plot.saveAndDisplay(saveTraces, fileName,true, displayOutput);
+
 
         // save csv
 
@@ -1092,9 +1092,8 @@ public class fittingMainClass {
         plot.addLine(histFits[0],histFits[1]);
         plot.overlay(histFits[0],histFits[2]);
         plot.overlay(histFits[0],histFits[3]);
-        plot.display(true);
-        plot.save(fileName,true);
 
+        plot.saveAndDisplay(saveTraces, fileName,true, displayOutput);
         // save csv
 
         String summaryHeader ="Normal Fit Equation = ,1 / (sigma*sqrt(2*pi)) * exp(-(x-mu)^2 / (2*sigma^2),mu = "+normFit[2]+",sigma = ,"+normFit[3]+"\n"+
