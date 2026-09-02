@@ -16,6 +16,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,6 +68,7 @@ public class Jimbob_Window {
      JButton SaveParametersBtn;
      JComboBox allFitsDropdown;
      JButton overwriteFitButton;
+    private JButton combinePositionsButton;
 
     DisplayManager myDisplayManager;
     DataViewer myDataViewer;
@@ -79,6 +82,7 @@ public class Jimbob_Window {
     detectParticlesClass detected;
     measureTracesClass measured;
     fittingMainClass fitted;
+
 
     public Jimbob_Window(Studio studioin) {
         myDisplayManager = studioin.getDisplayManager();
@@ -105,12 +109,14 @@ public class Jimbob_Window {
                 rawData = new rawDataHandler(myDataViewer);
                 params.posNum = rawData.getCurrentPos();
                 params.parseParameters(mainWindow);
+                disableAllButtons();
 
                 Runnable imageForDetectRunnable = ()-> {
                     rawDataHandler dataIn = new rawDataHandler(rawData);
                     paramsClass paramsIn = new paramsClass(params);
                     detected.imageForDetectFunc(dataIn,paramsIn,true);
                     analysisStage = 2;
+                    SwingUtilities.invokeLater(() -> {enableAllButtons();});
                 };
 
                 Thread detectThread = new Thread(imageForDetectRunnable);
@@ -129,13 +135,14 @@ public class Jimbob_Window {
                     IJ.error("Generate Detection Image First!");
                     return;
                 }
-
+                disableAllButtons();
                 params.parseParameters(mainWindow);
 
                 Runnable detectRunnable = ()-> {
                     paramsClass paramsIn = new paramsClass(params);
                     detected.detectFunc(paramsIn,true);
                     analysisStage = 3;
+                    SwingUtilities.invokeLater(() -> {enableAllButtons();});
                 };
 
                 Thread detectThread = new Thread(detectRunnable);
@@ -153,7 +160,7 @@ public class Jimbob_Window {
                     IJ.error("Detect ROIs First!");
                     return;
                 }
-
+                disableAllButtons();
                 params.parseParameters(mainWindow);
                 Runnable measureTracesRunnable = ()-> {
                     rawDataHandler dataIn = new rawDataHandler(rawData);
@@ -162,6 +169,7 @@ public class Jimbob_Window {
 
                     measured.measureTracesFunc(dataIn, detectedIn, paramsIn,true);
                     analysisStage =4;
+                    SwingUtilities.invokeLater(() -> {enableAllButtons();});
                 };
 
                 Thread measureTraceThread = new Thread(measureTracesRunnable);
@@ -181,6 +189,7 @@ public class Jimbob_Window {
                     IJ.error("Generate Traces First!");
                     return;
                 }
+                disableAllButtons();
                 params.parseParameters(mainWindow);
                 if(params.selectedFit!=-1) {
 
@@ -194,6 +203,7 @@ public class Jimbob_Window {
                                 );
 
                         analysisStage = 5;
+                        SwingUtilities.invokeLater(() -> {enableAllButtons();});
                     };
 
                     Thread fitThread = new Thread(fitMeanRunnable);
@@ -206,16 +216,42 @@ public class Jimbob_Window {
         batchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
+                disableAllButtons();
                 params.parseParameters(mainWindow);
                 params.saveTraces = true;
 
+                String baseDirectory = batchDirectoryBox.getText();
+
                 Runnable batchRunnable = () -> {
                     paramsClass paramsIn = new paramsClass(params);
+
+                    //update Group Fits
+                    ArrayList<ArrayList<fittingMainClass>> groupedFits = new ArrayList<>();
+                    try {
+                        for (int i = 0; i < paramsIn.numOfFittingGroups; i++) {
+                            groupedFits.add(new ArrayList<>());
+                            String groupFileBase = baseDirectory + (baseDirectory.endsWith(File.separator) ? "" : File.separator) + "Grouped_Analysis" + File.separator + paramsIn.groupedNames.get(i) + File.separator;
+                            Files.createDirectories(Paths.get(groupFileBase));
+                            for (int j = 0; j < params.allFits.size(); j++) {
+                                groupedFits.get(i).add(new fittingMainClass(params.allFits.get(j)));
+                                groupedFits.get(i).get(j).saveTraces = true;
+                                groupedFits.get(i).get(j).fileBase = groupFileBase + "Fit_" + (j + 1) + params.allFits.get(j).fitNameNoSpaces + File.separator;
+                                Files.createDirectories(Paths.get(groupedFits.get(i).get(j).fileBase));
+                                groupedFits.get(i).get(j).initializeAccumulators();
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e);
+                        IJ.error(e.toString());
+                        SwingUtilities.invokeLater(() -> {enableAllButtons();});
+                        return;
+                    }
+
+                    //run each pos
+
                     for (int posCount = 0; posCount < rawData.totPosNum; posCount++) {
                         paramsIn.posNum = posCount;
                         paramsIn.fileBase = rawData.getFolderName(paramsIn.posNum,paramsIn.folderName,paramsIn.saveTraces);
-
-
 
                         detected.imageForDetectFunc(rawData, paramsIn, false);
                         detected.detectFunc(paramsIn,false);
@@ -231,9 +267,17 @@ public class Jimbob_Window {
                             );
                         }
 
+                        for(int groupFitCount = 0;groupFitCount<paramsIn.numOfFittingGroups;groupFitCount++)
+                            if (paramsIn.groupPos.get(groupFitCount).contains(posCount))
+                                for(int i=0;i<paramsIn.allFits.size();i++)groupedFits.get(groupFitCount).get(i).addData(paramsIn.allFits.get(i));
+
                     }
 
+                    for(int groupFitCount = 0;groupFitCount<paramsIn.numOfFittingGroups;groupFitCount++)
+                        for(int i=0;i<paramsIn.allFits.size();i++)
+                            groupedFits.get(groupFitCount).get(i).fitSummedData();
 
+                    SwingUtilities.invokeLater(() -> {enableAllButtons();});
                 };
                 Thread batchThread = new Thread(batchRunnable);
                 batchThread.start();
@@ -435,22 +479,27 @@ public class Jimbob_Window {
         addFitToBatchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if(params==null)return;
-                params.parseParameters(mainWindow);
-                //check if there is need to input bleach rate
-                fittingMainClass newFit = new fittingMainClass();
-                int success = newFit.inputParametersFromGUI();
+                try {
+                    if (params == null) return;
 
-
-                if(success ==0) {
-                    params.allFits.add(newFit);
-                    allFitsDropdown.removeAllItems();
-                    for(int i=0;i<params.allFits.size();i++){
-                        allFitsDropdown.addItem(params.allFits.get(i).fitNameString);
+                    params.parseParameters(mainWindow);
+                    //check if there is need to input bleach rate
+                    fittingMainClass newFit = new fittingMainClass();
+                    int success = newFit.inputParametersFromGUI();
+                    if (success == 0) {
+                        params.allFits.add(newFit);
+                        allFitsDropdown.removeAllItems();
+                        for (int i = 0; i < params.allFits.size(); i++) {
+                            allFitsDropdown.addItem(params.allFits.get(i).fitNameString);
+                        }
+                        allFitsDropdown.setSelectedIndex(params.allFits.size() - 1);
                     }
-                    allFitsDropdown.setSelectedIndex(params.allFits.size() - 1);
+                }catch (Throwable e1) {
+                    GenericDialog gd = new GenericDialog("Error Adding Fit");
+                    gd.addMessage(e1.getClass().getName());
+                    gd.addMessage(String.valueOf(e1.getMessage()));
+                    gd.showDialog();
                 }
-
 
             }
         });
@@ -524,6 +573,81 @@ public class Jimbob_Window {
 
             }
         });
+        combinePositionsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                GenericDialog gd = new GenericDialog("Input of groups");
+                gd.addNumericField("Number of groups = ", params.numOfFittingGroups,0);
+                gd.showDialog();
+                if (gd.wasCanceled()) return;
+                int numOfGroupsIn = (int)gd.getNextNumber();
+
+                //resize containers
+                if(params.groupedNames.size()<numOfGroupsIn)
+                    for(int i=params.groupedNames.size();i<numOfGroupsIn;i++)params.groupedNames.add("Group_"+(i+1));
+                if(params.groupPos.size()<numOfGroupsIn)
+                    for(int i=params.groupPos.size();i<numOfGroupsIn;i++)params.groupPos.add(new ArrayList<>());
+
+
+
+                GenericDialog gd2 = new GenericDialog("Group Information");
+                gd2.addMessage("Group Names");
+                for(int i=0;i<numOfGroupsIn;i++) gd2.addStringField("Group "+(i+1)+"  Name = ", params.groupedNames.get(i));
+                gd2.addMessage("Group Positions Separated by Commas");
+                for(int i=0;i<numOfGroupsIn;i++){
+                    String nextPosLine = "";
+                    for(int j = 0;j<params.groupPos.get(i).size();j++)nextPosLine = nextPosLine+(params.groupPos.get(i).get(j)+1)+(j<params.groupPos.get(i).size()-1?",":"");
+                    gd2.addStringField("Group "+(i+1)+"  Positions = ", nextPosLine);
+                }
+
+                gd2.showDialog();
+                if (gd2.wasCanceled()) return;
+
+                params.numOfFittingGroups = numOfGroupsIn;
+                for(int i=0;i<params.numOfFittingGroups;i++){
+                    String groupNameIn = gd2.getNextString();
+                    groupNameIn = groupNameIn.trim();
+                    groupNameIn = groupNameIn.replaceAll("\\s+", "_");
+                    params.groupedNames.set(i,groupNameIn);
+                }
+
+                for(int i=0;i<params.numOfFittingGroups;i++){
+                    String groupPosIn = gd2.getNextString();
+                    String[] split = groupPosIn.split("\\s*,\\s*");
+                    ArrayList<Integer> newPoses = new ArrayList<>();
+                    for (String s : split) newPoses.add(Integer.parseInt(s) - 1);
+                    params.groupPos.set(i,newPoses);
+                }
+
+            }
+        });
+    }
+
+    void enableAllButtons(){
+        detectionImageButton.setEnabled(true);
+        detectParticlesButton.setEnabled(true);
+        GenerateTracesButton.setEnabled(true);
+        showTracesBtn.setEnabled(true);
+        fitButton.setEnabled(true);
+        addFitToBatchButton.setEnabled(true);
+        overwriteFitButton.setEnabled(true);
+        clearFitBatchButton.setEnabled(true);
+        combinePositionsButton.setEnabled(true);
+        batchButton.setEnabled(true);
+
+    }
+
+    void disableAllButtons(){
+        detectionImageButton.setEnabled(false);
+        detectParticlesButton.setEnabled(false);
+        GenerateTracesButton.setEnabled(false);
+        showTracesBtn.setEnabled(false);
+        fitButton.setEnabled(false);
+        addFitToBatchButton.setEnabled(false);
+        overwriteFitButton.setEnabled(false);
+        clearFitBatchButton.setEnabled(false);
+        combinePositionsButton.setEnabled(false);
+        batchButton.setEnabled(false);
     }
 
 }

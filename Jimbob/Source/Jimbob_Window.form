@@ -3,7 +3,7 @@
   <grid id="27dc6" binding="MainPanel" layout-manager="GridLayoutManager" row-count="18" column-count="6" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
-      <xy x="20" y="20" width="648" height="882"/>
+      <xy x="20" y="20" width="838" height="882"/>
     </constraints>
     <properties/>
     <border type="none"/>
@@ -32,7 +32,9 @@
       </component>
       <component id="f5766" class="javax.swing.JLabel">
         <constraints>
-          <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Threshold Cutoff"/>
@@ -40,7 +42,9 @@
       </component>
       <component id="90fed" class="javax.swing.JLabel">
         <constraints>
-          <grid row="7" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="7" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Min/Max Eccentricity"/>
@@ -73,7 +77,9 @@
       </component>
       <component id="7dcbe" class="javax.swing.JLabel">
         <constraints>
-          <grid row="8" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="8" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Min Separation"/>
@@ -81,7 +87,9 @@
       </component>
       <component id="8e39b" class="javax.swing.JLabel">
         <constraints>
-          <grid row="13" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="13" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Page No./Normalize"/>
@@ -102,7 +110,7 @@
       </component>
       <component id="fc944" class="javax.swing.JButton" binding="batchButton">
         <constraints>
-          <grid row="17" column="0" row-span="1" col-span="6" vsize-policy="0" hsize-policy="7" anchor="2" fill="0" indent="0" use-parent-layout="false">
+          <grid row="17" column="2" row-span="1" col-span="4" vsize-policy="0" hsize-policy="7" anchor="2" fill="0" indent="0" use-parent-layout="false">
             <minimum-size width="550" height="-1"/>
             <preferred-size width="550" height="-1"/>
           </grid>
@@ -118,6 +126,7 @@
           </grid>
         </constraints>
         <properties>
+          <enabled value="true"/>
           <text value="Make Detection Image"/>
         </properties>
       </component>
@@ -135,7 +144,9 @@
       </component>
       <component id="c3183" class="javax.swing.JLabel">
         <constraints>
-          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Align ROI size (2^n)"/>
@@ -143,7 +154,9 @@
       </component>
       <component id="74c7d" class="javax.swing.JLabel">
         <constraints>
-          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Detection Channel"/>
@@ -163,7 +176,9 @@
       </component>
       <component id="5bb63" class="javax.swing.JLabel">
         <constraints>
-          <grid row="10" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="10" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Show Stack/Save Traces"/>
@@ -171,7 +186,9 @@
       </component>
       <component id="ca65" class="javax.swing.JLabel">
         <constraints>
-          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Channel Alignment"/>
@@ -481,7 +498,9 @@
       </component>
       <component id="6cae8" class="javax.swing.JLabel">
         <constraints>
-          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="Select File"/>
@@ -539,8 +558,8 @@
       <component id="da775" class="javax.swing.JButton" binding="clearFitBatchButton">
         <constraints>
           <grid row="16" column="4" row-span="1" col-span="2" vsize-policy="0" hsize-policy="7" anchor="0" fill="0" indent="0" use-parent-layout="false">
-            <minimum-size width="100" height="-1"/>
-            <preferred-size width="100" height="-1"/>
+            <minimum-size width="150" height="-1"/>
+            <preferred-size width="150" height="-1"/>
           </grid>
         </constraints>
         <properties>
@@ -636,7 +655,9 @@
       </component>
       <component id="193c3" class="javax.swing.JLabel">
         <constraints>
-          <grid row="15" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="15" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="184" height="17"/>
+          </grid>
         </constraints>
         <properties>
           <text value="All Fits"/>
@@ -652,6 +673,17 @@
         <properties>
           <model/>
           <toolTipText value="All image stacks currently open in micromanager. The current position in the stack the when the stack is selected here is the position used for the other sections."/>
+        </properties>
+      </component>
+      <component id="c40c5" class="javax.swing.JButton" binding="combinePositionsButton">
+        <constraints>
+          <grid row="17" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="7" anchor="0" fill="0" indent="0" use-parent-layout="false">
+            <minimum-size width="150" height="-1"/>
+            <preferred-size width="150" height="-1"/>
+          </grid>
+        </constraints>
+        <properties>
+          <text value="Combine Position Fits"/>
         </properties>
       </component>
     </children>

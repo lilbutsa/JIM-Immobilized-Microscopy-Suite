@@ -10,6 +10,7 @@ import ij.io.FileSaver;
 import ij.plugin.MontageMaker;
 import ij.process.ImageProcessor;
 
+import javax.swing.*;
 import java.awt.*;
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -34,7 +35,7 @@ public class fittingMainClass {
     boolean saveTraces = false;
 
     //Fit Type
-    int alignType,alignNormType,alignRangeType,fitNormType,fitRangeType, fitType;
+    int alignType = 0,alignNormType = 0,alignRangeType = 0,fitNormType = 0,fitRangeType = 0, fitType = 0;
 
     //fit Channel and Range
     int fitChannel;
@@ -82,13 +83,22 @@ public class fittingMainClass {
     double[] fitOverlay;
     int resultsColumns = 0;
 
+    double[] meanXVals,meanYVals;
+    int[] meanCounts;
+
     ArrayList<ArrayList<Double>> survivalCurveData = new ArrayList<>(), HistogramData= new ArrayList<>();
+    ArrayList<Double> survivalCurveOffsets = new ArrayList<>();
     ArrayList<String[]> survivalCurveNames= new ArrayList<>(), HistogramNames= new ArrayList<>();
 
     int pageNo = 1;
 
     fittingMainClass(){
-
+        alignType = 0;
+        alignNormType = 0;
+        alignRangeType = 0;
+        fitNormType = 0;
+        fitRangeType = 0;
+        fitType = 0;
     }
 
     fittingMainClass(fittingMainClass other){
@@ -155,6 +165,7 @@ public class fittingMainClass {
         survivalCurveNames = new ArrayList<>(other.survivalCurveNames);
         HistogramNames = new ArrayList<>(other.HistogramNames);
         survivalCurveData = new ArrayList<>(other.survivalCurveData);
+        survivalCurveOffsets = new ArrayList<>(other.survivalCurveOffsets);
         HistogramData = new ArrayList<>(other.HistogramData);
 
         pageNo = other.pageNo;
@@ -162,24 +173,27 @@ public class fittingMainClass {
 
     int inputParametersFromGUI( ){
 
-        GenericDialog gd1 = new GenericDialog("Input Fit", IJ.getInstance());
 
+        GenericDialog gd1 = new GenericDialog("Input Fit");
+        gd1.addMessage("Fit Information");
         gd1.addChoice(" Choose Fit:", fitTypeNames, fitTypeNames[fitType]);
-        gd1.addToSameRow();
+        //gd1.addToSameRow();
+
         gd1.addChoice(" In Range:", rangeNames, rangeNames[fitRangeType]);
-        gd1.addToSameRow();
+        //gd1.addToSameRow();
+
         gd1.addChoice(" Normalized By:", normalizationTypeNames, normalizationTypeNames[fitNormType]);
 
+        gd1.addMessage("Alignment Information");
         gd1.addChoice(" Fit Aligned To:", alignmentTypeNames, alignmentTypeNames[alignType]);
-        gd1.addToSameRow();
+        //gd1.addToSameRow();
         gd1.addChoice(" In Range:", rangeNames, rangeNames[alignRangeType]);
-        gd1.addToSameRow();
+        //gd1.addToSameRow();
         gd1.addChoice(" Normalized By:", normalizationTypeNames, normalizationTypeNames[alignNormType]);
 
 
         gd1.showDialog();
         if (gd1.wasCanceled())return 1;
-
 
         fitType = gd1.getNextChoiceIndex();
         fitRangeType = gd1.getNextChoiceIndex();
@@ -191,11 +205,11 @@ public class fittingMainClass {
         if(fitType==0 ||fitType == firstMeanFit-1)return 2;
 
 
-        GenericDialog gd = new GenericDialog("Input Parameters", IJ.getInstance());
+        GenericDialog gd = new GenericDialog("Input Parameters");
 
         //Fit Info
 
-        gd.addNumericField("Fit Channel = ", fitChannel+1);
+        gd.addNumericField("Fit Channel = ", fitChannel+1,0);
         if(fitRangeType>0) {//Get channel and fit range
 
             String units = "";
@@ -204,41 +218,41 @@ public class fittingMainClass {
             else if(fitRangeType==3 || fitRangeType==5)units = " Percent ";
             else if(fitRangeType==4) units = " Intensity ";
 
-            gd.addNumericField("Fit "+(fitRangeType<=3?"X":"Y")+" Range Min"+units+"= ", fitMinRange);
-            gd.addNumericField("Fit "+(fitRangeType<=3?"X":"Y")+" Range Max"+units+"= ", fitMaxRange);
+            gd.addNumericField("Fit "+(fitRangeType<=3?"X":"Y")+" Range Min"+units+"= ", fitMinRange,2);
+            gd.addNumericField("Fit "+(fitRangeType<=3?"X":"Y")+" Range Max"+units+"= ", fitMaxRange,2);
         }
 
         //fit parameters
         if(fitType==1) {    //SingleStep
-            gd.addNumericField("Fit Stepfit Threshold = ", fitThreshold);
-            gd.addNumericField("Fit Min % Loss for Single Step = ", fitStepfitMinSingleStepFraction);
-            gd.addNumericField("Fit Max % Loss for No Step = ", fitStepfitMaxNoStepFraction);
+            gd.addNumericField("Fit Stepfit Threshold = ", fitThreshold,2);
+            gd.addNumericField("Fit Min % Loss for Single Step = ", fitStepfitMinSingleStepFraction,2);
+            gd.addNumericField("Fit Max % Loss for No Step = ", fitStepfitMaxNoStepFraction,2);
             gd.addCheckbox("Overwrite trace data with fit",fitOverwrite);
         }else if(fitType==2) {    //multi step  fit
-                gd.addNumericField("Fit Stepfit Threshold = ", fitThreshold);
+                gd.addNumericField("Fit Stepfit Threshold = ", fitThreshold,2);
                 gd.addCheckbox("Overwrite trace data with fit",fitOverwrite);
         }else if(fitType==3) {    //Bleach Correct
             gd.addCheckbox("Binding Data",fitBCBinding);
-            gd.addNumericField("Mean bleach Frame = ", bleachFrame);
-            gd.addNumericField("Mean Dissociation Time ("+timePerFrameUnits+") = ", dissociationTime);
+            gd.addNumericField("Mean bleach Frame = ", bleachFrame,2);
+            gd.addNumericField("Mean Dissociation Time ("+timePerFrameUnits+") = ", dissociationTime,2);
             gd.addCheckbox("Overwrite trace data with fit",fitOverwrite);
         } else if(fitType==6) {
-            gd.addNumericField("Fit Threshold = ", fitThreshold);
-            gd.addNumericField("Fit Threshold Debounce Frames = ", fitDebounceNum);
+            gd.addNumericField("Fit Threshold = ", fitThreshold,2);
+            gd.addNumericField("Fit Threshold Debounce Frames = ", fitDebounceNum,2);
             gd.addCheckbox("Fit Rising Threshold",fitRisingThreshold);
             gd.addCheckbox("Fit First Crossing",fitFirstThreshold);
         } else if(fitType==12) {//Nuc plot with input bleaching
-            gd.addNumericField("Mean bleach Frame = ", bleachFrame);
+            gd.addNumericField("Mean bleach Frame = ", bleachFrame,2);
         }
 
         if(fitType>=firstMeanFit){
-            gd.addNumericField("Min Trace number for Fit",minTraceCount);
+            gd.addNumericField("Min Trace number for Fit",minTraceCount,0);
         }
 
         //Fit Normalization!
-        if(fitNormType==1){gd.addNumericField("Fit Normalization Constant = ", fitNormConst);
+        if(fitNormType==1){gd.addNumericField("Fit Normalization Constant = ", fitNormConst,2);
         }
-        else if(fitNormType>1 && fitNormType<8 ){gd.addNumericField("Fit Normalization Channel = ", fitNormChannel+1);
+        else if(fitNormType>1 && fitNormType<8 ){gd.addNumericField("Fit Normalization Channel = ", fitNormChannel+1,0);
         }
 
         gd.addMessage("Alignment Parameters");
@@ -246,33 +260,33 @@ public class fittingMainClass {
         //Align Channel and range
 
         if(alignType==1) {//washing
-            gd.addNumericField("Wash In Frame = ", washinFrame);
+            gd.addNumericField("Wash In Frame = ", washinFrame,0);
         }else if(alignType>1 && alignRangeType>0) {//Get channel and fit range
-            gd.addNumericField("Alignment Channel = ", alignChannel+1);
+            gd.addNumericField("Alignment Channel = ", alignChannel+1,0);
             String units = "";
             if(alignRangeType==1)units = " Frames ";
             else if(alignRangeType==2)units = " Time (" + timePerFrameUnits + ") ";
             else if(alignRangeType==3 || alignRangeType==5)units = " Percent ";
             else if(alignRangeType==4) units = " Intensity ";
 
-            gd.addNumericField("Alignment "+(alignRangeType<=3?"X":"Y")+" Range Min"+units+"= ", alignMinRange);
-            gd.addNumericField("Alignment "+(alignRangeType<=3?"X":"Y")+" Range Max"+units+"= ", alignMaxRange);
+            gd.addNumericField("Alignment "+(alignRangeType<=3?"X":"Y")+" Range Min"+units+"= ", alignMinRange,2);
+            gd.addNumericField("Alignment "+(alignRangeType<=3?"X":"Y")+" Range Max"+units+"= ", alignMaxRange,2);
         }
 
         //Align normalization parameters
-        if(alignNormType==1 && alignType>1){gd.addNumericField("Alignment Normalization Constant = ", alignNormConst);
+        if(alignNormType==1 && alignType>1){gd.addNumericField("Alignment Normalization Constant = ", alignNormConst,2);
         }
-        else if(alignNormType>1 && alignNormType<8 && alignType>1){gd.addNumericField("Alignment Normalization Channel = ", alignNormChannel+1);
+        else if(alignNormType>1 && alignNormType<8 && alignType>1){gd.addNumericField("Alignment Normalization Channel = ", alignNormChannel+1,0);
         }
 
         //align fit
         if(alignType==2) {    //SingleStep
-            gd.addNumericField("Alignment Stepfit Threshold = ", alignThreshold);
-            gd.addNumericField("Align. Min % Loss for Single Step = ", alignStepfitMinSingleStepFraction);
-            gd.addNumericField("Align. Max % Loss for No Step = ", alignStepfitMaxNoStepFraction);
+            gd.addNumericField("Alignment Stepfit Threshold = ", alignThreshold,2);
+            gd.addNumericField("Align. Min % Loss for Single Step = ", alignStepfitMinSingleStepFraction,2);
+            gd.addNumericField("Align. Max % Loss for No Step = ", alignStepfitMaxNoStepFraction,2);
         } else if(alignType==5) {
-            gd.addNumericField("Alignment Threshold = ", alignThreshold);
-            gd.addNumericField("Alignment Threshold Debounce Frames = ", alignDebounceNum);
+            gd.addNumericField("Alignment Threshold = ", alignThreshold,2);
+            gd.addNumericField("Alignment Threshold Debounce Frames = ", alignDebounceNum,0);
             gd.addCheckbox("Align to Rising Threshold",alignThresholdRising);
             gd.addCheckbox("Align to First Crossing",alignFirstCrossing);
         }
@@ -383,10 +397,10 @@ public class fittingMainClass {
         double[] xvals = new double[allTraces[0].length];
 
 
-        double[] meanYVals  = new double[2*allTraces[0].length+1];
-        int[] meanCounts  = new int[2*allTraces[0].length+1];
+        meanYVals  = new double[2*allTraces[0].length+1];
+        meanCounts  = new int[2*allTraces[0].length+1];
         int alignmentAnchor = allTraces[0].length - 1;
-        double[] meanXVals  = new double[2*allTraces[0].length+1];
+        meanXVals  = new double[2*allTraces[0].length+1];
         for(int i=0;i<2*allTraces[0].length+1;i++)meanXVals[i] = (i-alignmentAnchor)*timePerFrame;
 
         ImageStack exampleTracePageStack = null;
@@ -441,7 +455,7 @@ public class fittingMainClass {
                 if(result[0]==0) {
                     survivalCurveData.get(0).add(timePerFrame*result[1]);//Add to step rate survival curve
                     HistogramData.get(0).add(result[2]);//Add to step Height survival curve
-                }
+                } else if(result[0]==1) survivalCurveOffsets.set(0, survivalCurveOffsets.get(0)+1);
 
             } else if(fitType==2){//"Multi Step Fit"
                 multiStepFit(Arrays.copyOfRange(fitNormedYVal, fitRange[0],fitRange[0]+fitRange[1] ),HistogramData.get(0),HistogramData.get(1),
@@ -575,7 +589,7 @@ public class fittingMainClass {
             }
             for(int i=0;i<survivalCurveData.size();i++){
                 double[] toplot = survivalCurveData.get(i).stream().mapToDouble(Double::doubleValue).toArray();
-                survivalCurve(toplot,timePerFrame,0.0
+                survivalCurve(toplot,timePerFrame,survivalCurveOffsets.get(i)
                         ,survivalCurveNames.get(i)[0],survivalCurveNames.get(i)[1],survivalCurveNames.get(i)[2],survivalCurveNames.get(i)[3],outputDisplay);
             }
 
@@ -601,9 +615,10 @@ public class fittingMainClass {
                 gd.showDialog();
                 return;
             }
-            for(int i=start;i<end;i++)meanYVals[i] = meanCounts[i]>0?meanYVals[i]/meanCounts[i]:0;
+            double[] averagedMeanYVals = new double[meanYVals.length];
+            for(int i=start;i<end;i++)averagedMeanYVals[i] = meanCounts[i]>0?meanYVals[i]/meanCounts[i]:0;
 
-            meanFit(Arrays.copyOfRange(meanXVals, start, end),Arrays.copyOfRange(meanYVals, start, end),Arrays.copyOfRange(meanCounts, start, end),timePerFrame,outputDisplay,saveTraces);
+            meanFit(Arrays.copyOfRange(meanXVals, start, end),Arrays.copyOfRange(averagedMeanYVals, start, end),Arrays.copyOfRange(meanCounts, start, end),timePerFrame,outputDisplay,saveTraces);
         }
 
         if(saveTraces)ShapeFunctions.writeCSV(fileBase+"Fit_Summary.csv",fitSummary,fitSummaryHeader,false);
@@ -688,6 +703,9 @@ public class fittingMainClass {
             survivalCurveData.add(new ArrayList<>());
             survivalCurveNames.add(new String[]{"Threshold Crossing Times", "Time (" + timePerFrameUnits + ")", "Remaining Particles", fileBase + "Threshold_Crossing_Time_Distribution"});
         }
+
+        survivalCurveOffsets.clear();
+        for(int i=0;i<survivalCurveData.size();i++)survivalCurveOffsets.add(0.0);
 
 
     }
@@ -1100,6 +1118,104 @@ public class fittingMainClass {
                 "Log Normal Fit Equation = ,1 / (x*sigma*sqrt(2*pi)) * exp(-(ln(x)-mu)^2 / (2*sigma^2),mu = "+logNormFit[2]+",sigma = ,"+logNormFit[3]+"\n";
         summaryHeader =summaryHeader +xAxis+","+"Probability Density"+", Normal Fit, Log Normal Fit\n";
         if(saveTraces) ShapeFunctions.writeCSV(fileName+"_Data.csv", histFits,summaryHeader,true);
+
+    }
+
+    void initializeAccumulators(){
+        meanXVals = null;
+        meanYVals = null;
+        meanCounts = null;
+
+        updateResultsSummaryInfo();
+
+    }
+
+    void addData(fittingMainClass inputData) {
+
+        if(inputData.meanXVals!=null){
+            if (meanXVals == null) { //Copy for the first time
+                meanXVals = new double[inputData.meanXVals.length];
+                System.arraycopy(inputData.meanXVals, 0, meanXVals, 0, meanXVals.length);
+                meanYVals = new double[inputData.meanYVals.length];
+                System.arraycopy(inputData.meanYVals, 0, meanYVals, 0, meanYVals.length);
+                meanCounts = new int[inputData.meanCounts.length];
+                System.arraycopy(inputData.meanCounts, 0, meanCounts, 0, meanCounts.length);
+            }else if(meanXVals.length < inputData.meanXVals.length) {//copy the preexisting into a bigger array
+                meanXVals = new double[inputData.meanXVals.length];
+                System.arraycopy(inputData.meanXVals, 0, meanXVals, 0, meanXVals.length);
+
+                double[] newYArray = new double[inputData.meanXVals.length];
+                System.arraycopy(inputData.meanYVals, 0, newYArray, 0, inputData.meanYVals.length);
+                int startPos = (inputData.meanYVals.length-meanYVals.length)/2;
+                for(int i=0;i<meanYVals.length;i++)newYArray[i+startPos]+=meanYVals[i];
+                meanYVals = newYArray;
+
+                int[] newCountArray = new int[inputData.meanXVals.length];
+                System.arraycopy(inputData.meanCounts, 0, newCountArray, 0, inputData.meanCounts.length);
+                for(int i=0;i<meanCounts.length;i++)newCountArray[i+startPos]+=meanCounts[i];
+                meanCounts = newCountArray;
+
+            } else {   //Copy for a smaller input
+                int startPos = (meanXVals.length - inputData.meanXVals.length)/2;
+                for(int i=0;i<inputData.meanYVals.length;i++)meanYVals[i+startPos]+=inputData.meanYVals[i];
+                for(int i=0;i<inputData.meanCounts.length;i++)meanCounts[i+startPos]+=inputData.meanCounts[i];
+            }
+        }
+
+        if (survivalCurveData.size() != inputData.survivalCurveData.size() || survivalCurveOffsets.size() != inputData.survivalCurveOffsets.size() || HistogramData.size() != inputData.HistogramData.size()){
+            GenericDialog gd = new GenericDialog("Error - Survival Curve Mismatch in Batch");
+            gd.addMessage("Problem with different number of plots for combined fits.");
+            SwingUtilities.invokeLater(gd::showDialog);
+            return;
+        }
+
+        for (int i = 0; i < survivalCurveData.size(); i++)
+            for (int j = 0; j < inputData.survivalCurveData.get(i).size(); j++)
+                survivalCurveData.get(i).add(inputData.survivalCurveData.get(i).get(j));
+
+        for (int i = 0; i < survivalCurveOffsets.size(); i++)
+            survivalCurveOffsets.set(i, survivalCurveOffsets.get(i) + inputData.survivalCurveOffsets.get(i));
+
+        for (int i = 0; i < HistogramData.size(); i++)
+            for (int j = 0; j < inputData.HistogramData.get(i).size(); j++)
+                HistogramData.get(i).add(inputData.HistogramData.get(i).get(j));
+
+    }
+
+    void fitSummedData(){
+
+        if(fitType<firstMeanFit) {
+
+            //Plot analysis curves
+            for(int i=0;i<HistogramData.size();i++){
+                double[] toplot = HistogramData.get(i).stream().mapToDouble(Double::doubleValue).toArray();
+                intensityDistribution(toplot,0.05,0.95,HistogramNames.get(i)[0],HistogramNames.get(i)[1],HistogramNames.get(i)[2],true);
+            }
+            for(int i=0;i<survivalCurveData.size();i++){
+                double[] toplot = survivalCurveData.get(i).stream().mapToDouble(Double::doubleValue).toArray();
+                survivalCurve(toplot,timePerFrame,survivalCurveOffsets.get(i)
+                        ,survivalCurveNames.get(i)[0],survivalCurveNames.get(i)[1],survivalCurveNames.get(i)[2],survivalCurveNames.get(i)[3],true);
+            }
+
+        }else{
+            //find range
+            if(meanCounts==null) return;
+            int start = 0,end;
+            for(start = 0;start< meanCounts.length && meanCounts[start]<minTraceCount;start++);
+            for(end = meanCounts.length-1;end>=0 && meanCounts[end]<minTraceCount;end--);
+            end++;
+
+            if(end-start<3) {
+                GenericDialog gd = new GenericDialog("Error - Insufficient Traces remaining after alignment");
+                gd.addMessage("No frame has more than the minimum number of traces ("+minTraceCount+") after alignment");
+                SwingUtilities.invokeLater(gd::showDialog);
+                return;
+            }
+            double[] averagedMeanYVals = new double[meanYVals.length];
+            for(int i=start;i<end;i++)averagedMeanYVals[i] = meanCounts[i]>0?meanYVals[i]/meanCounts[i]:0;
+
+            meanFit(Arrays.copyOfRange(meanXVals, start, end),Arrays.copyOfRange(averagedMeanYVals, start, end),Arrays.copyOfRange(meanCounts, start, end),timePerFrame,true,saveTraces);
+        }
 
     }
 

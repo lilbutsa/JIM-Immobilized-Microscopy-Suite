@@ -34,9 +34,16 @@ public class paramsClass
     ArrayList<fittingMainClass> allFits = new ArrayList<>();
     int selectedFit = -1;
 
+    //Batch params
+    int numOfFittingGroups = 0;
+    ArrayList<String> groupedNames = new ArrayList<>();
+    ArrayList<ArrayList<Integer>> groupPos = new ArrayList<>();
+
     //Internal params
     double LoGStdDev = 3,alignFilterStdDev = 10,measureAlignStdDev = 3;
     int initialSmallStackNum = 10;
+
+
 
     paramsClass(){
     }
@@ -78,6 +85,11 @@ public class paramsClass
 
         allFits = new ArrayList<>();
         for(int i=0;i<other.allFits.size();i++)allFits.add(new fittingMainClass(other.allFits.get(i)));
+
+        numOfFittingGroups = other.numOfFittingGroups;
+        groupedNames = new ArrayList<>(other.groupedNames);
+        groupPos = new ArrayList<>();
+        for(int i=0;i<other.groupPos.size();i++)groupPos.add(new ArrayList<>(other.groupPos.get(i)));
 
     }
 
@@ -152,6 +164,8 @@ public class paramsClass
         try(BufferedReader br = new BufferedReader(new FileReader(filePath));) {
 
             allFits = new ArrayList<>();
+            groupPos = new ArrayList<>();
+            groupedNames = new ArrayList<>();
 
             while ((line = br.readLine()) != null) {
                 String[] values = line.split(",", 2);
@@ -273,9 +287,25 @@ public class paramsClass
                     allFits.get(Integer.parseInt(values[0].substring("Align_Rising_Threshold_Fit_".length()))-1).alignThresholdRising = values[1].equalsIgnoreCase("True");
                 else if(values[0].startsWith("Align_First_Crossing_Fit_"))
                     allFits.get(Integer.parseInt(values[0].substring("Align_First_Crossing_Fit_".length()))-1).alignFirstCrossing = values[1].equalsIgnoreCase("True");
-
-
+                else if(values[0].startsWith("Batch_Group_Name_Group_")){
+                    int posIn = Integer.parseInt(values[0].substring("Batch_Group_Name_Group_".length()))-1;
+                    while(groupedNames.size()<=posIn)groupedNames.add("Group_"+(groupedNames.size()+1));
+                    String groupNameIn = values[1];
+                    groupNameIn = groupNameIn.trim();
+                    groupNameIn = groupNameIn.replaceAll("\\s+", "_");
+                    groupedNames.set(posIn,groupNameIn);
+                }else if(values[0].startsWith("Batch_Group_Positions_Group_")){
+                    int posIn = Integer.parseInt(values[0].substring("Batch_Group_Positions_Group_".length()))-1;
+                    while(groupPos.size()<=posIn) groupPos.add(new ArrayList<>());
+                    String[] split = values[1].split("\\s+");
+                    ArrayList<Integer> newPoses = new ArrayList<>();
+                    for (String s : split) newPoses.add(Integer.parseInt(s) - 1);
+                    groupPos.set(posIn,newPoses);
+                }
             }
+
+            numOfFittingGroups = Math.min(groupPos.size(),groupedNames.size());
+
         }catch (Exception e) {
             System.out.println("Could not read parameters CSV: Error with line "+line+ e);
             GenericDialog gd = new GenericDialog("Error - Could not read parameters");
@@ -398,7 +428,12 @@ public class paramsClass
                     myOutput.write("Align_Rising_Threshold_Fit_" + (i + 1) + "," + (allFits.get(i).alignThresholdRising ? "True" : "False") + "\n");
                     myOutput.write("Align_First_Crossing_Fit_" + (i + 1) + "," + (allFits.get(i).alignFirstCrossing ? "True" : "False") + "\n");
                 }
-
+            }
+            for(int i=0;i<numOfFittingGroups;i++){
+                myOutput.write("Batch_Group_Name_Group_"+(i+1)+","+groupedNames.get(i)+ "\n");
+                String posString = "";
+                for(int j=0;j<groupPos.get(i).size();j++)posString = posString+(groupPos.get(i).get(j)+1)+(j==groupPos.get(i).size()-1?"":" ");
+                myOutput.write("Batch_Group_Positions_Group_"+(i+1)+","+posString+ "\n");
             }
 
 
