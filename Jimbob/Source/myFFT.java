@@ -1,4 +1,4 @@
-package org.micromanager.plugins.Poor_Mans_JIM;
+package Jimbob;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
@@ -71,6 +71,8 @@ public class myFFT {
 
     }
 
+
+
     void  set_Reference (int[] sample) {
 
         FFT2d(sample, refFourCon, TransformType.FORWARD);
@@ -78,14 +80,15 @@ public class myFFT {
         for (int i = 0; i < ROILength; i++)
             for (int j = 0; j < ROILength; j++) refFourCon[i][j] = refFourCon[i][j].conjugate();
 
-
     }
     void  set_Reference_log (int[] sample,double gaussStdDev) {
 
         FFT2d(sample, refFourCon, TransformType.FORWARD);
 
-        double sqrtconst = Math.sqrt(Math.PI * Math.sqrt(2.0) * gaussStdDev);
-        double const2 = Math.PI *Math.PI * Math.sqrt(2.0) * gaussStdDev;
+       // double const1 = Math.sqrt(Math.PI * Math.sqrt(2.0) * gaussStdDev);
+        //double const2 = Math.PI *Math.PI * Math.sqrt(2.0) * gaussStdDev;
+        double const1 = 4*Math.PI * Math.PI;
+        double const2 = 2*Math.PI * Math.PI * gaussStdDev* gaussStdDev;
 
         for (int i = 0; i < ROILength; i++)
             for (int j = 0; j < ROILength; j++){
@@ -95,7 +98,7 @@ public class myFFT {
                 if (yIn >= ROILength / 2)yIn += -ROILength;
 
                 double kSquared = ((double)(xIn * xIn)) / (ROILength * ROILength) + ((double)(yIn * yIn)) / (ROILength * ROILength);
-                double logVal = (-kSquared * sqrtconst * Math.exp(-kSquared * const2));
+                double logVal = (-kSquared * const1 * Math.exp(-kSquared * const2));
 
                 refFourCon[i][j] = refFourCon[i][j].multiply(logVal*logVal);
 
@@ -105,7 +108,8 @@ public class myFFT {
     }
 
 
-    void align(int[] sample,int maxShift){
+
+        void align(int[] sample,int maxShift){
 
         FFT2d(sample,sampleFour,TransformType.FORWARD);
 
